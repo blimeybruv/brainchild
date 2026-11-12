@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brainchild — browse games and mods</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&amp;family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&amp;family=Martian+Mono:wght@400;600;700&amp;family=Silkscreen&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E0F12}
+a{color:#F5B83D}a:hover{color:#FFD27A}
+.metal{background:url(/_blob/c2eaa4868f83935fa372b38ba261914e) repeat,#15171B url(/_blob/440cb343d937134112bcd4246b13deed) repeat;background-size:280px 280px,512px 512px}
+input[type=checkbox]{accent-color:#F5B83D;width:18px;height:18px;margin:0;cursor:pointer}
+</style>
+</helmet>
+<div class="metal" style="color: #ECEDEE; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; font-size: 16px; line-height: 1.55; min-height: 100vh">
+
+<header style="border-bottom: 1px solid #23262D">
+<nav aria-label="Main" style="max-width: 1320px; margin: 0 auto; padding: 18px 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 24px">
+<a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: #ECEDEE">
+<svg aria-hidden="true" width="30" height="20" viewBox="0 0 30 20" fill="none" stroke="#F5B83D" stroke-width="3" stroke-linecap="round"><path d="M2 10c3-8 6-8 8.7 0s5.6 8 8.6 0 5.7-8 8.7 0"></path></svg>
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 22px">Brainchild</span>
+</a>
+<div style="display: flex; flex-wrap: wrap; gap: 22px; flex-grow: 1; font-size: 15px">
+<a href="Browse.dc.html" aria-current="page" style="color: #ECEDEE; text-decoration: none; font-weight: 600">Browse</a>
+<a href="Blog.dc.html" style="color: #C9CCD1; text-decoration: none">Blog</a>
+<a href="Main.dc.html#handoff" style="color: #C9CCD1; text-decoration: none">How handoff works</a>
+</div>
+<a href="#" style="color: #ECEDEE; text-decoration: none; padding: 10px 14px; font-size: 15px">Sign in</a>
+<a href="#" style="background: #F5B83D; color: #15130D; text-decoration: none; padding: 11px 18px; font-weight: 600; font-size: 15px; border-radius: 6px">List a project</a>
+</nav>
+</header>
+
+<div style="max-width: 1320px; margin: 0 auto; padding: 40px 32px 88px">
+
+<!-- Title + search -->
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 20px; margin-bottom: 28px">
+<div>
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 44px; letter-spacing: -0.02em">Browse</h1>
+<p style="margin: 6px 0 0; color: #A3A7AE">Every free game, mod and app on Brainchild. Sample listings shown.</p>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="q" style="font-size: 13px; color: #A3A7AE">Search</label>
+<input id="q" type="search" placeholder="Title, engine, maker…" style="font: inherit; font-size: 15px; width: 260px; max-width: 100%; box-sizing: border-box; background: #14161B; color: #ECEDEE; border: 1px solid #3A3E47; border-radius: 6px; padding: 11px 14px">
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="sort" style="font-size: 13px; color: #A3A7AE">Sort by</label>
+<select id="sort" style="font: inherit; font-size: 15px; background: #14161B; color: #ECEDEE; border: 1px solid #3A3E47; border-radius: 6px; padding: 11px 14px">
+<option>Recently handed off</option>
+<option>Most played</option>
+<option>Newest</option>
+</select>
+</div>
+</div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start">
+
+<!-- SIDEBAR -->
+<aside aria-label="Filters" style="flex: 1 1 270px; max-width: 100%; display: flex; flex-direction: column; gap: 20px">
+
+<fieldset style="margin: 0; border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 20px 22px">
+<legend style="padding: 0 6px; margin-left: -6px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 18px">Type</legend>
+<div style="display: flex; flex-direction: column; gap: 4px; margin-top: 6px">
+<sc-for list="{{typeOpts}}" as="o" hint-placeholder-count="3">
+<label style="display: flex; align-items: center; gap: 12px; padding: 7px 0; cursor: pointer; font-size: 15px">
+<input type="checkbox" checked="{{o.checked}}" onChange="{{o.toggle}}">
+<span style="flex-grow: 1">{{o.label}}</span>
+<span style="font-family: 'Martian Mono', monospace; font-size: 12px; color: #8B9099">{{o.count}}</span>
+</label>
+</sc-for>
+</div>
+</fieldset>
+
+<fieldset style="margin: 0; border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 20px 22px">
+<legend style="padding: 0 6px; margin-left: -6px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 18px">Genre / category</legend>
+<div style="display: flex; flex-direction: column; gap: 4px; margin-top: 6px">
+<sc-for list="{{genreOpts}}" as="o" hint-placeholder-count="12">
+<label style="display: flex; align-items: center; gap: 12px; padding: 7px 0; cursor: pointer; font-size: 15px">
+<input type="checkbox" checked="{{o.checked}}" onChange="{{o.toggle}}">
+<span style="flex-grow: 1">{{o.label}}</span>
+<span style="font-family: 'Martian Mono', monospace; font-size: 12px; color: #8B9099">{{o.count}}</span>
+</label>
+</sc-for>
+</div>
+</fieldset>
+
+<fieldset style="margin: 0; border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 20px 22px">
+<legend style="padding: 0 6px; margin-left: -6px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 18px">Status</legend>
+<div style="display: flex; flex-direction: column; gap: 4px; margin-top: 6px">
+<sc-for list="{{statusOpts}}" as="o" hint-placeholder-count="5">
+<label style="display: flex; align-items: center; gap: 12px; padding: 7px 0; cursor: pointer; font-size: 15px">
+<input type="checkbox" checked="{{o.checked}}" onChange="{{o.toggle}}">
+<span aria-hidden="true" style="{{o.dot}}"></span>
+<span style="flex-grow: 1">{{o.label}}</span>
+<span style="font-family: 'Martian Mono', monospace; font-size: 12px; color: #8B9099">{{o.count}}</span>
+</label>
+</sc-for>
+</div>
+</fieldset>
+
+<!-- Mods by game -->
+<fieldset style="margin: 0; border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 20px 22px">
+<legend style="padding: 0 6px; margin-left: -6px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 18px">Content</legend>
+<label style="display: flex; align-items: center; gap: 12px; padding: 7px 0; cursor: pointer; font-size: 15px">
+<input type="checkbox" checked="{{showMature}}" onChange="{{toggleMature}}">
+<span style="flex-grow: 1">Show Mature projects</span>
+<span style="font-family: 'Martian Mono', monospace; font-size: 12px; color: #8B9099">{{matureCount}}</span>
+</label>
+<p style="margin: 4px 0 0; font-size: 13px; color: #A3A7AE">Mature means strong violence, horror or language, and is hidden by default. Sexually explicit content isn't allowed at all.</p>
+</fieldset>
+
+<section aria-labelledby="modsby-h" style="border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 20px 22px">
+<h2 id="modsby-h" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 18px">Mods by game</h2>
+<p style="margin: 6px 0 12px; font-size: 13px; color: #A3A7AE">A game is added here when someone submits a mod for it.</p>
+<div style="display: flex; flex-direction: column; gap: 2px">
+<button type="button" onClick="{{clearGame}}" aria-pressed="{{allModsPressed}}" style="{{allModsStyle}}">
+<span style="flex-grow: 1; text-align: left">All games and mods</span>
+</button>
+<sc-for list="{{modGames}}" as="m" hint-placeholder-count="5">
+<button type="button" onClick="{{m.pick}}" aria-pressed="{{m.pressed}}" style="{{m.style}}">
+<span style="flex-grow: 1; text-align: left">{{m.name}}</span>
+<span style="font-family: 'Martian Mono', monospace; font-size: 12px; color: #8B9099">{{m.count}} mods</span>
+</button>
+</sc-for>
+</div>
+<a href="#" style="display: inline-block; margin-top: 12px; font-size: 14px">Submit a mod</a>
+</section>
+</aside>
+
+<!-- RESULTS -->
+<main style="flex: 999 1 620px; min-width: 0">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 18px; min-height: 36px">
+<span style="font-size: 15px; color: #C9CCD1; margin-right: 6px">{{resultLabel}}</span>
+<sc-for list="{{chips}}" as="c" hint-placeholder-count="0">
+<button type="button" onClick="{{c.remove}}" aria-label="Remove filter {{c.label}}" style="font: inherit; font-size: 13px; display: flex; align-items: center; gap: 8px; background: #23262D; color: #ECEDEE; border: 1px solid #3A3E47; border-radius: 999px; padding: 6px 12px; cursor: pointer">
+{{c.label}}
+<svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M1.5 1.5l7 7M8.5 1.5l-7 7"></path></svg>
+</button>
+</sc-for>
+<sc-if value="{{hasFilters}}" hint-placeholder-val="{{ false }}">
+<button type="button" onClick="{{clearAll}}" style="font: inherit; font-size: 13px; background: transparent; color: #F5B83D; border: 0; padding: 6px 4px; cursor: pointer; text-decoration: underline">Clear all</button>
+</sc-if>
+</div>
+
+<sc-if value="{{hasResults}}" hint-placeholder-val="{{ true }}">
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px">
+<sc-for list="{{results}}" as="g" hint-placeholder-count="9">
+<article style="border: 1px solid #262A31; background: #14161B; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column">
+<div aria-hidden="true" style="height: 130px; background: {{g.tone}}; display: flex; align-items: flex-end; justify-content: space-between; padding: 12px; box-sizing: border-box">
+<span style="font-family: 'Martian Mono', monospace; font-size: 11px; color: #0E0F12; background: rgba(236,237,238,0.85); padding: 3px 8px; border-radius: 4px">[ screenshot ]</span>
+<span style="font-family: 'Martian Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #ECEDEE; background: rgba(14,15,18,0.8); padding: 3px 8px; border-radius: 4px">{{g.kind}}</span>
+</div>
+<div style="padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 10px; flex-grow: 1">
+<div style="display: flex; justify-content: space-between; gap: 10px; align-items: flex-start">
+<h3 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 19px; line-height: 1.25">{{g.title}}</h3>
+<span style="{{g.badge}}">{{g.status}}</span>
+</div>
+<p style="margin: 0; color: #A3A7AE; font-size: 14px; flex-grow: 1">{{g.meta}}</p>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<span style="font-family: 'Martian Mono', monospace; font-size: 12px; color: #C9CCD1; border: 1px solid #343842; padding: 2px 8px; border-radius: 4px">{{g.genre}}</span>
+<span style="font-family: 'Martian Mono', monospace; font-size: 12px; color: #C9CCD1; border: 1px solid #343842; padding: 2px 8px; border-radius: 4px">{{g.license}}</span>
+</div>
+<a href="Project.dc.html" style="text-align: center; border: 1px solid #3A3E47; color: #ECEDEE; text-decoration: none; padding: 9px; border-radius: 6px; font-size: 15px; margin-top: 4px">{{g.btn}}</a>
+</div>
+</article>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{noResults}}" hint-placeholder-val="{{ false }}">
+<div style="border: 1px dashed #3A3E47; border-radius: 10px; padding: 48px 24px; text-align: center; background: rgba(20,22,27,0.8)">
+<p style="margin: 0 0 6px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px">Nothing matches those filters.</p>
+<p style="margin: 0 0 18px; color: #A3A7AE">Try fewer genres, or a different game.</p>
+<button type="button" onClick="{{clearAll}}" style="font: inherit; font-weight: 600; background: #F5B83D; color: #15130D; border: 0; padding: 11px 20px; border-radius: 6px; cursor: pointer">Clear filters</button>
+</div>
+</sc-if>
+</main>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1800}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { types: [], genres: [], statuses: [], game: null, showMature: false };
+  }
+  toggleIn(key, val) {
+    var cur = this.state[key].slice();
+    var i = cur.indexOf(val);
+    if (i >= 0) cur.splice(i, 1); else cur.push(val);
+    var next = {}; next[key] = cur;
+    this.setState(next);
+  }
+  renderVals() {
+    var self = this;
+    var st = this.state;
+    var colors = { adopt: '#F5B83D', help: '#7CB7FF', test: '#C9A2FF', active: '#6FD39A', archived: '#9AA0A8' };
+    var labels = { adopt: 'Up for adoption', help: 'Open for collaboration', test: 'Needs testers', active: 'Active', archived: 'Archived' };
+    var badgeBase = "font-family: 'Martian Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 7px; border-radius: 4px; white-space: nowrap; color: #0E0F12; background: ";
+    var items = [
+      { title: 'Moss Keeper', genre: 'Puzzle', s: 'adopt', tone: '#3E5B45', meta: 'Godot 4 · plays in browser', license: 'MIT + CC BY' },
+      { title: 'Signal Drift', genre: 'Roguelite', s: 'adopt', tone: '#3B4A6B', meta: 'Phaser · plays in browser', license: 'MIT' },
+      { title: 'Paper Knights', genre: 'Tactics', s: 'active', tone: '#5E3D4F', meta: 'Bevy · plays in browser', license: 'Apache-2.0' },
+      { title: 'Tidepool', genre: 'Simulation', s: 'adopt', tone: '#2F5A5C', meta: 'Vanilla JS · plays in browser', license: 'MIT + CC0' },
+      { title: 'Night Market', genre: 'Narrative', mature: 'horror, strong language', s: 'archived', tone: '#4A4A52', meta: 'Ink · plays in browser', license: 'CC BY-SA' },
+      { title: 'Gutter Run', genre: 'Platformer', s: 'help', tone: '#6B4A3A', meta: 'LÖVE · plays in browser', license: 'zlib' },
+      { title: 'Coldharbor', genre: 'Strategy', s: 'help', tone: '#3F4E58', meta: 'Godot 4 · desktop build', license: 'GPL-3.0' },
+      { title: 'Spokewheel', genre: 'Racing', s: 'test', tone: '#5A5631', meta: 'Three.js · plays in browser', license: 'MIT' },
+      { title: 'Lantern Mod Pack', game: 'Luanti', genre: 'Sandbox', s: 'help', tone: '#6B5530', license: 'GPL-3.0' },
+      { title: 'Deep Ore', game: 'Luanti', genre: 'Sandbox', s: 'adopt', tone: '#4E4038', license: 'MIT' },
+      { title: 'Weather Systems', game: 'Luanti', genre: 'Simulation', s: 'test', tone: '#34506A', license: 'LGPL-2.1' },
+      { title: 'Freight Signals+', game: 'OpenTTD', genre: 'Simulation', s: 'adopt', tone: '#4B5A3A', license: 'GPL-2.0' },
+      { title: 'Tram Pack Revival', game: 'OpenTTD', genre: 'Simulation', s: 'archived', tone: '#4A4A52', license: 'GPL-2.0' },
+      { title: 'Sky Pirates Campaign', game: 'Battle for Wesnoth', genre: 'Strategy', s: 'adopt', tone: '#56404F', license: 'GPL-2.0' },
+      { title: 'Ironclad Era', game: '0 A.D.', genre: 'Strategy', s: 'help', tone: '#5B4B3B', license: 'GPL-2.0' },
+      { title: 'Night Tracks', game: 'SuperTuxKart', genre: 'Racing', s: 'adopt', tone: '#2E3F5E', license: 'CC BY-SA' },
+      { title: 'Pocket Ledger', app: true, genre: 'Productivity', s: 'archived', tone: '#4A4A52', meta: 'Budget tracker · runs in browser', license: 'MIT' },
+      { title: 'Tab Tamer', app: true, genre: 'Utility', s: 'adopt', tone: '#3D5A4F', meta: 'Browser extension · Chrome and Firefox', license: 'MIT' },
+      { title: 'Loop Sketch', app: true, genre: 'Creative tools', s: 'help', tone: '#5A3F5E', meta: 'Music sketchpad · runs in browser', license: 'GPL-3.0' }
+    ];
+
+    // Filtering
+    var kindOf = function (it) { return it.game ? 'Mod' : it.app ? 'App' : 'Game'; };
+    var inType = function (it) { return st.types.length === 0 || st.types.indexOf(kindOf(it)) >= 0; };
+    var inGame = function (it) { return !st.game || it.game === st.game; };
+    var inGenre = function (it) { return st.genres.length === 0 || st.genres.indexOf(it.genre) >= 0; };
+    var inMature = function (it) { return st.showMature || !it.mature; };
+    var inStatus = function (it) { return st.statuses.length === 0 || st.statuses.indexOf(it.s) >= 0; };
+    var results = items.filter(function (it) { return inType(it) && inMature(it) && inGame(it) && inGenre(it) && inStatus(it); });
+
+    // Genre options (counts reflect the other active filters)
+    var genreNames = ['Puzzle', 'Platformer', 'Racing', 'Roguelite', 'Narrative', 'Sandbox', 'Simulation', 'Strategy', 'Tactics', 'Productivity', 'Utility', 'Creative tools'];
+    var typeOpts = ['Game', 'Mod', 'App'].map(function (k) {
+      return {
+        label: k + 's',
+        checked: st.types.indexOf(k) >= 0,
+        count: items.filter(function (it) { return kindOf(it) === k && inGame(it) && inGenre(it) && inStatus(it); }).length,
+        toggle: function () { self.toggleIn('types', k); }
+      };
+    });
+    var genreOpts = genreNames.map(function (gname) {
+      return {
+        label: gname,
+        checked: st.genres.indexOf(gname) >= 0,
+        count: items.filter(function (it) { return it.genre === gname && inType(it) && inMature(it) && inGame(it) && inStatus(it); }).length,
+        toggle: function () { self.toggleIn('genres', gname); }
+      };
+    });
+    var statusOpts = ['adopt', 'help', 'test', 'active', 'archived'].map(function (s) {
+      return {
+        label: labels[s],
+        checked: st.statuses.indexOf(s) >= 0,
+        dot: 'width: 10px; height: 10px; border-radius: 50%; background: ' + colors[s],
+        count: items.filter(function (it) { return it.s === s && inType(it) && inMature(it) && inGame(it) && inGenre(it); }).length,
+        toggle: function () { self.toggleIn('statuses', s); }
+      };
+    });
+
+    // Mods-by-game list: built from the base games mods were submitted for
+    var btnBase = 'font: inherit; font-size: 15px; display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border-radius: 6px; cursor: pointer; color: #ECEDEE; ';
+    var on = 'background: #262A31; border: 1px solid #F5B83D; font-weight: 600;';
+    var off = 'background: transparent; border: 1px solid transparent;';
+    var gameNames = [];
+    items.forEach(function (it) { if (it.game && gameNames.indexOf(it.game) < 0) gameNames.push(it.game); });
+    gameNames.sort();
+    var modGames = gameNames.map(function (n) {
+      return {
+        name: n,
+        count: items.filter(function (it) { return it.game === n; }).length,
+        pressed: st.game === n ? 'true' : 'false',
+        style: btnBase + (st.game === n ? on : off),
+        pick: function () { self.setState({ game: st.game === n ? null : n }); }
+      };
+    });
+
+    // Active filter chips
+    var chips = [];
+    st.types.forEach(function (k) { chips.push({ label: k + 's', remove: function () { self.toggleIn('types', k); } }); });
+    if (st.game) chips.push({ label: 'Mods for ' + st.game, remove: function () { self.setState({ game: null }); } });
+    st.genres.forEach(function (gname) { chips.push({ label: gname, remove: function () { self.toggleIn('genres', gname); } }); });
+    st.statuses.forEach(function (s) { chips.push({ label: labels[s], remove: function () { self.toggleIn('statuses', s); } }); });
+
+    var n = results.length;
+    return {
+      typeOpts: typeOpts,
+      genreOpts: genreOpts,
+      statusOpts: statusOpts,
+      modGames: modGames,
+      allModsPressed: st.game ? 'false' : 'true',
+      allModsStyle: btnBase + (st.game ? off : on),
+      clearGame: function () { self.setState({ game: null }); },
+      showMature: st.showMature,
+      toggleMature: function () { self.setState({ showMature: !st.showMature }); },
+      matureCount: items.filter(function (it) { return it.mature; }).length,
+      clearAll: function () { self.setState({ types: [], genres: [], statuses: [], game: null }); },
+      chips: chips,
+      hasFilters: chips.length > 0,
+      resultLabel: n === 1 ? '1 result' : n + ' results',
+      hasResults: n > 0,
+      noResults: n === 0,
+      results: results.map(function (it) {
+        return Object.assign({}, it, {
+          kind: kindOf(it),
+          meta: (it.game ? 'Mod for ' + it.game + ' · download, needs the base game' : it.meta) + (it.mature ? ' · Mature: ' + it.mature : ''),
+          btn: it.game ? 'View mod' : it.app ? 'View and open' : 'View and play',
+          status: labels[it.s],
+          badge: badgeBase + colors[it.s]
+        });
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

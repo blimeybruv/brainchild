@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brainchild — Moss Keeper license record</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&amp;family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&amp;family=Martian+Mono:wght@400;600;700&amp;family=Silkscreen&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E0F12}
+a{color:#F5B83D}a:hover{color:#FFD27A}
+.metal{background:url(/_blob/c2eaa4868f83935fa372b38ba261914e) repeat,#15171B url(/_blob/440cb343d937134112bcd4246b13deed) repeat;background-size:280px 280px,512px 512px}
+</style>
+</helmet>
+<div class="metal" style="color: #ECEDEE; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; font-size: 16px; line-height: 1.55; min-height: 100vh">
+
+<header style="border-bottom: 1px solid #23262D">
+<nav aria-label="Main" style="max-width: 1240px; margin: 0 auto; padding: 18px 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 24px">
+<a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: #ECEDEE">
+<svg aria-hidden="true" width="30" height="20" viewBox="0 0 30 20" fill="none" stroke="#F5B83D" stroke-width="3" stroke-linecap="round"><path d="M2 10c3-8 6-8 8.7 0s5.6 8 8.6 0 5.7-8 8.7 0"></path></svg>
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 22px">Brainchild</span>
+</a>
+<span style="flex-grow: 1; font-size: 14px; color: #A3A7AE"><a href="Browse.dc.html" style="color: #A3A7AE">Browse</a> / <a href="Project.dc.html" style="color: #A3A7AE">Moss Keeper</a> / License record</span>
+</nav>
+</header>
+
+<main style="max-width: 1240px; margin: 0 auto; padding: 40px 32px 88px">
+<div style="margin-bottom: 28px">
+<p style="margin: 0 0 10px; font-family: 'Martian Mono', monospace; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: #F5B83D">License record</p>
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 44px; line-height: 1.05; letter-spacing: -0.02em">Moss Keeper</h1>
+<p style="margin: 10px 0 0; color: #B8BCC3; max-width: 720px">The license each version was released under, kept by Brainchild so it can be checked even if a repository changes or disappears.</p>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start">
+
+<!-- Main column -->
+<div style="flex: 999 1 600px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+
+<div role="radiogroup" aria-label="Which version" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px">
+<sc-for list="{{versions}}" as="v" hint-placeholder-count="2">
+<button type="button" role="radio" aria-checked="{{v.checked}}" onClick="{{v.pick}}" style="{{v.style}}">
+<span style="display: block; font-family: 'Martian Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #A3A7AE">{{v.kicker}}</span>
+<span style="display: flex; align-items: center; gap: 10px; margin-top: 4px">
+<span style="{{v.badgeStyle}}">{{v.license}}</span>
+<span style="font-family: 'Martian Mono', monospace; font-size: 13px; color: #C9CCD1">commit {{v.commit}}</span>
+</span>
+<span style="display: block; font-size: 13px; color: #A3A7AE; margin-top: 6px">{{v.who}}</span>
+</button>
+</sc-for>
+</div>
+
+<div style="border: 1px solid {{meaningBorder}}; border-radius: 10px; padding: 16px 18px; background: #14161B">
+<p style="margin: 0 0 6px; font-weight: 600">What this means</p>
+<p style="margin: 0; color: #C9CCD1">{{meaning}}</p>
+</div>
+
+<div style="border: 1px solid #262A31; background: #14161B; border-radius: 10px; overflow: hidden">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #262A31; background: #0F1114">
+<span style="font-family: 'Martian Mono', monospace; font-size: 14px">{{fileName}}</span>
+<div style="display: flex; gap: 8px">
+<button type="button" style="font: inherit; font-size: 13px; background: transparent; color: #ECEDEE; border: 1px solid #3A3E47; padding: 6px 12px; border-radius: 6px; cursor: pointer">Download</button>
+<button type="button" onClick="{{verify}}" style="font: inherit; font-size: 13px; background: transparent; color: #ECEDEE; border: 1px solid #3A3E47; padding: 6px 12px; border-radius: 6px; cursor: pointer">Check fingerprint</button>
+</div>
+</div>
+<pre style="margin: 0; padding: 18px; font-family: 'Martian Mono', monospace; font-size: 13px; line-height: 1.65; color: #C9CCD1; white-space: pre-wrap">{{licenseText}}</pre>
+<div style="padding: 12px 16px; border-top: 1px solid #262A31; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font-size: 13px; color: #A3A7AE">
+<span>Fingerprint (SHA-256): <span style="font-family: 'Martian Mono', monospace; color: #C9CCD1">{{fingerprint}}</span></span>
+<sc-if value="{{verified}}" hint-placeholder-val="{{ false }}">
+<span role="status" style="color: #6FD39A; font-weight: 600">✓ Matches the copy stored at handoff</span>
+</sc-if>
+</div>
+</div>
+
+<div style="border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 18px">
+<p style="margin: 0 0 8px; font-weight: 600">Maker's handoff agreement</p>
+<blockquote style="margin: 0; padding-left: 14px; border-left: 3px solid #F5B83D; color: #C9CCD1">"I own this project, and I release this version under the licenses above so that others can continue it. I understand this can't be withdrawn for this version."</blockquote>
+<p style="margin: 10px 0 0; font-size: 13px; color: #A3A7AE">Confirmed by @[original-maker] (verified owner) on [DATE].</p>
+</div>
+</div>
+
+<!-- Side column -->
+<aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 18px">
+<div style="border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 20px">
+<h2 style="margin: 0 0 12px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 19px">Handoff snapshot</h2>
+<dl style="margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; font-size: 14px">
+<dt style="color: #A3A7AE">Commit</dt><dd style="margin: 0; font-family: 'Martian Mono', monospace">a1b2c3d</dd>
+<dt style="color: #A3A7AE">Taken</dt><dd style="margin: 0">[DATE]</dd>
+<dt style="color: #A3A7AE">Owner</dt><dd style="margin: 0">@[original-maker] <span style="color: #6FD39A">✓ verified</span></dd>
+<dt style="color: #A3A7AE">Code</dt><dd style="margin: 0; font-family: 'Martian Mono', monospace">MIT</dd>
+<dt style="color: #A3A7AE">Assets</dt><dd style="margin: 0; font-family: 'Martian Mono', monospace">CC BY 4.0</dd>
+<dt style="color: #A3A7AE">Name</dt><dd style="margin: 0">Keep it, as a continuation</dd>
+<dt style="color: #A3A7AE">Stored copy</dt><dd style="margin: 0">Source archive + license, locked against deletion</dd>
+<dt style="color: #A3A7AE">Independent archive</dt><dd style="margin: 0"><a href="#" style="font-family: 'Martian Mono', monospace; font-size: 13px">swh:1:snp:[…]</a><br><span style="font-size: 12px; color: #A3A7AE">Software Heritage</span></dd>
+</dl>
+</div>
+
+<div style="border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 20px">
+<h2 style="margin: 0 0 14px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 19px">License history</h2>
+<ol style="margin: 0; padding: 0; list-style: none">
+<sc-for list="{{history}}" as="e" hint-placeholder-count="3">
+<li style="display: flex; gap: 12px">
+<div style="display: flex; flex-direction: column; align-items: center"><span aria-hidden="true" style="width: 12px; height: 12px; border-radius: 50%; margin-top: 5px; background: {{e.dot}}"></span><span aria-hidden="true" style="width: 2px; flex-grow: 1; min-height: 20px; background: {{e.line}}"></span></div>
+<div style="padding-bottom: 14px">
+<p style="margin: 0; font-weight: 600; font-size: 15px">{{e.title}}</p>
+<p style="margin: 2px 0 0; font-size: 13px; color: #A3A7AE">{{e.detail}}</p>
+</div>
+</li>
+</sc-for>
+</ol>
+</div>
+</aside>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { v: 'handoff', verified: false };
+  }
+  renderVals() {
+    var self = this;
+    var st = this.state;
+    var MIT = 'MIT License\n\nCopyright (c) [YEAR] [original-maker]\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the "Software"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.';
+    var defs = {
+      handoff: { kicker: 'At handoff', license: 'MIT', commit: 'a1b2c3d', who: 'Released by @[original-maker] · [DATE]', color: '#7CB7FF',
+        file: 'LICENSE  (stored copy, commit a1b2c3d)', text: MIT, fp: '[9f2c…e41a]',
+        meaning: 'Everything up to commit a1b2c3d is MIT, permanently. Anyone can use, change or sell it, as long as this notice stays with the code. Later changes to the project can’t take that away.', border: '#7CB7FF' },
+      current: { kicker: 'Current version', license: 'GPL-3.0', commit: 'e4f5a6b', who: 'Relicensed by @[you] · [DATE]', color: '#6FD39A',
+        file: 'LICENSE  (current, commit e4f5a6b)', text: 'GNU GENERAL PUBLIC LICENSE\nVersion 3, 29 June 2007\n\n[ full GPL-3.0 text ]\n\n---\nThis version also includes code originally released under the MIT License.\nThat code, and its MIT notice, are kept in LICENSE-MIT.', fp: '[51d0…7b3c]',
+        meaning: 'The new maintainer releases their version under GPL-3.0: anyone sharing a modified copy of it must keep it open. That’s allowed because MIT permits it, but only for their version. The original code up to a1b2c3d is still MIT and can be taken from the stored snapshot.', border: '#6FD39A' }
+    };
+    var cur = defs[st.v];
+    var versions = ['handoff', 'current'].map(function (k) {
+      var d = defs[k], on = st.v === k;
+      return { kicker: d.kicker, license: d.license, commit: d.commit, who: d.who, checked: on ? 'true' : 'false',
+        badgeStyle: "font-family: 'Martian Mono', monospace; font-size: 13px; font-weight: 700; padding: 3px 9px; border-radius: 6px; color: " + d.color + '; border: 1px solid ' + d.color + ';',
+        style: 'font: inherit; color: #ECEDEE; text-align: left; padding: 14px 16px; border-radius: 10px; cursor: pointer; ' + (on ? 'background: #1C1F25; border: 2px solid #F5B83D;' : 'background: #14161B; border: 2px solid #262A31;'),
+        pick: function () { self.setState({ v: k, verified: false }); } };
+    });
+    var history = [
+      { title: 'Released under MIT at handoff', detail: '@[original-maker] · commit a1b2c3d · [DATE] · assets CC BY 4.0', dot: '#7CB7FF', line: '#343842' },
+      { title: 'Adopted by @[you]', detail: 'Forked to github.com/[you]/moss-keeper · [DATE]', dot: '#F5B83D', line: '#343842' },
+      { title: 'New work relicensed GPL-3.0', detail: '@[you] · from commit e4f5a6b · original MIT notice kept in LICENSE-MIT', dot: '#6FD39A', line: 'transparent' }
+    ];
+    return {
+      versions: versions,
+      meaning: cur.meaning,
+      meaningBorder: cur.border,
+      fileName: cur.file,
+      licenseText: cur.text,
+      fingerprint: cur.fp,
+      verified: st.verified,
+      verify: function () { self.setState({ verified: true }); },
+      history: history
+    };
+  }
+}
+</script>
+</body>
+</html>

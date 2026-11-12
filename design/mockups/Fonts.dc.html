@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brainchild — font pairing options</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500;700&amp;family=Space+Grotesk:wght@500;700&amp;family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&amp;family=Atkinson+Hyperlegible:wght@400;700&amp;family=Martian+Mono:wght@400;600&amp;family=Silkscreen&amp;family=Chakra+Petch:wght@500;700&amp;family=IBM+Plex+Sans:wght@400;600&amp;family=IBM+Plex+Mono:wght@500;600&amp;family=Pixelify+Sans:wght@500;700&amp;family=Familjen+Grotesk:wght@500;700&amp;family=Lato:wght@400;700;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E0F12}
+.metal{background:url(/_blob/c2eaa4868f83935fa372b38ba261914e) repeat,#15171B url(/_blob/440cb343d937134112bcd4246b13deed) repeat;background-size:280px 280px,512px 512px}
+</style>
+</helmet>
+<div class="metal" style="width: 1792px; min-height: 1520px; box-sizing: border-box; padding: 40px; color: #ECEDEE; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; gap: 28px">
+<div>
+<h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 32px">Font pairing options</h1>
+<p style="margin: 6px 0 0; color: #A3A7AE; font-size: 16px">Same hero and project card in each pairing. Every font here is under the SIL Open Font License, so it can be self-hosted on brainchild.nexus.</p>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px">
+<sc-for list="{{pairs}}" as="p" hint-placeholder-count="5">
+<section style="{{p.panelStyle}}">
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px">
+<p style="margin: 0; font-family: Inter, sans-serif; font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #F5B83D">{{p.tag}}</p>
+<p style="margin: 0; font-family: Inter, sans-serif; font-size: 12px; color: #A3A7AE">{{p.mood}}</p>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 12px">
+<p style="{{p.labelStyle}}">Free games, mods &amp; apps · Open source</p>
+<h2 style="{{p.headStyle}}">Hand it off,<br>or take it on.</h2>
+<p style="{{p.bodyStyle}}">Free AI-assisted games, mods and vibe-coded apps. When their makers move on, they leave a handoff packet behind so anyone can pick the project back up.</p>
+<div style="display: flex; align-items: center; gap: 12px; margin-top: 4px">
+<span style="{{p.accentStyle}}">CONTINUE? 9</span>
+<span style="{{p.buttonStyle}}">List a project</span>
+</div>
+</div>
+
+<div style="border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 10px">
+<span style="{{p.cardTitleStyle}}">Moss Keeper</span>
+<span style="{{p.badgeStyle}}">Up for adoption</span>
+</div>
+<span style="{{p.metaStyle}}">Cozy puzzle · Godot 4 · plays in browser</span>
+<span style="{{p.noteStyle}}">12 handmade levels and a garden-growing mechanic. The maker started a new job.</span>
+</div>
+
+<p style="margin: 0; font-family: Inter, sans-serif; font-size: 13px; color: #A3A7AE; border-top: 1px solid #262A31; padding-top: 10px">{{p.fonts}}</p>
+</section>
+</sc-for>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1792,"height":1520}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var defs = [
+      { tag: 'Current', mood: 'Clean, but the common AI default', head: "'Space Grotesk'", headW: 700, headSize: 44, body: 'Inter', label: "'JetBrains Mono'", labelUpper: true, accent: "'JetBrains Mono'", accentW: 700,
+        fonts: 'Space Grotesk · Inter · JetBrains Mono', current: true },
+      { tag: 'Option A', mood: 'Warm, quirky, very readable', head: "'Bricolage Grotesque'", headW: 800, headSize: 48, body: "'Atkinson Hyperlegible'", label: "'Martian Mono'", labelUpper: true, accent: 'Silkscreen', accentW: 400,
+        fonts: 'Bricolage Grotesque · Atkinson Hyperlegible · Martian Mono · Silkscreen (accents)' },
+      { tag: 'Option B', mood: 'Angular, techy, arcade', head: "'Chakra Petch'", headW: 700, headSize: 46, body: "'IBM Plex Sans'", label: "'IBM Plex Mono'", labelUpper: true, accent: "'Pixelify Sans'", accentW: 700,
+        fonts: 'Chakra Petch · IBM Plex Sans · IBM Plex Mono · Pixelify Sans (accents)' },
+      { tag: 'Option C · your Lato', mood: 'Friendly and familiar', head: "'Familjen Grotesk'", headW: 700, headSize: 46, body: 'Lato', label: "'Martian Mono'", labelUpper: true, accent: 'Silkscreen', accentW: 400,
+        fonts: 'Familjen Grotesk · Lato · Martian Mono · Silkscreen (accents)' },
+      { tag: 'Option D · all Lato', mood: 'One family, pixel accents', head: 'Lato', headW: 900, headSize: 46, body: 'Lato', label: "'Pixelify Sans'", labelUpper: false, accent: "'Pixelify Sans'", accentW: 700,
+        fonts: 'Lato (Black for headings) · Pixelify Sans (labels and accents)' }
+    ];
+    var pairs = defs.map(function (d) {
+      var head = d.head + ', sans-serif', body = d.body + ', sans-serif', label = d.label + ', monospace', accent = d.accent + ', monospace';
+      return {
+        tag: d.tag, mood: d.mood, fonts: d.fonts,
+        panelStyle: 'border: ' + (d.current ? '1px dashed #3A3E47' : '1px solid #2C3038') + '; background: rgba(20,22,27,0.85); border-radius: 12px; padding: 22px; display: flex; flex-direction: column; gap: 18px;',
+        labelStyle: 'margin: 0; font-family: ' + label + '; font-size: 12px; letter-spacing: ' + (d.labelUpper ? '0.12em' : '0.02em') + '; text-transform: ' + (d.labelUpper ? 'uppercase' : 'none') + '; color: #F5B83D;',
+        headStyle: 'margin: 0; font-family: ' + head + '; font-weight: ' + d.headW + '; font-size: ' + d.headSize + 'px; line-height: 1.02; letter-spacing: -0.02em;',
+        bodyStyle: 'margin: 0; font-family: ' + body + '; font-size: 16px; line-height: 1.55; color: #B8BCC3;',
+        accentStyle: 'font-family: ' + accent + '; font-weight: ' + d.accentW + '; font-size: 18px; color: #F5B83D; letter-spacing: 0.04em;',
+        buttonStyle: 'font-family: ' + body + '; font-weight: 700; font-size: 14px; background: #F5B83D; color: #15130D; padding: 9px 14px; border-radius: 6px;',
+        cardTitleStyle: 'font-family: ' + head + '; font-weight: ' + d.headW + '; font-size: 20px;',
+        badgeStyle: 'font-family: ' + label + '; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 7px; border-radius: 4px; color: #0E0F12; background: #F5B83D; white-space: nowrap;',
+        metaStyle: 'font-family: ' + body + '; font-size: 13px; color: #A3A7AE;',
+        noteStyle: 'font-family: ' + body + '; font-size: 14px; color: #C9CCD1; line-height: 1.5;'
+      };
+    });
+    return { pairs: pairs };
+  }
+}
+</script>
+</body>
+</html>

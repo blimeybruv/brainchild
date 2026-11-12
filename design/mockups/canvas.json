@@ -1,0 +1,121 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Blog.dc.html": {
+      "expand": "fill",
+      "h": 2000,
+      "is_interactive": true,
+      "title": "Blog + community projects",
+      "w": 1440,
+      "x": 4560,
+      "y": 0
+    },
+    "Browse.dc.html": {
+      "expand": "fill",
+      "h": 1800,
+      "is_interactive": true,
+      "title": "Browse index",
+      "w": 1440,
+      "x": 3040,
+      "y": 0
+    },
+    "Main.dc.html": {
+      "expand": "fill",
+      "h": 3000,
+      "title": "Landing page",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "Patterns.dc.html": {
+      "h": 740,
+      "title": "Background pattern options",
+      "w": 1792,
+      "x": 0,
+      "y": 3120
+    },
+    "Project.dc.html": {
+      "expand": "fill",
+      "h": 2600,
+      "is_interactive": true,
+      "title": "Project page",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "Relay.dc.html": {
+      "expand": "fill",
+      "h": 1500,
+      "is_interactive": true,
+      "title": "Relay rounds",
+      "w": 1440,
+      "x": 6080,
+      "y": 0
+    },
+    "Handoff.dc.html": {
+      "expand": "fill",
+      "h": 1650,
+      "is_interactive": true,
+      "title": "Hand off / adopt flow",
+      "w": 1440,
+      "x": 7600,
+      "y": 0
+    },
+    "License.dc.html": {
+      "expand": "fill",
+      "h": 1500,
+      "is_interactive": true,
+      "title": "License record",
+      "w": 1440,
+      "x": 9120,
+      "y": 0
+    },
+    "Fonts.dc.html": {
+      "h": 1520,
+      "title": "Font pairing options",
+      "w": 1792,
+      "x": 1912,
+      "y": 3120
+    },
+    "Logo.dc.html": {
+      "h": 1180,
+      "title": "Logo options, round 2",
+      "w": 1792,
+      "x": 3784,
+      "y": 3120
+    },
+    "HeroFractal.dc.html": {
+      "h": 1900,
+      "is_interactive": true,
+      "title": "Hero background options",
+      "w": 1440,
+      "x": 0,
+      "y": 4760
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-11-08T12:00:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {},
+  "order": [
+    "Main.dc.html",
+    "Project.dc.html",
+    "Browse.dc.html",
+    "Blog.dc.html",
+    "Patterns.dc.html",
+    "Relay.dc.html",
+    "Handoff.dc.html",
+    "License.dc.html",
+    "Fonts.dc.html",
+    "Logo.dc.html",
+    "HeroFractal.dc.html"
+  ],
+  "pages": [],
+  "title": "Brainchild — site mockup"
+}

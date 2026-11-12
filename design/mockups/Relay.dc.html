@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brainchild — Relay rounds</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&amp;family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&amp;family=Martian+Mono:wght@400;600;700&amp;family=Silkscreen&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E0F12}
+a{color:#F5B83D}a:hover{color:#FFD27A}
+.metal{background:url(/_blob/c2eaa4868f83935fa372b38ba261914e) repeat,#15171B url(/_blob/440cb343d937134112bcd4246b13deed) repeat;background-size:280px 280px,512px 512px}
+</style>
+</helmet>
+<div class="metal" style="color: #ECEDEE; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; font-size: 16px; line-height: 1.55; min-height: 100vh">
+
+<header style="border-bottom: 1px solid #23262D">
+<nav aria-label="Main" style="max-width: 1240px; margin: 0 auto; padding: 18px 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 24px">
+<a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: #ECEDEE">
+<svg aria-hidden="true" width="30" height="20" viewBox="0 0 30 20" fill="none" stroke="#F5B83D" stroke-width="3" stroke-linecap="round"><path d="M2 10c3-8 6-8 8.7 0s5.6 8 8.6 0 5.7-8 8.7 0"></path></svg>
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 22px">Brainchild</span>
+</a>
+<div style="display: flex; flex-wrap: wrap; gap: 22px; flex-grow: 1; font-size: 15px">
+<a href="Browse.dc.html" style="color: #C9CCD1; text-decoration: none">Browse</a>
+<a href="Blog.dc.html" style="color: #C9CCD1; text-decoration: none">Blog</a>
+<a href="Relay.dc.html" aria-current="page" style="color: #ECEDEE; text-decoration: none; font-weight: 600">Relay rounds</a>
+</div>
+<a href="#" style="color: #ECEDEE; text-decoration: none; padding: 10px 14px; font-size: 15px">@[you]</a>
+</nav>
+</header>
+
+<div style="max-width: 1240px; margin: 0 auto; padding: 40px 32px 88px">
+
+<!-- Intro -->
+<section style="display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-end; margin-bottom: 32px">
+<div style="flex: 999 1 560px; min-width: 0">
+<p style="margin: 0 0 12px; font-family: 'Martian Mono', monospace; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: #F5B83D">Relay round 4 · opt-in</p>
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 48px; line-height: 1.05; letter-spacing: -0.02em">Help one project this month.<br>Next month it could be yours.</h1>
+</div>
+<ol style="flex: 1 1 380px; min-width: 0; margin: 0; padding: 20px 22px 20px 40px; border: 1px solid #262A31; background: #14161B; border-radius: 10px; display: flex; flex-direction: column; gap: 8px; color: #C9CCD1; font-size: 15px">
+<li>Nominate your own project and rank three others. You can't vote for yours.</li>
+<li>Everyone who entered contributes to the winner within a month: a task from its board, or a wildcard idea.</li>
+<li>Skip it and you can still vote next round, but can't nominate your own project.</li>
+</ol>
+</section>
+
+<!-- Phase stepper -->
+<div role="group" aria-label="Round stage" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-bottom: 24px">
+<sc-for list="{{phases}}" as="p" hint-placeholder-count="5">
+<button type="button" onClick="{{p.pick}}" aria-pressed="{{p.pressed}}" style="{{p.style}}">
+<span style="display: block; font-family: 'Martian Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.8">{{p.step}}</span>
+<span style="display: block; font-weight: 600; font-size: 16px">{{p.label}}</span>
+<span style="display: block; font-size: 12px; opacity: 0.8">{{p.when}}</span>
+</button>
+</sc-for>
+</div>
+
+<!-- ENTRY -->
+<sc-if value="{{showEntry}}" hint-placeholder-val="{{ true }}">
+<section aria-label="Enter the round" style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+<div style="flex: 1 1 340px; min-width: 0; border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px">1. Nominate your project</h2>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="own" style="font-size: 14px; color: #C9CCD1">Your project</label>
+<select id="own" style="font: inherit; font-size: 15px; background: #0E0F12; color: #ECEDEE; border: 1px solid #3A3E47; border-radius: 6px; padding: 11px 12px">
+<option>Gutter Run</option>
+</select>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="pitch" style="font-size: 14px; color: #C9CCD1">What would a month of help get done?</label>
+<textarea id="pitch" rows="4" placeholder="e.g. finish worlds 4 and 5 and add a level select" style="font: inherit; font-size: 15px; background: #0E0F12; color: #ECEDEE; border: 1px solid #3A3E47; border-radius: 6px; padding: 11px 12px; resize: vertical"></textarea>
+</div>
+<p style="margin: 0; font-size: 13px; color: #A3A7AE">If you win, you'll post a task board for contributors.</p>
+</div>
+
+<div style="flex: 2 1 560px; min-width: 0; border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 24px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 14px">
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px">2. Rank three others</h2>
+<span style="font-size: 14px; color: #A3A7AE">{{rankHint}}</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{candidates}}" as="c" hint-placeholder-count="6">
+<div style="{{c.rowStyle}}">
+<span aria-hidden="true" style="width: 40px; height: 40px; border-radius: 6px; flex: none; background: {{c.tone}}"></span>
+<div style="flex-grow: 1; min-width: 0">
+<p style="margin: 0; font-weight: 600">{{c.title}}</p>
+<p style="margin: 0; font-size: 13px; color: #A3A7AE">{{c.meta}}</p>
+</div>
+<sc-if value="{{c.own}}" hint-placeholder-val="{{ false }}">
+<span style="font-size: 13px; color: #A3A7AE">Your project · can't vote</span>
+</sc-if>
+<sc-if value="{{c.votable}}" hint-placeholder-val="{{ true }}">
+<div role="group" aria-label="Rank {{c.title}}" style="display: flex; gap: 6px">
+<sc-for list="{{c.ranks}}" as="r" hint-placeholder-count="3">
+<button type="button" onClick="{{r.pick}}" aria-pressed="{{r.pressed}}" aria-label="Rank {{r.n}}" style="{{r.style}}">{{r.n}}</button>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 18px">
+<button type="button" style="{{enterStyle}}">Enter Relay round 4</button>
+<span style="font-size: 14px; color: #A3A7AE">[N] entered so far · entry closes [DATE]</span>
+</div>
+</div>
+</section>
+</sc-if>
+
+<!-- RESULTS + TASK BOARD -->
+<sc-if value="{{showResults}}" hint-placeholder-val="{{ false }}">
+<section aria-label="Results and task board" style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+<div style="flex: 1 1 340px; min-width: 0; border: 2px solid #F5B83D; background: #14161B; border-radius: 10px; overflow: hidden">
+<div aria-hidden="true" style="height: 150px; background: #2F5A5C; display: flex; align-items: flex-end; padding: 12px; box-sizing: border-box">
+<span style="font-family: 'Martian Mono', monospace; font-size: 11px; color: #0E0F12; background: rgba(236,237,238,0.85); padding: 3px 8px; border-radius: 4px">[ screenshot ]</span>
+</div>
+<div style="padding: 20px; display: flex; flex-direction: column; gap: 8px">
+<p style="margin: 0; font-family: 'Martian Mono', monospace; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: #F5B83D">Round 4 winner</p>
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 28px">Tidepool</h2>
+<p style="margin: 0; color: #C9CCD1">Maintained by @[maintainer]. Goal for the month: give the sim a reason to keep playing.</p>
+<p style="margin: 0; font-size: 14px; color: #A3A7AE">Ranked votes from [N] entrants · results shown after voting closed</p>
+</div>
+</div>
+
+<div style="flex: 2 1 560px; min-width: 0; border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 24px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 6px">
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px">Task board</h2>
+<span style="font-size: 14px; color: #A3A7AE">Posted by the maintainer</span>
+</div>
+<p style="margin: 0 0 16px; font-size: 14px; color: #A3A7AE">Say what you're working on, so people don't spend their time (or AI usage) on the same thing.</p>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{tasks}}" as="t" hint-placeholder-count="5">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid #262A31; border-radius: 8px; background: #0F1114">
+<span style="{{t.tagStyle}}">{{t.tag}}</span>
+<span style="flex: 1 1 260px; min-width: 0">{{t.title}}</span>
+<span style="font-size: 13px; color: #A3A7AE">{{t.claimLabel}}</span>
+<button type="button" onClick="{{t.toggle}}" aria-pressed="{{t.mine}}" style="{{t.btnStyle}}">{{t.btnLabel}}</button>
+</div>
+</sc-for>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 14px; border: 1px dashed #3A3E47; border-radius: 8px">
+<span style="font-family: 'Martian Mono', monospace; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 7px; border-radius: 4px; color: #0E0F12; background: #C9A2FF">Wildcard</span>
+<span style="flex: 1 1 260px; min-width: 0; color: #C9CCD1">Got your own idea? Go for it. Explain what you tried and why when you submit.</span>
+</div>
+</div>
+</div>
+</section>
+</sc-if>
+
+<!-- CONTRIBUTE -->
+<sc-if value="{{showContribute}}" hint-placeholder-val="{{ false }}">
+<section aria-label="Submit your contribution" style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+<form style="flex: 2 1 560px; min-width: 0; border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px">Submit your contribution to Tidepool</h2>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="pr" style="font-size: 14px; color: #C9CCD1">Pull request link</label>
+<input id="pr" type="url" placeholder="https://github.com/…/pull/…" style="font: inherit; font-size: 15px; background: #0E0F12; color: #ECEDEE; border: 1px solid #3A3E47; border-radius: 6px; padding: 11px 12px">
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="which" style="font-size: 14px; color: #C9CCD1">Task</label>
+<select id="which" style="font: inherit; font-size: 15px; background: #0E0F12; color: #ECEDEE; border: 1px solid #3A3E47; border-radius: 6px; padding: 11px 12px">
+<option>Food-chain balance: plankton crash after day 40</option>
+<option>Wildcard: my own idea</option>
+</select>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="why" style="font-size: 14px; color: #C9CCD1">What did you try, and why? (one or two sentences)</label>
+<textarea id="why" rows="3" style="font: inherit; font-size: 15px; background: #0E0F12; color: #ECEDEE; border: 1px solid #3A3E47; border-radius: 6px; padding: 11px 12px; resize: vertical"></textarea>
+</div>
+<button type="button" style="align-self: flex-start; font: inherit; font-weight: 600; background: #F5B83D; color: #15130D; border: 0; padding: 12px 20px; border-radius: 6px; cursor: pointer">Submit contribution</button>
+</form>
+<div style="flex: 1 1 320px; min-width: 0; border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 24px">
+<h2 style="margin: 0 0 12px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px">Your round 4 status</h2>
+<ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 15px; color: #C9CCD1">
+<li style="display: flex; gap: 10px"><span style="color: #6FD39A; font-family: 'Martian Mono', monospace">✓</span>Entered with Gutter Run</li>
+<li style="display: flex; gap: 10px"><span style="color: #6FD39A; font-family: 'Martian Mono', monospace">✓</span>Ranked three projects</li>
+<li style="display: flex; gap: 10px"><span style="color: #8B9099; font-family: 'Martian Mono', monospace">–</span>Contribution due [DATE]</li>
+</ul>
+<p style="margin: 14px 0 0; font-size: 13px; color: #A3A7AE">If the maintainer hasn't reviewed within a week of the deadline, your contribution counts automatically.</p>
+</div>
+</section>
+</sc-if>
+
+<!-- REVIEW (maintainer view) -->
+<sc-if value="{{showReview}}" hint-placeholder-val="{{ false }}">
+<section aria-label="Maintainer review" style="border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 24px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 6px">
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px">Review contributions</h2>
+<span style="font-size: 14px; color: #A3A7AE">Maintainer view · Tidepool</span>
+</div>
+<p style="margin: 0 0 16px; font-size: 14px; color: #A3A7AE">Accept good-faith work even if you don't merge it. Pick one Most helpful and, if there's a wildcard worth it, one Best wildcard. A flag needs a reason and starts a review; it isn't a penalty on its own.</p>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{contribs}}" as="k" hint-placeholder-count="4">
+<article style="{{k.cardStyle}}">
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+<span style="font-weight: 600">{{k.user}}</span>
+<span style="{{k.tagStyle}}">{{k.tag}}</span>
+<span style="font-size: 14px; color: #A3A7AE; flex-grow: 1">{{k.task}}</span>
+<span style="{{k.statusStyle}}">{{k.statusLabel}}</span>
+</div>
+<p style="margin: 0; font-family: 'Martian Mono', monospace; font-size: 13px; color: #C9CCD1">{{k.pr}}</p>
+<p style="margin: 0; font-size: 14px; color: #A3A7AE">"{{k.note}}"</p>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+<button type="button" onClick="{{k.accept}}" aria-pressed="{{k.isAccepted}}" style="{{k.acceptStyle}}">Accept</button>
+<button type="button" onClick="{{k.helpful}}" aria-pressed="{{k.isHelpful}}" style="{{k.helpfulStyle}}">Most helpful</button>
+<sc-if value="{{k.isWild}}" hint-placeholder-val="{{ false }}">
+<button type="button" onClick="{{k.wild}}" aria-pressed="{{k.isBestWild}}" style="{{k.wildStyle}}">Best wildcard</button>
+</sc-if>
+<button type="button" onClick="{{k.flag}}" aria-pressed="{{k.isFlagged}}" style="{{k.flagStyle}}">Flag</button>
+<sc-if value="{{k.isFlagged}}" hint-placeholder-val="{{ false }}">
+<label style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: #C9CCD1">Reason
+<select style="font: inherit; font-size: 14px; background: #0E0F12; color: #ECEDEE; border: 1px solid #3A3E47; border-radius: 6px; padding: 7px 10px">
+<option>No real change</option>
+<option>Spam</option>
+<option>Auto-generated with no effort</option>
+<option>Ignored the instructions</option>
+</select>
+</label>
+</sc-if>
+</div>
+</article>
+</sc-for>
+</div>
+</section>
+</sc-if>
+
+<!-- RECAP -->
+<sc-if value="{{showRecap}}" hint-placeholder-val="{{ false }}">
+<section aria-label="Round recap" style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+<div style="flex: 2 1 560px; min-width: 0; border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px">Relay round 4 recap</h2>
+<p style="margin: 0; color: #C9CCD1">{{recapLine}}</p>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{awards}}" as="a" hint-placeholder-count="2">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+<span style="font-weight: 600; min-width: 140px">{{a.user}}</span>
+<span style="{{a.badgeStyle}}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M8 1.8l1.9 3.9 4.3.6-3.1 3 .7 4.3L8 11.6l-3.8 2 .7-4.3-3.1-3 4.3-.6z"></path></svg>{{a.label}}</span>
+</div>
+</sc-for>
+<sc-if value="{{noAwards}}" hint-placeholder-val="{{ false }}">
+<p style="margin: 0; color: #A3A7AE">No awards picked yet. Mark them in the Review stage.</p>
+</sc-if>
+</div>
+<div style="border-top: 1px solid #262A31; padding-top: 14px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: #C9CCD1">
+<sc-for list="{{underReview}}" as="u" hint-placeholder-count="0">
+<p style="margin: 0"><span style="color: #FF9A7A; font-weight: 600">Under review:</span> {{u}}'s contribution was flagged. It won't count until a reviewer clears it, and no penalty applies meanwhile.</p>
+</sc-for>
+<p style="margin: 0"><span style="color: #A3A7AE; font-weight: 600">Missed round:</span> @[member-e] didn't contribute, so can vote in round 5 but can't nominate their own project.</p>
+</div>
+</div>
+
+<div style="flex: 1 1 320px; min-width: 0; border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 24px">
+<p style="margin: 0 0 10px; font-family: 'Martian Mono', monospace; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: #A3A7AE">How badges appear</p>
+<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px">
+<span aria-hidden="true" style="width: 48px; height: 48px; border-radius: 50%; background: #3B4A6B; flex: none"></span>
+<div>
+<p style="margin: 0; font-weight: 600; font-size: 18px">@[member-a]</p>
+<p style="margin: 0; font-size: 13px; color: #A3A7AE">Member since [DATE] · 6 contributions</p>
+</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<span style="{{badgeHelpful}}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M8 1.8l1.9 3.9 4.3.6-3.1 3 .7 4.3L8 11.6l-3.8 2 .7-4.3-3.1-3 4.3-.6z"></path></svg>Most helpful · Relay round 4</span>
+<span style="{{badgeWild}}"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M8 1.8l1.9 3.9 4.3.6-3.1 3 .7 4.3L8 11.6l-3.8 2 .7-4.3-3.1-3 4.3-.6z"></path></svg>Best wildcard · Relay round 2</span>
+</div>
+<p style="margin: 14px 0 6px; font-size: 13px; color: #A3A7AE">Under a name on a contribution:</p>
+<p style="margin: 0; font-size: 15px"><span style="font-weight: 600">@[member-a]</span> <span style="font-size: 12px; color: #F5B83D">★ Most helpful ×1</span> <span style="font-size: 12px; color: #C9A2FF">★ Best wildcard ×1</span></p>
+</div>
+</section>
+</sc-if>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { phase: 'entry', ranks: {}, mine: {}, review: {}, helpful: null, bestWild: null };
+  }
+  renderVals() {
+    var self = this;
+    var st = this.state;
+    var btnBase = 'font: inherit; font-size: 14px; padding: 8px 14px; border-radius: 6px; cursor: pointer; min-height: 38px; ';
+    var ghost = 'background: transparent; color: #ECEDEE; border: 1px solid #3A3E47;';
+    var tagBase = "font-family: 'Martian Mono', monospace; font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 7px; border-radius: 4px; color: #0E0F12; background: ";
+    var badgeBase = 'display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 5px 10px; border-radius: 999px; ';
+    var helpfulBadge = badgeBase + 'color: #F5B83D; border: 1px solid #F5B83D; background: rgba(245,184,61,0.08);';
+    var wildBadge = badgeBase + 'color: #C9A2FF; border: 1px solid #C9A2FF; background: rgba(201,162,255,0.08);';
+
+    // Stages
+    var defs = [
+      { id: 'entry', step: 'Step 1', label: 'Entry', when: 'Week 1' },
+      { id: 'results', step: 'Step 2', label: 'Results', when: 'Task board posted' },
+      { id: 'contribute', step: 'Step 3', label: 'Contribute', when: 'One month' },
+      { id: 'review', step: 'Step 4', label: 'Review', when: 'Maintainer, 1 week' },
+      { id: 'recap', step: 'Step 5', label: 'Recap', when: 'Badges awarded' }
+    ];
+    var phases = defs.map(function (d) {
+      var on = st.phase === d.id;
+      return Object.assign({}, d, {
+        pressed: on ? 'true' : 'false',
+        style: 'font: inherit; text-align: left; padding: 12px 14px; border-radius: 8px; cursor: pointer; ' + (on ? 'background: #F5B83D; color: #15130D; border: 1px solid #F5B83D;' : 'background: #14161B; color: #ECEDEE; border: 1px solid #262A31;'),
+        pick: function () { self.setState({ phase: d.id }); }
+      });
+    });
+
+    // Entry: rank three others (not your own)
+    var cands = [
+      { id: 'gutter-run', title: 'Gutter Run', meta: 'Your project · Platformer', tone: '#6B4A3A', own: true },
+      { id: 'tidepool', title: 'Tidepool', meta: 'Game · Simulation', tone: '#2F5A5C' },
+      { id: 'signal-drift', title: 'Signal Drift', meta: 'Game · Roguelite', tone: '#3B4A6B' },
+      { id: 'night-tracks', title: 'Night Tracks', meta: 'Mod for SuperTuxKart', tone: '#2E3F5E' },
+      { id: 'loop-sketch', title: 'Loop Sketch', meta: 'App · Creative tools', tone: '#5A3F5E' },
+      { id: 'deep-ore', title: 'Deep Ore', meta: 'Mod for Luanti', tone: '#4E4038' }
+    ];
+    var ranks = st.ranks;
+    var used = Object.keys(ranks).length;
+    var candidates = cands.map(function (c) {
+      var mineRank = ranks[c.id] || 0;
+      return Object.assign({}, c, {
+        votable: !c.own,
+        rowStyle: 'display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; ' + (c.own ? 'border: 1px dashed #3A3E47; opacity: 0.7;' : mineRank ? 'border: 1px solid #F5B83D; background: #1C1F25;' : 'border: 1px solid #262A31; background: #0F1114;'),
+        ranks: [1, 2, 3].map(function (n) {
+          var on = mineRank === n;
+          return {
+            n: n,
+            pressed: on ? 'true' : 'false',
+            style: 'font: inherit; font-weight: 700; width: 40px; height: 40px; border-radius: 6px; cursor: pointer; ' + (on ? 'background: #F5B83D; color: #15130D; border: 1px solid #F5B83D;' : 'background: transparent; color: #ECEDEE; border: 1px solid #3A3E47;'),
+            pick: function () {
+              var next = {};
+              Object.keys(ranks).forEach(function (k) { if (k !== c.id && ranks[k] !== n) next[k] = ranks[k]; });
+              if (!on) next[c.id] = n;
+              self.setState({ ranks: next });
+            }
+          };
+        })
+      });
+    });
+    var ready = used === 3;
+
+    // Task board
+    var taskDefs = [
+      { id: 't1', tag: 'Feature', color: '#7CB7FF', title: 'Pick a goal: survival, research or relaxation (vision doc, part 2)', others: 2 },
+      { id: 't2', tag: 'Bug', color: '#FF9A7A', title: 'Food-chain balance: plankton crash after day 40', others: 1 },
+      { id: 't3', tag: 'Art', color: '#6FD39A', title: 'Day and night colour palettes', others: 0 },
+      { id: 't4', tag: 'Feature', color: '#7CB7FF', title: 'Save and load the ecosystem', others: 1 },
+      { id: 't5', tag: 'Feature', color: '#7CB7FF', title: 'Touch controls for phones', others: 0 }
+    ];
+    var tasks = taskDefs.map(function (t) {
+      var mine = !!st.mine[t.id];
+      var n = t.others + (mine ? 1 : 0);
+      return {
+        tag: t.tag, title: t.title,
+        tagStyle: tagBase + t.color,
+        mine: mine ? 'true' : 'false',
+        claimLabel: n === 0 ? 'Nobody yet' : n === 1 ? '1 working on this' : n + ' working on this',
+        btnLabel: mine ? "I'm on it" : 'Work on this',
+        btnStyle: btnBase + (mine ? 'background: #F5B83D; color: #15130D; border: 1px solid #F5B83D;' : ghost),
+        toggle: function () { var m = Object.assign({}, st.mine); if (m[t.id]) delete m[t.id]; else m[t.id] = true; self.setState({ mine: m }); }
+      };
+    });
+
+    // Review
+    var cdefs = [
+      { id: 'c1', user: '@[member-a]', wild: false, task: 'Food-chain balance', pr: 'PR #41 · Cap plankton growth with a logistic curve', note: 'Plankton was growing exponentially; capped it and tuned the fish appetite to match.' },
+      { id: 'c2', user: '@[member-b]', wild: true, task: 'Own idea', pr: 'PR #44 · Tides that move the shoreline', note: 'Tried a daily tide cycle so rock pools form and dry out. It gives the sim a rhythm.' },
+      { id: 'c3', user: '@[member-c]', wild: false, task: 'Save and load', pr: 'PR #45 · Save the ecosystem to browser storage', note: 'Saves every species count and position; loads on start.' },
+      { id: 'c4', user: '@[member-d]', wild: false, task: 'Day and night palettes', pr: 'PR #47 · Fix typo in README', note: 'Small fix.' }
+    ];
+    var rv = st.review;
+    var statusText = { accepted: 'Accepted', flagged: 'Flagged · review', none: 'Not reviewed' };
+    var statusColor = { accepted: '#6FD39A', flagged: '#FF9A7A', none: '#8B9099' };
+    var contribs = cdefs.map(function (k) {
+      var s = rv[k.id] || 'none';
+      var isHelpful = st.helpful === k.id;
+      var isBestWild = st.bestWild === k.id;
+      function setStatus(v) {
+        var next = Object.assign({}, rv); next[k.id] = (next[k.id] === v) ? 'none' : v;
+        var upd = { review: next };
+        if (next[k.id] === 'flagged') { if (st.helpful === k.id) upd.helpful = null; if (st.bestWild === k.id) upd.bestWild = null; }
+        self.setState(upd);
+      }
+      return Object.assign({}, k, {
+        isWild: k.wild,
+        tag: k.wild ? 'Wildcard' : 'Task',
+        tagStyle: tagBase + (k.wild ? '#C9A2FF' : '#9AA0A8'),
+        statusLabel: statusText[s],
+        statusStyle: 'font-size: 13px; font-weight: 600; color: ' + statusColor[s],
+        cardStyle: 'border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; background: #0F1114; border: 1px solid ' + (s === 'flagged' ? '#FF9A7A' : isHelpful || isBestWild ? '#F5B83D' : '#262A31') + ';',
+        isAccepted: s === 'accepted' ? 'true' : 'false',
+        isFlagged: s === 'flagged',
+        isHelpful: isHelpful ? 'true' : 'false',
+        isBestWild: isBestWild ? 'true' : 'false',
+        acceptStyle: btnBase + (s === 'accepted' ? 'background: #6FD39A; color: #0E0F12; border: 1px solid #6FD39A;' : ghost),
+        helpfulStyle: btnBase + (isHelpful ? 'background: #F5B83D; color: #15130D; border: 1px solid #F5B83D;' : ghost),
+        wildStyle: btnBase + (isBestWild ? 'background: #C9A2FF; color: #0E0F12; border: 1px solid #C9A2FF;' : ghost),
+        flagStyle: btnBase + (s === 'flagged' ? 'background: #FF9A7A; color: #0E0F12; border: 1px solid #FF9A7A;' : ghost),
+        accept: function () { setStatus('accepted'); },
+        flag: function () { setStatus('flagged'); },
+        helpful: function () {
+          var next = Object.assign({}, rv); if (next[k.id] !== 'accepted') next[k.id] = 'accepted';
+          self.setState({ helpful: isHelpful ? null : k.id, review: next });
+        },
+        wild: function () {
+          var next = Object.assign({}, rv); if (next[k.id] !== 'accepted') next[k.id] = 'accepted';
+          self.setState({ bestWild: isBestWild ? null : k.id, review: next });
+        }
+      });
+    });
+
+    // Recap
+    var byId = {}; cdefs.forEach(function (k) { byId[k.id] = k; });
+    var awards = [];
+    if (st.helpful) awards.push({ user: byId[st.helpful].user, label: 'Most helpful contributor · Relay round 4', badgeStyle: helpfulBadge });
+    if (st.bestWild) awards.push({ user: byId[st.bestWild].user, label: 'Best wildcard · Relay round 4', badgeStyle: wildBadge });
+    var accepted = cdefs.filter(function (k) { return rv[k.id] === 'accepted'; }).length;
+    var underReview = cdefs.filter(function (k) { return rv[k.id] === 'flagged'; }).map(function (k) { return k.user; });
+
+    return {
+      phases: phases,
+      showEntry: st.phase === 'entry',
+      showResults: st.phase === 'results',
+      showContribute: st.phase === 'contribute',
+      showReview: st.phase === 'review',
+      showRecap: st.phase === 'recap',
+      candidates: candidates,
+      rankHint: ready ? 'All three ranked' : (3 - used) + ' left to rank',
+      enterStyle: 'font: inherit; font-weight: 600; border: 0; padding: 12px 20px; border-radius: 6px; ' + (ready ? 'background: #F5B83D; color: #15130D; cursor: pointer;' : 'background: #2A2D34; color: #8B9099; cursor: not-allowed;'),
+      tasks: tasks,
+      contribs: contribs,
+      awards: awards,
+      noAwards: awards.length === 0,
+      underReview: underReview,
+      recapLine: accepted + ' of 4 contributions accepted for Tidepool. Thanks to everyone who took part.',
+      badgeHelpful: helpfulBadge,
+      badgeWild: wildBadge
+    };
+  }
+}
+</script>
+</body>
+</html>

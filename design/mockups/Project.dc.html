@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brainchild — project page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&amp;family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&amp;family=Martian+Mono:wght@400;600;700&amp;family=Silkscreen&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E0F12}
+.metal{background:url(/_blob/c2eaa4868f83935fa372b38ba261914e) repeat,#15171B url(/_blob/440cb343d937134112bcd4246b13deed) repeat;background-size:280px 280px,512px 512px}
+a{color:#F5B83D}a:hover{color:#FFD27A}
+</style>
+</helmet>
+<div class="metal" style="color: #ECEDEE; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; font-size: 16px; line-height: 1.55; min-height: 100vh">
+
+<header style="border-bottom: 1px solid #23262D">
+<nav aria-label="Main" style="max-width: 1240px; margin: 0 auto; padding: 18px 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 24px">
+<a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: #ECEDEE">
+<svg aria-hidden="true" width="30" height="20" viewBox="0 0 30 20" fill="none" stroke="#F5B83D" stroke-width="3" stroke-linecap="round"><path d="M2 10c3-8 6-8 8.7 0s5.6 8 8.6 0 5.7-8 8.7 0"></path></svg>
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 22px">Brainchild</span>
+</a>
+<span style="flex-grow: 1; font-size: 14px; color: #A3A7AE"><a href="Main.dc.html" style="color: #A3A7AE">Up for adoption</a> / Moss Keeper</span>
+<a href="#" style="color: #ECEDEE; text-decoration: none; padding: 10px 14px; font-size: 15px">Sign in</a>
+</nav>
+</header>
+
+<div style="max-width: 1240px; margin: 0 auto; padding: 40px 32px 88px">
+
+<!-- Title row -->
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 20px; margin-bottom: 28px">
+<div>
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px">
+<span style="font-family: 'Martian Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 8px; border-radius: 4px; color: #0E0F12; background: #F5B83D">Up for adoption</span>
+<span style="{{ratingStyle}}">{{ratingLabel}}</span>
+<span style="font-size: 14px; color: #A3A7AE">Handed off [DATE] by @[original-maker]</span>
+</div>
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 52px; line-height: 1.05; letter-spacing: -0.02em">Moss Keeper</h1>
+<p style="margin: 8px 0 0; color: #B8BCC3; font-size: 18px">A cozy puzzle game about growing a garden across tiny floating islands.</p>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 12px">
+<button type="button" onClick="{{reportProject}}" style="font: inherit; background: transparent; color: #A3A7AE; border: 0; padding: 13px 8px; cursor: pointer; text-decoration: underline">Report</button>
+<a href="#" style="border: 1px solid #3A3E47; color: #ECEDEE; text-decoration: none; padding: 13px 20px; border-radius: 6px; font-weight: 500">Just fork it</a>
+<a href="Handoff.dc.html" style="background: #F5B83D; color: #15130D; text-decoration: none; padding: 14px 22px; border-radius: 6px; font-weight: 600">Adopt this project</a>
+</div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start">
+
+<!-- Main column -->
+<main style="flex: 999 1 600px; min-width: 0; display: flex; flex-direction: column; gap: 32px">
+
+<!-- Player -->
+<div style="border: 1px solid #262A31; border-radius: 10px; overflow: hidden; background: #14161B">
+<div style="aspect-ratio: 16 / 9; background: #2B3F30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px">
+<sc-if value="{{showGate}}" hint-placeholder-val="{{ false }}">
+<div role="group" aria-label="Mature content warning" style="max-width: 420px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 20px">
+<span style="font-family: 'Martian Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 10px; border-radius: 4px; color: #0E0F12; background: #FF9A7A">Mature</span>
+<p style="margin: 0; font-size: 18px; font-weight: 600">This project is rated Mature</p>
+<p style="margin: 0; color: #C9D6CC">Contains: {{ratingNotes}}. The maker chose this rating; tell us if it's wrong.</p>
+<div style="display: flex; gap: 10px">
+<button type="button" onClick="{{passGate}}" style="font: inherit; font-weight: 600; background: #ECEDEE; color: #0E0F12; border: 0; padding: 11px 20px; border-radius: 6px; cursor: pointer">Continue</button>
+<a href="Browse.dc.html" style="color: #ECEDEE; border: 1px solid rgba(236,237,238,0.5); text-decoration: none; padding: 10px 18px; border-radius: 6px">Go back</a>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{showPlay}}" hint-placeholder-val="{{ true }}">
+<span style="font-family: 'Martian Mono', monospace; font-size: 12px; color: #C9D6CC">[ browser build loads here ]</span>
+<button type="button" style="font: inherit; font-weight: 600; font-size: 17px; background: #ECEDEE; color: #0E0F12; border: 0; padding: 14px 28px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 10px">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 2.5v11l9-5.5z"></path></svg>
+Play in browser
+</button>
+</sc-if>
+</div>
+<div style="padding: 14px 18px; display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 14px; color: #A3A7AE; border-top: 1px solid #262A31">
+<span>Godot 4 · web export</span>
+<span>Built from source by Brainchild</span>
+<span>Keyboard or controller</span>
+</div>
+</div>
+
+<!-- Handoff packet -->
+<section aria-labelledby="packet-h">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 16px">
+<h2 id="packet-h" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 28px">Handoff packet</h2>
+<a href="#" style="font-size: 15px">Download packet (.zip)</a>
+</div>
+<div role="tablist" aria-label="Handoff packet sections" style="display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid #262A31; margin-bottom: 20px">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="5">
+<button type="button" role="tab" aria-selected="{{t.selected}}" onClick="{{t.pick}}" style="{{t.style}}">{{t.label}}</button>
+</sc-for>
+</div>
+<div role="tabpanel" style="border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 26px">
+<sc-if value="{{showWorks}}" hint-placeholder-val="{{ true }}">
+<ul style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 10px; color: #C9CCD1">
+<li>All 12 levels are playable start to finish; save/load works.</li>
+<li>Plant growth system is data-driven: new species are one JSON entry each.</li>
+<li>Build: open in Godot 4, export preset "Web" is already configured.</li>
+</ul>
+</sc-if>
+<sc-if value="{{showBroken}}" hint-placeholder-val="{{ false }}">
+<ul style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 10px; color: #C9CCD1">
+<li>Level 9 can soft-lock if you undo during the water animation.</li>
+<li>Controller remapping UI is half-built (scene exists, not wired up).</li>
+<li>Tried: procedural islands. Dropped them; they felt lifeless. Notes in /docs/dead-ends.md.</li>
+</ul>
+</sc-if>
+<sc-if value="{{showVision}}" hint-placeholder-val="{{ false }}">
+<p style="margin: 0; color: #C9CCD1">I wanted it to feel like tending a bonsai: slow, quiet, no fail states. The plan was 3 more biomes and a "share your garden" seed code. If you take it somewhere else entirely, that's fine too.</p>
+</sc-if>
+<sc-if value="{{showAgent}}" hint-placeholder-val="{{ false }}">
+<div style="background: #0E0F12; border: 1px solid #262A31; border-radius: 6px; padding: 18px; font-family: 'Martian Mono', monospace; font-size: 13px; line-height: 1.7; color: #C9CCD1; white-space: pre-line"># CLAUDE.md
+Godot 4 project. Game logic in /scripts, levels in /levels/*.tres.
+GridManager owns all tile state; never mutate tiles from plant scripts.
+Run tests: godot --headless -s tests/run.gd
+Style: small scenes, signals over direct references.</div>
+</sc-if>
+<sc-if value="{{showAssets}}" hint-placeholder-val="{{ false }}">
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; font-size: 14px">
+<div style="border: 1px solid #262A31; border-radius: 6px; padding: 14px"><p style="margin: 0 0 4px; font-weight: 600">Code</p><p style="margin: 0; color: #A3A7AE">AI-assisted, reviewed by hand. MIT.</p></div>
+<div style="border: 1px solid #262A31; border-radius: 6px; padding: 14px"><p style="margin: 0 0 4px; font-weight: 600">Art</p><p style="margin: 0; color: #A3A7AE">Hand-drawn pixel art. CC BY 4.0.</p></div>
+<div style="border: 1px solid #262A31; border-radius: 6px; padding: 14px"><p style="margin: 0 0 4px; font-weight: 600">Music</p><p style="margin: 0; color: #A3A7AE">[TOOL] generated, tagged per track. CC BY 4.0.</p></div>
+</div>
+</sc-if>
+</div>
+</section>
+
+<!-- Discussion -->
+<section aria-labelledby="disc-h" style="display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 12px">
+<h2 id="disc-h" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 28px">Discussion <span style="font-size: 18px; color: #A3A7AE; font-weight: 500">· {{commentCount}}</span></h2>
+<div role="group" aria-label="Sort comments" style="display: flex; gap: 6px">
+<sc-for list="{{sorts}}" as="o" hint-placeholder-count="2">
+<button type="button" onClick="{{o.pick}}" aria-pressed="{{o.pressed}}" style="{{o.style}}">{{o.label}}</button>
+</sc-for>
+</div>
+</div>
+
+<div style="border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 16px; display: flex; gap: 12px; align-items: flex-start">
+<span aria-hidden="true" style="width: 40px; height: 40px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #0E0F12; background: #F5B83D">Y</span>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+<label for="comment-box" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Write a comment</label>
+<textarea id="comment-box" rows="3" value="{{draft}}" onInput="{{onDraft}}" placeholder="Ask the maker a question, report a bug, or share an idea…" style="font: inherit; font-size: 15px; background: #0E0F12; color: #ECEDEE; border: 1px solid #3A3E47; border-radius: 6px; padding: 11px 12px; resize: vertical"></textarea>
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px">
+<span style="font-size: 13px; color: #A3A7AE">Be kind. Maintainers can pin comments; anyone can report one.</span>
+<button type="button" onClick="{{post}}" style="{{postStyle}}">Post comment</button>
+</div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 12px">
+<sc-for list="{{comments}}" as="c" hint-placeholder-count="3">
+<article style="{{c.cardStyle}}">
+<sc-if value="{{c.pinned}}" hint-placeholder-val="{{ false }}">
+<p style="margin: 0 0 8px; font-family: 'Martian Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #F5B83D">Pinned by the maintainer</p>
+</sc-if>
+<div style="display: flex; gap: 12px; align-items: flex-start">
+<span aria-hidden="true" style="{{c.avatarStyle}}">{{c.initial}}</span>
+<div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<a href="#" style="font-weight: 600; color: #ECEDEE; text-decoration: none">{{c.user}}</a>
+<sc-if value="{{c.hasRole}}" hint-placeholder-val="{{ false }}">
+<span style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; border: 1px solid #6FD39A; color: #6FD39A">{{c.role}}</span>
+</sc-if>
+<sc-for list="{{c.badges}}" as="b" hint-placeholder-count="0">
+<span title="{{b.title}}" style="{{b.style}}">★ {{b.label}}</span>
+</sc-for>
+<span style="font-size: 13px; color: #8B9099">· {{c.when}}</span>
+</div>
+<p style="margin: 0; color: #C9CCD1; white-space: pre-line">{{c.body}}</p>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<button type="button" style="font: inherit; font-size: 13px; background: transparent; color: #A3A7AE; border: 0; padding: 6px 8px; cursor: pointer">Reply</button>
+<button type="button" onClick="{{c.like}}" aria-pressed="{{c.liked}}" style="{{c.likeStyle}}">Helpful · {{c.likes}}</button>
+<button type="button" onClick="{{c.report}}" style="font: inherit; font-size: 13px; background: transparent; color: #A3A7AE; border: 0; padding: 6px 8px; cursor: pointer">Report</button>
+</div>
+<sc-for list="{{c.replies}}" as="r" hint-placeholder-count="0">
+<div style="display: flex; gap: 10px; align-items: flex-start; margin-top: 6px; padding-left: 14px; border-left: 2px solid #262A31">
+<span aria-hidden="true" style="{{r.avatarStyle}}">{{r.initial}}</span>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<span style="font-weight: 600">{{r.user}}</span>
+<sc-if value="{{r.hasRole}}" hint-placeholder-val="{{ false }}">
+<span style="font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; border: 1px solid #6FD39A; color: #6FD39A">{{r.role}}</span>
+</sc-if>
+<span style="font-size: 13px; color: #8B9099">· {{r.when}}</span>
+</div>
+<p style="margin: 0; color: #C9CCD1">{{r.body}}</p>
+</div>
+</div>
+</sc-for>
+</div>
+</div>
+</article>
+</sc-for>
+</div>
+</section>
+</main>
+
+<!-- Sidebar -->
+<aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+
+<div style="border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 22px">
+<h2 style="margin: 0 0 14px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 19px">Before you adopt</h2>
+<ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 15px; color: #C9CCD1">
+<li style="display: flex; gap: 10px"><span style="color: #6FD39A; font-family: 'Martian Mono', monospace">✓</span>License: code and assets</li>
+<li style="display: flex; gap: 10px"><span style="color: #6FD39A; font-family: 'Martian Mono', monospace">✓</span>Playable build verified</li>
+<li style="display: flex; gap: 10px"><span style="color: #6FD39A; font-family: 'Martian Mono', monospace">✓</span>Handoff packet complete</li>
+<li style="display: flex; gap: 10px"><span style="color: #6FD39A; font-family: 'Martian Mono', monospace">✓</span>Asset provenance tagged</li>
+<li style="display: flex; gap: 10px"><span style="color: #8B9099; font-family: 'Martian Mono', monospace">–</span>Original maker reachable for questions</li>
+</ul>
+</div>
+
+<div style="border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 22px">
+<h2 style="margin: 0 0 16px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 19px">Lineage</h2>
+<ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0">
+<li style="display: flex; gap: 14px">
+<div style="display: flex; flex-direction: column; align-items: center"><span aria-hidden="true" style="width: 12px; height: 12px; border-radius: 50%; background: #6B7079; margin-top: 5px"></span><span aria-hidden="true" style="width: 2px; flex-grow: 1; background: #343842; min-height: 28px"></span></div>
+<div style="padding-bottom: 14px"><p style="margin: 0; font-weight: 600">@[original-maker]</p><p style="margin: 0; font-size: 14px; color: #A3A7AE">Created it · [DATE] to [DATE]</p></div>
+</li>
+<li style="display: flex; gap: 14px">
+<div style="display: flex; flex-direction: column; align-items: center"><span aria-hidden="true" style="width: 12px; height: 12px; border-radius: 50%; border: 2px dashed #F5B83D; box-sizing: border-box; margin-top: 5px"></span></div>
+<div><p style="margin: 0; font-weight: 600; color: #F5B83D">You?</p><p style="margin: 0; font-size: 14px; color: #A3A7AE">Next maintainer</p></div>
+</li>
+</ol>
+</div>
+
+<div style="border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 22px">
+<h2 style="margin: 0 0 14px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 19px">Details</h2>
+<dl style="margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; font-size: 14px">
+<dt style="color: #A3A7AE">Code</dt><dd style="margin: 0; position: relative">
+<button type="button" aria-describedby="tip-code" onMouseEnter="{{show_code}}" onMouseLeave="{{hideTip}}" onFocus="{{show_code}}" onBlur="{{hideTip}}" style="{{badge_code}}">{{lic_code.label}} <span aria-hidden="true" style="opacity: 0.7">ⓘ</span></button>
+<div id="tip-code" role="tooltip" style="{{tipStyle_code}}">
+<p style="margin: 0 0 6px; font-weight: 700; color: #ECEDEE">{{lic_code.name}}</p>
+<p style="margin: 0 0 8px; color: #C9CCD1">{{lic_code.blurb}}</p>
+<p style="margin: 0; font-size: 12px; color: #A3A7AE">{{lic_code.facts}}</p>
+</div>
+</dd>
+<dt style="color: #A3A7AE">Assets</dt><dd style="margin: 0; position: relative">
+<button type="button" aria-describedby="tip-assets" onMouseEnter="{{show_assets}}" onMouseLeave="{{hideTip}}" onFocus="{{show_assets}}" onBlur="{{hideTip}}" style="{{badge_assets}}">{{lic_assets.label}} <span aria-hidden="true" style="opacity: 0.7">ⓘ</span></button>
+<div id="tip-assets" role="tooltip" style="{{tipStyle_assets}}">
+<p style="margin: 0 0 6px; font-weight: 700; color: #ECEDEE">{{lic_assets.name}}</p>
+<p style="margin: 0 0 8px; color: #C9CCD1">{{lic_assets.blurb}}</p>
+<p style="margin: 0; font-size: 12px; color: #A3A7AE">{{lic_assets.facts}}</p>
+</div>
+</dd>
+<dt style="color: #A3A7AE">Name</dt><dd style="margin: 0">Adopters may keep it, marked as a continuation</dd>
+<dt style="color: #A3A7AE">Rating</dt><dd style="margin: 0"><span style="{{ratingStyle}}">{{ratingLabel}}</span> <span style="font-size: 13px; color: #A3A7AE">{{ratingNotesShort}}</span></dd>
+<dt style="color: #A3A7AE">Record</dt><dd style="margin: 0"><a href="License.dc.html">Full license record</a></dd>
+<dt style="color: #A3A7AE">Engine</dt><dd style="margin: 0">Godot 4</dd>
+<dt style="color: #A3A7AE">AI tools</dt><dd style="margin: 0">[as tagged by maker]</dd>
+<dt style="color: #A3A7AE">Repo</dt><dd style="margin: 0"><a href="#">[repo link]</a></dd>
+</dl>
+</div>
+
+<div style="border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 22px">
+<h2 style="margin: 0 0 6px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 19px">Forks</h2>
+<p style="margin: 0; font-size: 15px; color: #A3A7AE">No forks yet. Make the first continuation.</p>
+</div>
+</aside>
+</div>
+</div>
+</div>
+
+<!-- Report dialog -->
+<sc-if value="{{reportOpen}}" hint-placeholder-val="{{ false }}">
+<div style="position: fixed; inset: 0; z-index: 50; background: rgba(8,9,11,0.72); display: flex; align-items: center; justify-content: center; padding: 20px">
+<div role="dialog" aria-modal="true" aria-labelledby="report-h" style="width: 100%; max-width: 520px; max-height: 90vh; overflow: auto; background: #14161B; border: 1px solid #3A3E47; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 20px 60px rgba(0,0,0,0.6)">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px">
+<div>
+<h2 id="report-h" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 22px">{{reportTitle}}</h2>
+<p style="margin: 4px 0 0; font-size: 14px; color: #A3A7AE">{{reportContext}}</p>
+</div>
+<button type="button" onClick="{{closeReport}}" aria-label="Close" style="font: inherit; font-size: 20px; line-height: 1; background: transparent; color: #A3A7AE; border: 1px solid #3A3E47; border-radius: 6px; width: 36px; height: 36px; cursor: pointer">×</button>
+</div>
+<sc-if value="{{reportForm}}" hint-placeholder-val="{{ true }}">
+<div role="radiogroup" aria-label="What's wrong?" style="display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{reportCats}}" as="r" hint-placeholder-count="7">
+<button type="button" role="radio" aria-checked="{{r.checked}}" onClick="{{r.pick}}" style="{{r.style}}">
+<span style="display: block; font-weight: 600">{{r.label}}</span>
+<span style="display: block; font-size: 13px; color: #A3A7AE">{{r.desc}}</span>
+</button>
+</sc-for>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="report-details" style="font-size: 14px; color: #C9CCD1">Details (optional)</label>
+<textarea id="report-details" rows="3" placeholder="Where is it, and what's the problem?" style="font: inherit; font-size: 15px; background: #0E0F12; color: #ECEDEE; border: 1px solid #3A3E47; border-radius: 6px; padding: 10px 12px; resize: vertical"></textarea>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end">
+<button type="button" onClick="{{closeReport}}" style="font: inherit; background: transparent; color: #ECEDEE; border: 1px solid #3A3E47; padding: 10px 16px; border-radius: 6px; cursor: pointer">Cancel</button>
+<button type="button" onClick="{{sendReport}}" style="{{sendStyle}}">Send report</button>
+</div>
+</sc-if>
+<sc-if value="{{reportDone}}" hint-placeholder-val="{{ false }}">
+<p style="margin: 0; padding: 14px; border: 1px solid #6FD39A; border-radius: 8px; color: #C9CCD1"><span style="color: #6FD39A; font-weight: 600">Thanks, your report is in.</span> A moderator reviews every report. You'll get a notice when it's been looked at.</p>
+<p style="margin: 0; font-size: 13px; color: #A3A7AE">Anything sexual involving a minor is removed immediately and reported to the authorities. If someone is in danger, contact the police.</p>
+<button type="button" onClick="{{closeReport}}" style="align-self: flex-end; font: inherit; font-weight: 600; background: #F5B83D; color: #15130D; border: 0; padding: 10px 18px; border-radius: 6px; cursor: pointer">Done</button>
+</sc-if>
+</div>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"rating":{"editor":"enum","options":["Everyone","Teen","Mature"],"default":"Everyone"},"$preview":{"width":1440,"height":2600}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { tab: 'works', sort: 'top', liked: {}, draft: '', mine: [], tip: null, gateOk: false, report: null, reportCat: null, reportSent: false };
+  }
+  renderVals() {
+    var self = this;
+    var cur = this.state.tab;
+    var defs = [
+      { id: 'works', label: 'What works' },
+      { id: 'broken', label: "What's broken" },
+      { id: 'vision', label: 'What I was going for' },
+      { id: 'agent', label: 'Agent context' },
+      { id: 'assets', label: 'Asset provenance' }
+    ];
+    var base = 'font: inherit; font-size: 15px; background: transparent; border: 0; padding: 12px 14px; margin-bottom: -1px; cursor: pointer; ';
+    // ----- Discussion -----
+    var st = this.state;
+    var avatar = function (color, size) {
+      size = size || 40;
+      return 'width: ' + size + 'px; height: ' + size + 'px; border-radius: 50%; flex: none; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: ' + Math.round(size * 0.4) + 'px; color: #0E0F12; background: ' + color;
+    };
+    var badgeStyle = function (c) { return 'font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; color: ' + c + '; border: 1px solid ' + c + ';'; };
+    var helpfulB = function (n, rounds) { return { label: 'Most helpful ×' + n, title: 'Most helpful contributor · Relay round ' + rounds, style: badgeStyle('#F5B83D') }; };
+    var wildB = function (n, rounds) { return { label: 'Best wildcard ×' + n, title: 'Best wildcard · Relay round ' + rounds, style: badgeStyle('#C9A2FF') }; };
+    var base = [
+      { id: 'm1', user: '@[original-maker]', initial: 'O', color: '#6FD39A', role: 'Original maker', badges: [], when: '[DATE]', pinned: true, likes: 9, order: 1,
+        body: 'If you adopt this: the water animation in /scripts/tides.gd is the scariest part. I’ll keep answering questions here for a few months.' },
+      { id: 'm2', user: '@[member-a]', initial: 'A', color: '#7CB7FF', role: '', badges: [helpfulB(1, '4'), wildB(1, '2')], when: '[DATE]', likes: 5, order: 2,
+        body: 'Played all 12 levels. The level 9 soft-lock happens every time you undo mid-animation. I have a fix half done and will open a PR.',
+        replies: [{ user: '@[original-maker]', initial: 'O', color: '#6FD39A', role: 'Original maker', when: '[DATE]', body: 'Thank you! The undo stack doesn’t know about the animation queue. That’s the whole bug.' }] },
+      { id: 'm3', user: '@[member-f]', initial: 'F', color: '#C9A2FF', role: '', badges: [], when: '[DATE]', likes: 2, order: 3,
+        body: 'Would a phone version be in scope? Touch controls look doable since everything is grid-based.' }
+    ];
+    var mine = st.mine.map(function (m, i) {
+      return { id: 'u' + i, user: '@[you]', initial: 'Y', color: '#F5B83D', role: '', badges: [], when: 'just now', likes: 0, order: 100 + i, body: m };
+    });
+    var all = base.concat(mine);
+    var pinned = all.filter(function (c) { return c.pinned; });
+    var rest = all.filter(function (c) { return !c.pinned; });
+    var likesOf = function (c) { return c.likes + (st.liked[c.id] ? 1 : 0); };
+    rest.sort(st.sort === 'top' ? function (a, b) { return likesOf(b) - likesOf(a); } : function (a, b) { return b.order - a.order; });
+    var comments = pinned.concat(rest).map(function (c) {
+      var liked = !!st.liked[c.id];
+      return {
+        user: c.user, initial: c.initial, role: c.role, hasRole: !!c.role, badges: c.badges, when: c.when, body: c.body, pinned: !!c.pinned,
+        avatarStyle: avatar(c.color),
+        cardStyle: 'border-radius: 10px; padding: 16px; background: #14161B; border: 1px solid ' + (c.pinned ? '#F5B83D' : '#262A31') + ';',
+        likes: likesOf(c), liked: liked ? 'true' : 'false',
+        likeStyle: 'font: inherit; font-size: 13px; padding: 6px 10px; border-radius: 999px; cursor: pointer; ' + (liked ? 'background: #23262D; color: #F5B83D; border: 1px solid #F5B83D;' : 'background: transparent; color: #A3A7AE; border: 1px solid #3A3E47;'),
+        report: function () { self.setState({ report: 'comment by ' + c.user, reportCat: null, reportSent: false }); },
+        like: function () { var l = Object.assign({}, st.liked); if (l[c.id]) delete l[c.id]; else l[c.id] = true; self.setState({ liked: l }); },
+        replies: (c.replies || []).map(function (r) { return Object.assign({}, r, { hasRole: !!r.role, avatarStyle: avatar(r.color, 30) }); })
+      };
+    });
+    var replyCount = all.reduce(function (n, c) { return n + (c.replies ? c.replies.length : 0); }, 0);
+    var total = all.length + replyCount;
+    var canPost = st.draft.trim().length > 0;
+    var disc = {
+      comments: comments,
+      commentCount: total + (total === 1 ? ' comment' : ' comments'),
+      draft: st.draft,
+      onDraft: function (e) { self.setState({ draft: e.target.value }); },
+      post: function () { if (!canPost) return; self.setState({ mine: st.mine.concat([st.draft.trim()]), draft: '', sort: 'new' }); },
+      postStyle: 'font: inherit; font-weight: 600; font-size: 15px; border: 0; padding: 10px 18px; border-radius: 6px; ' + (canPost ? 'background: #F5B83D; color: #15130D; cursor: pointer;' : 'background: #2A2D34; color: #8B9099; cursor: not-allowed;'),
+      sorts: [{ id: 'top', label: 'Top' }, { id: 'new', label: 'Newest' }].map(function (o) {
+        var on = st.sort === o.id;
+        return { label: o.label, pressed: on ? 'true' : 'false', pick: function () { self.setState({ sort: o.id }); },
+          style: 'font: inherit; font-size: 14px; padding: 7px 14px; border-radius: 999px; cursor: pointer; ' + (on ? 'background: #ECEDEE; color: #0E0F12; border: 1px solid #ECEDEE;' : 'background: transparent; color: #ECEDEE; border: 1px solid #3A3E47;') };
+      })
+    };
+
+    // ----- License badges with tooltips -----
+    var LIC = {
+      'MIT': { label: 'MIT', name: 'MIT License', color: '#7CB7FF',
+        blurb: 'Do almost anything with the code, including selling it or taking it closed-source. Just keep the copyright notice and license with it.',
+        facts: 'Credit required · No patent grant · Doesn’t state it’s irrevocable' },
+      'CC BY 4.0': { label: 'CC BY 4.0', name: 'Creative Commons Attribution 4.0', color: '#6FD39A',
+        blurb: 'For art, music and other assets. Use, change and share them for any purpose, as long as you credit the creator.',
+        facts: 'Credit required · Commercial use allowed · States it’s irrevocable' }
+    };
+    var tipFor = function (key, lic) {
+      var open = self.state.tip === key;
+      return {
+        badge: 'font: inherit; font-family: \'Martian Mono\', monospace; font-size: 13px; font-weight: 700; padding: 3px 9px; border-radius: 6px; cursor: help; background: transparent; color: ' + lic.color + '; border: 1px solid ' + lic.color + ';',
+        tip: 'position: absolute; right: 0; top: calc(100% + 8px); z-index: 5; width: 280px; padding: 14px; border-radius: 8px; background: #1C1F25; border: 1px solid #3A3E47; box-shadow: 0 10px 30px rgba(0,0,0,0.5); font-size: 14px; line-height: 1.45; display: ' + (open ? 'block' : 'none') + ';'
+      };
+    };
+    var tc = tipFor('code', LIC['MIT']), ta = tipFor('assets', LIC['CC BY 4.0']);
+    var licVals = {
+      lic_code: LIC['MIT'], lic_assets: LIC['CC BY 4.0'],
+      badge_code: tc.badge, badge_assets: ta.badge,
+      tipStyle_code: tc.tip, tipStyle_assets: ta.tip,
+      show_code: function () { self.setState({ tip: 'code' }); },
+      show_assets: function () { self.setState({ tip: 'assets' }); },
+      hideTip: function () { self.setState({ tip: null }); }
+    };
+    Object.assign(disc, licVals);
+
+    // ----- Rating, Mature gate and report dialog -----
+    var rating = this.props.rating ?? 'Everyone';
+    var ratingColor = { Everyone: '#6FD39A', Teen: '#7CB7FF', Mature: '#FF9A7A' }[rating];
+    var notes = { Everyone: 'No content notes', Teen: 'Mild violence, cartoon peril', Mature: 'violence, blood, strong language' }[rating];
+    var cats = [
+      { id: 'sexual', label: 'Sexual content', desc: 'Not allowed on Brainchild, including in mods.' },
+      { id: 'rating', label: 'Wrong rating', desc: 'It should be rated Teen or Mature, or needs content notes.' },
+      { id: 'malware', label: 'Malware or suspicious download', desc: 'It does something harmful or unexpected.' },
+      { id: 'license', label: 'License or copyright problem', desc: 'Someone else’s work, or the license is wrong.' },
+      { id: 'harass', label: 'Harassment or hate', desc: 'Targets a person or group.' },
+      { id: 'spam', label: 'Spam or junk', desc: 'Ads, scams, or no real content.' },
+      { id: 'other', label: 'Something else', desc: 'Tell us in the details.' }
+    ];
+    var picked = st.reportCat;
+    Object.assign(disc, {
+      ratingLabel: rating === 'Everyone' ? 'Everyone' : rating,
+      ratingStyle: "font-family: 'Martian Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; color: " + ratingColor + '; border: 1px solid ' + ratingColor + ';',
+      ratingNotes: notes,
+      ratingNotesShort: rating === 'Everyone' ? '' : notes,
+      showGate: rating === 'Mature' && !st.gateOk,
+      showPlay: rating !== 'Mature' || st.gateOk,
+      passGate: function () { self.setState({ gateOk: true }); },
+      reportOpen: !!st.report,
+      reportForm: !!st.report && !st.reportSent,
+      reportDone: !!st.report && st.reportSent,
+      reportTitle: st.report === 'project' ? 'Report this project' : 'Report this comment',
+      reportContext: st.report === 'project' ? 'Moss Keeper · reports go to the moderators, not the maker' : (st.report ? 'The ' + st.report + ' · reports go to the moderators' : ''),
+      reportProject: function () { self.setState({ report: 'project', reportCat: null, reportSent: false }); },
+      closeReport: function () { self.setState({ report: null }); },
+      reportCats: cats.map(function (c) {
+        var on = picked === c.id;
+        return { label: c.label, desc: c.desc, checked: on ? 'true' : 'false', pick: function () { self.setState({ reportCat: c.id }); },
+          style: 'font: inherit; color: #ECEDEE; text-align: left; padding: 10px 12px; border-radius: 8px; cursor: pointer; ' + (on ? 'background: #1C1F25; border: 2px solid #F5B83D;' : 'background: #0F1114; border: 2px solid #262A31;') };
+      }),
+      sendReport: function () { if (picked) self.setState({ reportSent: true }); },
+      sendStyle: 'font: inherit; font-weight: 600; border: 0; padding: 10px 18px; border-radius: 6px; ' + (picked ? 'background: #F5B83D; color: #15130D; cursor: pointer;' : 'background: #2A2D34; color: #8B9099; cursor: not-allowed;')
+    });
+
+    return Object.assign(disc, {
+      tabs: defs.map(function (d) {
+        var on = d.id === cur;
+        return {
+          label: d.label,
+          selected: on ? 'true' : 'false',
+          style: base + (on ? 'color: #ECEDEE; font-weight: 600; border-bottom: 2px solid #F5B83D;' : 'color: #A3A7AE; border-bottom: 2px solid transparent;'),
+          pick: function () { self.setState({ tab: d.id }); }
+        };
+      }),
+      showWorks: cur === 'works',
+      showBroken: cur === 'broken',
+      showVision: cur === 'vision',
+      showAgent: cur === 'agent',
+      showAssets: cur === 'assets'
+    });
+  }
+}
+</script>
+</body>
+</html>

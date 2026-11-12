@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brainchild — blog and community projects</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&amp;family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&amp;family=Martian+Mono:wght@400;600;700&amp;family=Silkscreen&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E0F12}
+a{color:#F5B83D}a:hover{color:#FFD27A}
+.metal{background:url(/_blob/c2eaa4868f83935fa372b38ba261914e) repeat,#15171B url(/_blob/440cb343d937134112bcd4246b13deed) repeat;background-size:280px 280px,512px 512px}
+</style>
+</helmet>
+<div class="metal" style="color: #ECEDEE; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; font-size: 16px; line-height: 1.55; min-height: 100vh">
+
+<header style="border-bottom: 1px solid #23262D">
+<nav aria-label="Main" style="max-width: 1240px; margin: 0 auto; padding: 18px 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 24px">
+<a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: #ECEDEE">
+<svg aria-hidden="true" width="30" height="20" viewBox="0 0 30 20" fill="none" stroke="#F5B83D" stroke-width="3" stroke-linecap="round"><path d="M2 10c3-8 6-8 8.7 0s5.6 8 8.6 0 5.7-8 8.7 0"></path></svg>
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 22px">Brainchild</span>
+</a>
+<div style="display: flex; flex-wrap: wrap; gap: 22px; flex-grow: 1; font-size: 15px">
+<a href="Browse.dc.html" style="color: #C9CCD1; text-decoration: none">Browse</a>
+<a href="Blog.dc.html" aria-current="page" style="color: #ECEDEE; text-decoration: none; font-weight: 600">Blog</a>
+<a href="Relay.dc.html" style="color: #C9CCD1; text-decoration: none">Relay rounds</a>
+<a href="Main.dc.html#handoff" style="color: #C9CCD1; text-decoration: none">How handoff works</a>
+</div>
+<a href="#" style="color: #ECEDEE; text-decoration: none; padding: 10px 14px; font-size: 15px">Sign in</a>
+<a href="#" style="background: #F5B83D; color: #15130D; text-decoration: none; padding: 11px 18px; font-weight: 600; font-size: 15px; border-radius: 6px">List a project</a>
+</nav>
+</header>
+
+<div style="max-width: 1240px; margin: 0 auto; padding: 40px 32px 88px">
+
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 44px; letter-spacing: -0.02em">Blog</h1>
+<p style="margin: 6px 0 32px; color: #A3A7AE">Handoff stories, site news, and the community's monthly project. Sample posts shown.</p>
+
+<!-- COMMUNITY PROJECT VOTE -->
+<section aria-labelledby="vote-h" style="border: 1px solid #3A3E47; background: #14161B; border-radius: 12px; padding: 32px; margin-bottom: 48px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; align-items: flex-end; margin-bottom: 24px">
+<div style="max-width: 640px">
+<p style="margin: 0 0 10px; font-family: 'Martian Mono', monospace; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: #F5B83D">Community project · voting closes [DATE]</p>
+<h2 id="vote-h" style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 34px; line-height: 1.1">Pick next month's community project</h2>
+<p style="margin: 12px 0 0; color: #B8BCC3; font-size: 17px">Members proposed these. The winner gets a shared goal list, a pinned thread, and everyone's help for a month. Want your own project helped? <a href="Relay.dc.html">Enter a Relay round</a>.</p>
+</div>
+<sc-if value="{{hasVote}}" hint-placeholder-val="{{ false }}">
+<p role="status" style="margin: 0; font-size: 15px; color: #6FD39A">Thanks, your vote is in. You can change it until voting closes.</p>
+</sc-if>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px">
+<sc-for list="{{candidates}}" as="c" hint-placeholder-count="3">
+<article style="{{c.cardStyle}}">
+<div aria-hidden="true" style="height: 96px; border-radius: 6px; background: {{c.tone}}; display: flex; align-items: flex-end; justify-content: space-between; padding: 10px; box-sizing: border-box">
+<span style="font-family: 'Martian Mono', monospace; font-size: 11px; color: #0E0F12; background: rgba(236,237,238,0.85); padding: 3px 8px; border-radius: 4px">[ screenshot ]</span>
+<span style="font-family: 'Martian Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #ECEDEE; background: rgba(14,15,18,0.8); padding: 3px 8px; border-radius: 4px">{{c.kind}}</span>
+</div>
+<h3 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 21px">{{c.title}}</h3>
+<p style="margin: 0; font-size: 14px; color: #A3A7AE">Proposed by @[member]</p>
+<p style="margin: 0; color: #C9CCD1; font-size: 15px; flex-grow: 1">{{c.goal}}</p>
+<button type="button" onClick="{{c.vote}}" aria-pressed="{{c.pressed}}" style="{{c.btnStyle}}">{{c.btnLabel}}</button>
+</article>
+</sc-for>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start">
+
+<!-- POSTS -->
+<main style="flex: 999 1 600px; min-width: 0">
+<div role="group" aria-label="Filter posts by topic" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px">
+<sc-for list="{{topics}}" as="t" hint-placeholder-count="5">
+<button type="button" onClick="{{t.pick}}" aria-pressed="{{t.pressed}}" style="{{t.style}}">{{t.label}}</button>
+</sc-for>
+</div>
+<div style="display: flex; flex-direction: column; gap: 16px">
+<sc-for list="{{posts}}" as="p" hint-placeholder-count="4">
+<article style="border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 24px 26px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center">
+<span style="font-family: 'Martian Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #0E0F12; background: {{p.tagColor}}; padding: 3px 8px; border-radius: 4px">{{p.topic}}</span>
+<span style="font-size: 14px; color: #A3A7AE">by @[author] · [DATE]</span>
+</div>
+<h3 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px; line-height: 1.2">{{p.title}}</h3>
+<p style="margin: 0; color: #C9CCD1">{{p.excerpt}}</p>
+<a href="#" style="align-self: flex-start; font-size: 15px; font-weight: 500">Read the post</a>
+</article>
+</sc-for>
+</div>
+</main>
+
+<!-- SIDEBAR -->
+<aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+<form style="border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px">Propose a community project</h2>
+<p style="margin: 0; font-size: 14px; color: #A3A7AE">Any game, mod or app that's up for adoption can be proposed for next month's vote.</p>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="proj" style="font-size: 14px; color: #C9CCD1">Project</label>
+<select id="proj" style="font: inherit; font-size: 15px; background: #0E0F12; color: #ECEDEE; border: 1px solid #3A3E47; border-radius: 6px; padding: 11px 12px">
+<option>Choose a project…</option>
+<option>Moss Keeper</option>
+<option>Signal Drift</option>
+<option>Tidepool</option>
+<option>Deep Ore (mod for Luanti)</option>
+<option>Night Tracks (mod for SuperTuxKart)</option>
+</select>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="goal" style="font-size: 14px; color: #C9CCD1">What should the community do with it?</label>
+<textarea id="goal" rows="4" placeholder="e.g. finish the last three levels and fix the save bug" style="font: inherit; font-size: 15px; background: #0E0F12; color: #ECEDEE; border: 1px solid #3A3E47; border-radius: 6px; padding: 11px 12px; resize: vertical"></textarea>
+</div>
+<button type="button" style="font: inherit; font-weight: 600; background: #F5B83D; color: #15130D; border: 0; padding: 12px; border-radius: 6px; cursor: pointer">Submit proposal</button>
+</form>
+
+<div style="border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 24px">
+<h2 style="margin: 0 0 10px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px">How community projects work</h2>
+<ol style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; color: #C9CCD1; font-size: 15px">
+<li>Anyone proposes a project with a goal for the month.</li>
+<li>Members vote; the top proposal wins.</li>
+<li>The original maker is invited to weigh in, if they're reachable.</li>
+<li>Everyone contributes; the results go up on the blog.</li>
+</ol>
+</div>
+
+<div style="border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 24px">
+<h2 style="margin: 0 0 6px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px">Write for the blog</h2>
+<p style="margin: 0 0 10px; font-size: 15px; color: #A3A7AE">Handed off a project, or picked one up? Tell the story.</p>
+<a href="#" style="font-size: 15px">Pitch a post</a>
+</div>
+</aside>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2000}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { vote: null, topic: 'All' };
+  }
+  renderVals() {
+    var self = this;
+    var st = this.state;
+    var candidates = [
+      { id: 'signal', title: 'Signal Drift', kind: 'Game', tone: '#3B4A6B', goal: 'Rebalance the economy and add a proper end boss. The design notes already sketch both.' },
+      { id: 'tidepool', title: 'Tidepool', kind: 'Game', tone: '#2F5A5C', goal: 'Pick one of the three directions in the vision doc and give the sim a goal.' },
+      { id: 'freight', title: 'Freight Signals+', kind: 'Mod', tone: '#4B5A3A', goal: 'Update it for the current OpenTTD release and write a proper install guide.' }
+    ];
+    var cardBase = 'border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px; background: #0F1114; ';
+    var btnBase = 'font: inherit; font-weight: 600; font-size: 15px; padding: 11px; border-radius: 6px; cursor: pointer; ';
+    var topicNames = ['All', 'Community project', 'Handoff story', 'Guide', 'Site news'];
+    var tagColors = { 'Community project': '#F5B83D', 'Handoff story': '#6FD39A', 'Guide': '#7CB7FF', 'Site news': '#C9CCD1' };
+    var posts = [
+      { topic: 'Community project', title: 'Community project recap: Gutter Run got its missing levels', excerpt: 'What the community finished in a month, what is still open, and how the original maker felt about it.' },
+      { topic: 'Handoff story', title: 'How Paper Knights found its second maintainer', excerpt: 'The maker moved on, a player picked it up, and the agent context file did most of the explaining.' },
+      { topic: 'Site news', title: 'Mods are different: how mod listings work', excerpt: 'Mods need their base game, so they get source downloads, install notes and version tags instead of a browser build.' },
+      { topic: 'Guide', title: 'Writing a handoff packet your successor will thank you for', excerpt: 'Five sections, one license, and the one paragraph about your vision that people always skip.' }
+    ];
+    var shown = st.topic === 'All' ? posts : posts.filter(function (p) { return p.topic === st.topic; });
+    return {
+      hasVote: !!st.vote,
+      candidates: candidates.map(function (c) {
+        var on = st.vote === c.id;
+        return Object.assign({}, c, {
+          pressed: on ? 'true' : 'false',
+          cardStyle: cardBase + (on ? 'border: 2px solid #F5B83D;' : 'border: 2px solid #262A31;'),
+          btnStyle: btnBase + (on ? 'background: #F5B83D; color: #15130D; border: 0;' : 'background: transparent; color: #ECEDEE; border: 1px solid #3A3E47;'),
+          btnLabel: on ? 'Your vote' : 'Vote for this',
+          vote: function () { self.setState({ vote: on ? null : c.id }); }
+        });
+      }),
+      topics: topicNames.map(function (t) {
+        var on = st.topic === t;
+        return {
+          label: t,
+          pressed: on ? 'true' : 'false',
+          style: 'font: inherit; font-size: 14px; padding: 8px 16px; border-radius: 999px; cursor: pointer; ' + (on ? 'background: #ECEDEE; color: #0E0F12; border: 1px solid #ECEDEE;' : 'background: transparent; color: #ECEDEE; border: 1px solid #3A3E47;'),
+          pick: function () { self.setState({ topic: t }); }
+        };
+      }),
+      posts: shown.map(function (p) { return Object.assign({}, p, { tagColor: tagColors[p.topic] }); })
+    };
+  }
+}
+</script>
+</body>
+</html>

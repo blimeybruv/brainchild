@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Brainchild — background pattern options</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&amp;family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&amp;family=Martian+Mono:wght@400;600;700&amp;family=Silkscreen&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E0F12}
+.p-cur{background:url(/_blob/80230e6343142656b432436a74571ec5) repeat,#15171B url(/_blob/440cb343d937134112bcd4246b13deed) repeat;background-size:240px 240px,512px 512px}
+.p-a{background:url(/_blob/c2eaa4868f83935fa372b38ba261914e) repeat,#15171B url(/_blob/440cb343d937134112bcd4246b13deed) repeat;background-size:280px 280px,512px 512px}
+.p-b{background:url(/_blob/c98a7bd5296a2312ecd6854971969c96) repeat,#15171B url(/_blob/440cb343d937134112bcd4246b13deed) repeat;background-size:320px 320px,512px 512px}
+.p-c{background:url(/_blob/3b0823303831415976a263e066f10f0d) repeat,#15171B url(/_blob/440cb343d937134112bcd4246b13deed) repeat;background-size:280px 280px,512px 512px}
+</style>
+</helmet>
+<div style="width: 1792px; height: 740px; box-sizing: border-box; padding: 40px; background: #0E0F12; color: #ECEDEE; font-family: 'Atkinson Hyperlegible', system-ui, sans-serif; display: flex; flex-direction: column; gap: 28px">
+<div>
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 32px">Background pattern options</h1>
+<p style="margin: 6px 0 0; color: #A3A7AE; font-size: 16px">Shown at the real page strength over the brushed metal, with a sample card to check readability.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; flex-grow: 1">
+
+<sc-for list="{{opts}}" as="o" hint-placeholder-count="4">
+<section class="{{o.cls}}" style="border: 1px solid #2C3038; border-radius: 12px; padding: 22px; display: flex; flex-direction: column; justify-content: space-between">
+<div>
+<p style="margin: 0; font-family: 'Martian Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: #F5B83D">{{o.tag}}</p>
+<h2 style="margin: 6px 0 4px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px">{{o.name}}</h2>
+<p style="margin: 0; color: #B8BCC3; font-size: 14px">{{o.desc}}</p>
+</div>
+<div style="border: 1px solid #262A31; background: #14161B; border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 10px">
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 19px">Moss Keeper</span>
+<span style="font-family: 'Martian Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 7px; border-radius: 4px; color: #0E0F12; background: #F5B83D">Up for adoption</span>
+</div>
+<span style="color: #A3A7AE; font-size: 14px">Cozy puzzle · Godot 4 · plays in browser</span>
+</div>
+</section>
+</sc-for>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1792,"height":740}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      opts: [
+        { cls: 'p-cur', tag: 'Current', name: 'Wavy diamonds', desc: 'From your pattern sheet, mirrored to repeat.' },
+        { cls: 'p-a', tag: 'Option A · in use', name: 'Chip lattice', desc: 'An AI chip icon inside each wavy diamond.' },
+        { cls: 'p-b', tag: 'Option B', name: 'Network', desc: 'Nodes joined by curved links, like a neural net.' },
+        { cls: 'p-c', tag: 'Option C', name: 'Circuit waves', desc: 'Circuit traces woven into the wavy diamonds.' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

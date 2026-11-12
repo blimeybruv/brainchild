@@ -1,10 +1,32 @@
 // Cloudflare reads this when it builds the site from GitHub.
 // "name" must match the site Worker, or the build fails.
+// One Worker serves everything: api/worker.js answers /api/*, and site/ is served as static files.
 {
   "name": "royal-firefly-b80b",
+  "main": "./api/worker.js",
   "compatibility_date": "2026-10-13",
   "assets": {
     "directory": "./site",
-    "not_found_handling": "404-page"
+    "binding": "ASSETS",
+    "not_found_handling": "404-page",
+    // The Worker script runs first for these paths; all other paths go straight to static files.
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "brainchild-db",
+      "database_id": "6e241536-91de-49b7-b885-35429bd01efb"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "BUILDS",
+      "bucket_name": "brainchild-builds"
+    }
+  ],
+  // Keeps the error logs the separate API Worker used to have.
+  "observability": {
+    "enabled": true
   }
 }

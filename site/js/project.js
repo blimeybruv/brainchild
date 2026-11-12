@@ -28,6 +28,19 @@ window.BC.load(function () {
     hint.textContent = "[ app loads here ]";
   }
 
+  // Hosted builds aren't live yet (HANDOFF.md). Until they are, send people to the repo
+  // instead of leaving a button that does nothing.
+  var play = document.getElementById("p-play");
+  if (item.repo && /^https:\/\/(github\.com|gitlab\.com|codeberg\.org)\//.test(item.repo)) {
+    hint.textContent = "[ hosted build coming soon ]";
+    playLabel.textContent = "Get it on " + item.repo.split("/")[2].replace(/\.(com|org)$/, "").replace(/^./, function (c) { return c.toUpperCase(); });
+    play.addEventListener("click", function () { window.open(item.repo, "_blank", "noopener"); });
+  } else {
+    hint.textContent = "[ hosted build coming soon ]";
+    play.disabled = true;
+    play.title = "Not hosted yet";
+  }
+
   var meta = document.getElementById("p-meta");
   [
     item.kind === "Mod" ? "Mod for " + item.game : item.genre,

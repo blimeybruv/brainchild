@@ -78,7 +78,18 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    - Apache-2.0 grants no name or trademark rights.
 6. **Adopter flow.** The adopter either takes a repo transfer or makes a fork. Verify a fork via the repo's
    `parent` field. Write lineage rows. Show the block the adopter pastes into their CLAUDE.md or AGENTS.md.
-7. **Then, in this order:**
+7. **Hosted browser builds.** The "Play in browser" button currently links to the repo
+   (`site/js/project.js`).
+   - **Upload:** makers upload a static build (e.g. a Vite `dist/`) to R2.
+   - **Origin:** serve every build from a **separate origin**, never brainchild.nexus or a subdomain of
+     it, because a game is arbitrary JavaScript and must not be able to reach the session cookie. Options
+     are a second cheap domain or a `*.workers.dev` Worker; ask the owner which.
+   - **Embedding:** embed it in a sandboxed iframe (`allow-scripts`, plus `allow-same-origin` only on that
+     separate origin), and allow that origin in `frame-src`.
+   - **Limits:** set size caps and scan file types.
+   - **First test:** the owner's Zombie Outbreak Simulator. Its `npm run build` gives a static `dist/`
+     with a Web Worker, and it is fine at the domain root.
+8. **Then, in this order:**
    - Discussion board with comments, badges and GitHub avatars (add `avatars.githubusercontent.com` to
      `img-src` in `site/_headers`).
    - Report button feeding a moderation queue. Record a statement of reasons for each removal (EU DSA

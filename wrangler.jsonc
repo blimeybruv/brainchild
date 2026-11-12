@@ -28,5 +28,22 @@
   // Keeps the error logs the separate API Worker used to have.
   "observability": {
     "enabled": true
+  },
+  // Pull-request previews (built for every branch other than main) use their own test
+  // database and bucket, so nothing tried out in a preview can touch the live data.
+  "previews": {
+    "d1_databases": [
+      {
+        "binding": "DB",
+        "database_name": "brainchild-db-preview",
+        "database_id": "3b6e6ea2-8a4a-469c-9150-4dcbad16ab64"
+      }
+    ],
+    "r2_buckets": [
+      {
+        "binding": "BUILDS",
+        "bucket_name": "brainchild-builds-preview"
+      }
+    ]
   }
 }

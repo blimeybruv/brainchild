@@ -14,6 +14,10 @@ Pushing to the `main` branch on GitHub redeploys the site and the API together, 
 connected under **royal-firefly-b80b → Settings → Builds**). Wait about a minute, then refresh
 https://brainchild.nexus. Cloudflare runs the build on its servers, so nothing needs installing locally.
 
+Every other branch gets a **preview**: Cloudflare builds it and posts a preview link on the pull request.
+Previews run the same code against the test database and bucket (the `previews` block in
+`wrangler.jsonc`), never the live ones.
+
 ## How it fits together
 
 - Pages call `/api/projects` and `/api/projects/<id>` on the same domain. One Worker serves everything:
@@ -33,6 +37,8 @@ https://brainchild.nexus. Cloudflare runs the build on its servers, so nothing n
 | Worker | `royal-firefly-b80b` | Static assets plus `/api/*`, custom domain `brainchild.nexus`. Bindings: `DB` (D1), `BUILDS` (R2), `ASSETS` (the `site/` files) |
 | D1 database | `brainchild-db` · `6e241536-91de-49b7-b885-35429bd01efb` | Tables: users, projects, packets, lineage, proposals, votes, posts. 19 sample projects, 1 sample packet |
 | R2 bucket | `brainchild-builds` (ENAM, private) | Lifecycle rule deletes unfinished uploads after 24 h |
+| Preview D1 database | `brainchild-db-preview` · `3b6e6ea2-8a4a-469c-9150-4dcbad16ab64` | Test copy used only by pull-request previews. Same tables and sample rows as the live database |
+| Preview R2 bucket | `brainchild-builds-preview` (ENAM, private) | Used only by pull-request previews. Same lifecycle rule |
 
 ## API (v1, read-only)
 

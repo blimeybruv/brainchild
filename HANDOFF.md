@@ -28,6 +28,7 @@ The site's tagline is "Hand it off, or take it on." "Adopt" is the deliberate wo
 | API | `api/worker.js`, the main script of the same Worker. It handles `/api/*` first (`run_worker_first`) and passes everything else to the static files. Bindings: `DB` (D1), `BUILDS` (R2), `ASSETS`. It is read-only for now, with a 60s edge cache. |
 | Database | D1 `brainchild-db` (`6e241536-91de-49b7-b885-35429bd01efb`). The schema is in `db/schema.sql`. It holds 19 sample projects plus one real one, `zombie-outbreak-simulator` (owner blimeybruv). |
 | Storage | R2 `brainchild-builds` (private; incomplete uploads are deleted after 24h). |
+| Previews | Every branch other than `main` gets a preview build (`npx wrangler preview`), linked from its pull request. Previews use the test database `brainchild-db-preview` (`3b6e6ea2-8a4a-469c-9150-4dcbad16ab64`) and bucket `brainchild-builds-preview`, set in the `previews` block of `wrangler.jsonc`. Any binding added at the top level needs a matching entry there, and schema changes must be applied to both databases. |
 | Designs | `design/mockups/*.dc.html`, exported from the design canvas on 9 Nov. The live canvas, which may be newer, is at https://claude.ai/artifact/DmMeLYto8YNwpSZcxNr9Mr |
 | Spending | Cloudflare budget alerts are set. Keep everything within the free tiers. |
 
@@ -50,12 +51,9 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
 
 ## Work for this session, in order
 
-1. **Merge the API into the site Worker.** *Code done (12 Nov); cleanup pending.* `royal-firefly-b80b`
-   now has a main script, with `/api/*` handled first (`run_worker_first`) and D1 and R2 bindings in
-   `wrangler.jsonc`, so one push deploys everything.
-   **Still to do, once this has deployed from `main`:** remove the old route `brainchild.nexus/api/*`
-   (it points at the Worker `brainchild-api` and takes priority until removed), check `/api/health` and
-   `/api/projects` still answer, then delete the Worker `brainchild-api`.
+1. **Merge the API into the site Worker.** *Done 12 Nov.* `royal-firefly-b80b` has a main script, with
+   `/api/*` handled first (`run_worker_first`) and D1 and R2 bindings in `wrangler.jsonc`, so one push
+   deploys everything. The old `brainchild-api` route and Worker are deleted.
 2. **GitHub sign-in.** Use a GitHub OAuth App with minimal scope, so no repo write access. Store sessions
    in D1 behind an HttpOnly, Secure, SameSite=Lax cookie, and use the state parameter for CSRF.
    Take the user's handle and avatar from GitHub. Never show an email address.

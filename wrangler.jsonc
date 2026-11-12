@@ -1,0 +1,10 @@
+// Cloudflare reads this when it builds the site from GitHub.
+// "name" must match the site Worker, or the build fails.
+{
+  "name": "royal-firefly-b80b",
+  "compatibility_date": "2026-10-13",
+  "assets": {
+    "directory": "./site",
+    "not_found_handling": "404-page"
+  }
+}

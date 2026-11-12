@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Browse games, mods and apps · Brainchild</title>
+<meta name="description" content="Browse free AI-assisted games, mods and apps by type, genre and status.">
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <nav class="wrap site-nav" aria-label="Main">
+    <a class="brand" href="index.html">
+      <svg aria-hidden="true" width="30" height="20" viewBox="0 0 30 20" fill="none" stroke="#F5B83D" stroke-width="3" stroke-linecap="round"><path d="M2 10c3-8 6-8 8.7 0s5.6 8 8.6 0 5.7-8 8.7 0"/></svg>
+      <span class="brand-name">Brainchild</span>
+    </a>
+    <div class="nav-links">
+      <a href="browse.html" aria-current="page">Browse</a>
+      <a href="blog.html">Blog</a>
+      <a href="index.html#handoff">How handoff works</a>
+    </div>
+    <div class="nav-actions">
+      <a class="btn btn-plain" href="#">Sign in</a>
+      <a class="btn btn-primary" href="#">List a project</a>
+    </div>
+  </nav>
+</header>
+
+<main id="main" class="wrap">
+  <div class="page-head">
+    <div>
+      <h1>Browse</h1>
+      <p>Every free game, mod and app on Brainchild. Sample listings shown.</p>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end">
+      <div class="field">
+        <label for="q">Search</label>
+        <input id="q" class="input" type="search" placeholder="Title, engine, game…" style="width:260px;max-width:100%">
+      </div>
+      <div class="field">
+        <label for="sort">Sort by</label>
+        <select id="sort" class="select">
+          <option value="recent">Recently handed off</option>
+          <option value="az">Title A–Z</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <aside class="sidebar" aria-label="Filters">
+      <fieldset class="panel filter">
+        <legend>Type</legend>
+        <div class="check-list" id="f-type"></div>
+      </fieldset>
+      <fieldset class="panel filter">
+        <legend>Genre / category</legend>
+        <div class="check-list" id="f-genre"></div>
+      </fieldset>
+      <fieldset class="panel filter">
+        <legend>Status</legend>
+        <div class="check-list" id="f-status"></div>
+      </fieldset>
+      <section class="panel filter" aria-labelledby="modsby-h">
+        <h2 id="modsby-h">Mods by game</h2>
+        <p class="muted" style="margin:6px 0 0;font-size:13px">A game is added here when someone submits a mod for it.</p>
+        <div class="game-list" id="f-game"></div>
+        <a href="#" style="display:inline-block;margin-top:12px;font-size:14px">Submit a mod</a>
+      </section>
+    </aside>
+
+    <section class="results" aria-label="Results">
+      <div class="results-bar">
+        <span id="result-count" aria-live="polite" style="font-size:15px;color:var(--text-2);margin-right:6px"></span>
+        <span id="chips" style="display:contents"></span>
+      </div>
+      <div class="card-grid compact" id="results"></div>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span class="brand-name">Brainchild</span>
+    <span class="grow">A free home for projects that deserve another go.</span>
+    <a href="#">About</a>
+    <a href="#">Licensing guide</a>
+    <a href="#">Report a project</a>
+    <a href="#">Source</a>
+  </div>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+<script src="js/browse.js"></script>
+</body>
+</html>

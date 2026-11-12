@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blog and community projects · Brainchild</title>
+<meta name="description" content="Handoff stories, site news, and the community's monthly project.">
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <nav class="wrap site-nav" aria-label="Main">
+    <a class="brand" href="index.html">
+      <svg aria-hidden="true" width="30" height="20" viewBox="0 0 30 20" fill="none" stroke="#F5B83D" stroke-width="3" stroke-linecap="round"><path d="M2 10c3-8 6-8 8.7 0s5.6 8 8.6 0 5.7-8 8.7 0"/></svg>
+      <span class="brand-name">Brainchild</span>
+    </a>
+    <div class="nav-links">
+      <a href="browse.html">Browse</a>
+      <a href="blog.html" aria-current="page">Blog</a>
+      <a href="index.html#handoff">How handoff works</a>
+    </div>
+    <div class="nav-actions">
+      <a class="btn btn-plain" href="#">Sign in</a>
+      <a class="btn btn-primary" href="#">List a project</a>
+    </div>
+  </nav>
+</header>
+
+<main id="main" class="wrap" style="padding-bottom:88px">
+  <div class="page-head">
+    <div>
+      <h1>Blog</h1>
+      <p>Handoff stories, site news, and the community's monthly project. Sample posts shown.</p>
+    </div>
+  </div>
+
+  <section class="panel vote" aria-labelledby="vote-h">
+    <div class="vote-head">
+      <div>
+        <p class="eyebrow">Community project · voting closes [DATE]</p>
+        <h2 id="vote-h">Pick next month's community project</h2>
+        <p>Members proposed these. The winner gets a shared goal list, a pinned thread, and everyone's help for a month.</p>
+      </div>
+      <p class="vote-status" id="vote-status" role="status"></p>
+    </div>
+    <div class="card-grid compact" id="candidates"></div>
+  </section>
+
+  <div class="layout" style="gap:40px;padding-bottom:0">
+    <section class="results" aria-label="Posts">
+      <div class="pills" role="group" aria-label="Filter posts by topic" id="topics" style="margin-bottom:24px"></div>
+      <div class="posts" id="posts"></div>
+    </section>
+
+    <aside class="side-col">
+      <form class="panel side-form" id="propose">
+        <h2>Propose a community project</h2>
+        <p>Any game, mod or app that's up for adoption can be proposed for next month's vote.</p>
+        <div class="field">
+          <label for="proj">Project</label>
+          <select id="proj" class="select" required></select>
+        </div>
+        <div class="field">
+          <label for="goal">What should the community do with it?</label>
+          <textarea id="goal" class="textarea" rows="4" required placeholder="e.g. finish the last three levels and fix the save bug"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Submit proposal</button>
+        <p class="form-note" id="propose-note" role="status"></p>
+      </form>
+
+      <div class="panel side-panel">
+        <h2>How community projects work</h2>
+        <ol>
+          <li>Anyone proposes a project with a goal for the month.</li>
+          <li>Members vote; the top proposal wins.</li>
+          <li>The original maker is invited to weigh in, if they're reachable.</li>
+          <li>Everyone contributes; the results go up on the blog.</li>
+        </ol>
+      </div>
+
+      <div class="panel side-panel">
+        <h2>Write for the blog</h2>
+        <p>Handed off a project, or picked one up? Tell the story.</p>
+        <a href="#" style="font-size:15px">Pitch a post</a>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span class="brand-name">Brainchild</span>
+    <span class="grow">A free home for projects that deserve another go.</span>
+    <a href="#">About</a>
+    <a href="#">Licensing guide</a>
+    <a href="#">Report a project</a>
+    <a href="#">Source</a>
+  </div>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+<script src="js/blog.js"></script>
+</body>
+</html>

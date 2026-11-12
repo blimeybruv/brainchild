@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Project · Brainchild</title>
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <nav class="wrap site-nav" aria-label="Main">
+    <a class="brand" href="index.html">
+      <svg aria-hidden="true" width="30" height="20" viewBox="0 0 30 20" fill="none" stroke="#F5B83D" stroke-width="3" stroke-linecap="round"><path d="M2 10c3-8 6-8 8.7 0s5.6 8 8.6 0 5.7-8 8.7 0"/></svg>
+      <span class="brand-name">Brainchild</span>
+    </a>
+    <span class="crumbs"><a href="browse.html">Browse</a> / <span id="crumb-title">Project</span></span>
+    <a class="btn btn-plain" href="#">Sign in</a>
+  </nav>
+</header>
+
+<main id="main" class="wrap" style="padding-bottom:88px">
+  <div class="project-head">
+    <div>
+      <div class="byline">
+        <span class="badge" id="p-badge"></span>
+        <span>Handed off [DATE] by @[original-maker]</span>
+      </div>
+      <h1 id="p-title"></h1>
+      <p class="sub" id="p-sub"></p>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:12px">
+      <a class="btn btn-ghost" href="#">Just fork it</a>
+      <a class="btn btn-primary" href="#" id="p-cta"></a>
+    </div>
+  </div>
+
+  <div class="layout" style="padding-bottom:0">
+    <div class="main-col">
+      <div class="panel player">
+        <div class="player-stage" id="p-stage">
+          <span class="hint" id="p-hint">[ browser build loads here ]</span>
+          <button type="button" class="btn btn-light btn-lg" id="p-play">
+            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 2.5v11l9-5.5z"/></svg>
+            <span id="p-play-label">Play in browser</span>
+          </button>
+        </div>
+        <div class="player-meta" id="p-meta"></div>
+      </div>
+
+      <section aria-labelledby="packet-h">
+        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:16px">
+          <h2 id="packet-h" style="margin:0;font-size:28px">Handoff packet</h2>
+          <a href="#" style="font-size:15px">Download packet (.zip)</a>
+        </div>
+        <div class="tabs" role="tablist" aria-label="Handoff packet sections" id="tabs"></div>
+        <div class="panel tabpanel" role="tabpanel" id="tabpanel" tabindex="0"></div>
+      </section>
+    </div>
+
+    <aside class="side-col">
+      <div class="panel">
+        <h2>Before you adopt</h2>
+        <ul class="checks" style="font-size:15px">
+          <li>License: code and assets</li>
+          <li>Playable build verified</li>
+          <li>Handoff packet complete</li>
+          <li>Asset provenance tagged</li>
+          <li class="pending">Original maker reachable for questions</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h2>Lineage</h2>
+        <ol class="lineage">
+          <li>
+            <div class="rail"><span class="node" aria-hidden="true"></span><span class="line" aria-hidden="true"></span></div>
+            <div><p class="who">@[original-maker]</p><p class="when">Created it · [DATE] to [DATE]</p></div>
+          </li>
+          <li>
+            <div class="rail"><span class="node next" aria-hidden="true"></span></div>
+            <div><p class="who next">You?</p><p class="when">Next maintainer</p></div>
+          </li>
+        </ol>
+      </div>
+      <div class="panel">
+        <h2>Details</h2>
+        <dl class="details" id="p-details"></dl>
+      </div>
+      <div class="panel">
+        <h2 style="margin-bottom:6px">Forks</h2>
+        <p class="muted" style="margin:0;font-size:15px">No forks yet. Make the first continuation.</p>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span class="brand-name">Brainchild</span>
+    <span class="grow">A free home for projects that deserve another go.</span>
+    <a href="#">About</a>
+    <a href="#">Licensing guide</a>
+    <a href="#">Report a project</a>
+    <a href="#">Source</a>
+  </div>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+<script src="js/project.js"></script>
+</body>
+</html>

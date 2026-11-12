@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brainchild: hand it off, or take it on</title>
+<meta name="description" content="Free AI-assisted games, mods and vibe-coded apps. When their makers move on, they leave a handoff packet so anyone can pick the project back up.">
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <nav class="wrap site-nav" aria-label="Main">
+    <a class="brand" href="index.html">
+      <svg aria-hidden="true" width="30" height="20" viewBox="0 0 30 20" fill="none" stroke="#F5B83D" stroke-width="3" stroke-linecap="round"><path d="M2 10c3-8 6-8 8.7 0s5.6 8 8.6 0 5.7-8 8.7 0"/></svg>
+      <span class="brand-name">Brainchild</span>
+    </a>
+    <div class="nav-links">
+      <a href="browse.html">Browse</a>
+      <a href="#adopt">Up for adoption</a>
+      <a href="browse.html?type=Mod">Mods</a>
+      <a href="blog.html">Blog</a>
+      <a href="#handoff">How handoff works</a>
+    </div>
+    <div class="nav-actions">
+      <a class="btn btn-plain" href="#">Sign in</a>
+      <a class="btn btn-primary" href="#">List a project</a>
+    </div>
+  </nav>
+</header>
+
+<main id="main">
+  <section class="wrap hero">
+    <div class="hero-copy">
+      <p class="eyebrow">Free games, mods &amp; apps · Open source · AI-assisted</p>
+      <h1>Hand it off,<br>or take it on.</h1>
+      <p class="hero-lede">Free AI-assisted games, mods and vibe-coded apps. When their makers move on, they leave a handoff packet behind so anyone can pick the project back up.</p>
+      <div class="hero-ctas">
+        <a class="btn btn-primary btn-lg" href="#adopt">Browse games up for adoption</a>
+        <a class="btn btn-ghost btn-lg" href="#handoff">How handing off works</a>
+      </div>
+    </div>
+
+    <aside class="continue-card" aria-label="Featured project">
+      <div class="continue-top" aria-hidden="true"><span>CONTINUE?</span><span id="countdown">9</span></div>
+      <div class="shot" aria-hidden="true"><span>[ game screenshot ]</span></div>
+      <div>
+        <p style="margin:0;font-family:var(--font-head);font-weight:700;font-size:22px">Moss Keeper</p>
+        <p class="muted" style="margin:4px 0 0;font-size:14px">Cozy puzzle · Godot 4 · last commit [DATE]</p>
+      </div>
+      <ul class="checks">
+        <li>Playable build, 12 levels</li>
+        <li>MIT code · CC BY 4.0 assets</li>
+        <li>Handoff packet + agent context file</li>
+      </ul>
+      <div class="two-col">
+        <a class="btn btn-primary" href="project.html?id=moss-keeper">YES · adopt it</a>
+        <a class="btn btn-ghost" href="project.html?id=moss-keeper">Just play</a>
+      </div>
+    </aside>
+  </section>
+
+  <section class="status-strip" aria-label="Project statuses">
+    <div class="wrap">
+      <span class="label">Every project has a status</span>
+      <span class="status-item"><span class="dot" data-status="active"></span>Active</span>
+      <span class="status-item"><span class="dot" data-status="help"></span>Open for collaboration</span>
+      <span class="status-item"><span class="dot" data-status="test"></span>Needs testers</span>
+      <span class="status-item"><span class="dot" data-status="adopt"></span>Up for adoption</span>
+      <span class="status-item"><span class="dot" data-status="archived"></span>Archived (still playable)</span>
+    </div>
+  </section>
+
+  <section id="adopt" class="wrap section" aria-labelledby="adopt-h">
+    <div class="section-head">
+      <div>
+        <h2 id="adopt-h">Waiting for a second wind</h2>
+        <p>Playable, properly licensed, and handed off with notes. Sample listings shown. <a href="browse.html">Browse everything</a></p>
+      </div>
+      <div class="pills" role="group" aria-label="Filter featured projects" id="home-filters">
+        <button type="button" class="pill" data-filter="all" aria-pressed="true">All</button>
+        <button type="button" class="pill" data-filter="Game" aria-pressed="false">Games</button>
+        <button type="button" class="pill" data-filter="Mod" aria-pressed="false">Mods</button>
+        <button type="button" class="pill" data-filter="App" aria-pressed="false">Apps</button>
+        <button type="button" class="pill" data-filter="browser" aria-pressed="false">Plays in browser</button>
+      </div>
+    </div>
+    <div class="card-grid" id="featured" aria-live="polite"></div>
+  </section>
+
+  <section id="handoff" class="wrap packet" aria-labelledby="handoff-h">
+    <div class="packet-intro">
+      <p class="eyebrow">The handoff packet</p>
+      <h2 id="handoff-h">Pick it up in an afternoon, not a week.</h2>
+      <p>AI-assisted projects already carry their own record of intent. Brainchild asks you to package it, so the next person and their AI tools can start where you stopped.</p>
+    </div>
+    <ol class="packet-list">
+      <li class="panel"><h3>What works</h3><p>The playable parts, and how to build and run them.</p></li>
+      <li class="panel"><h3>What's broken</h3><p>Known bugs, dead ends, and fixes you already tried.</p></li>
+      <li class="panel"><h3>What I was going for</h3><p>The vision: the feel, the endgame, what you'd build next.</p></li>
+      <li class="panel"><h3>Agent context</h3><p>Your CLAUDE.md, AGENTS.md or prompt notes describing the architecture.</p></li>
+      <li class="panel"><h3>Asset provenance</h3><p>What was generated, with which tool, and what was made by hand.</p></li>
+      <li class="panel"><h3>A license</h3><p>Required. No license means nobody can legally continue it.</p></li>
+    </ol>
+  </section>
+
+  <section class="wrap duo">
+    <div class="rules">
+      <h2>House rules</h2>
+      <ul>
+        <li>Free to play and use, always. No paywalls, no loot boxes.</li>
+        <li>Games and apps must run in the browser, built or checked on our side. No mystery downloads.</li>
+        <li>Mods ship as source with install notes and the base game version, and are scanned before listing.</li>
+        <li>Open license for code and assets before the "up for adoption" label.</li>
+        <li>Credit carries forward. Every maintainer stays on the lineage.</li>
+      </ul>
+    </div>
+    <div class="community">
+      <p class="eyebrow">From the blog · community project</p>
+      <h2>Nobody starts from scratch.</h2>
+      <p>Members propose a project that's up for adoption, the community votes, and everyone pushes the winner forward together.</p>
+      <a class="btn" href="blog.html">See this month's proposals</a>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span class="brand-name">Brainchild</span>
+    <span class="grow">A free home for projects that deserve another go.</span>
+    <a href="#">About</a>
+    <a href="#">Licensing guide</a>
+    <a href="#">Report a project</a>
+    <a href="#">Source</a>
+  </div>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/common.js"></script>
+<script src="js/home.js"></script>
+</body>
+</html>

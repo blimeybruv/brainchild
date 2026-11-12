@@ -1,0 +1,53 @@
+/* Sample listings. Replace with data from your backend later.
+   kind: "Game" | "Mod" | "App"; status: adopt | help | test | active | archived */
+window.BC_DATA = {
+  statuses: {
+    adopt:    { label: "Up for adoption",      cta: "Adopt" },
+    help:     { label: "Open for collaboration", cta: "Join in" },
+    test:     { label: "Needs testers",        cta: "Test it" },
+    active:   { label: "Active",               cta: "Follow" },
+    archived: { label: "Archived",             cta: "Revive" }
+  },
+  statusOrder: ["adopt", "help", "test", "active", "archived"],
+  genres: ["Puzzle", "Platformer", "Racing", "Roguelite", "Narrative", "Sandbox", "Simulation", "Strategy", "Tactics", "Productivity", "Utility", "Creative tools"],
+  items: [
+    { id: "moss-keeper", title: "Moss Keeper", kind: "Game", genre: "Puzzle", status: "adopt", tone: "#3E5B45", tech: "Godot 4", browser: true, license: "MIT + CC BY", featured: true,
+      note: "12 handmade levels and a garden-growing mechanic. The maker started a new job." },
+    { id: "signal-drift", title: "Signal Drift", kind: "Game", genre: "Roguelite", status: "test", tone: "#3B4A6B", tech: "Phaser", browser: true, license: "MIT", featured: true,
+      note: "Core loop is fun; the economy needs balancing. Play a few runs and report what feels off." },
+    { id: "lantern-mod-pack", title: "Lantern Mod Pack", kind: "Mod", game: "Luanti", genre: "Sandbox", status: "help", tone: "#6B5530", license: "GPL-3.0", featured: true,
+      note: "Dynamic lighting mod that broke on the base game's last update." },
+    { id: "paper-knights", title: "Paper Knights", kind: "Game", genre: "Tactics", status: "active", tone: "#5E3D4F", tech: "Bevy", browser: true, license: "Apache-2.0", featured: true,
+      note: "A second maintainer took it over as a community project. Looking for level designers." },
+    { id: "tidepool", title: "Tidepool", kind: "Game", genre: "Simulation", status: "adopt", tone: "#2F5A5C", tech: "Vanilla JS", browser: true, license: "MIT + CC0", featured: true,
+      note: "Runs beautifully, has no goal yet. Vision doc sketches three directions." },
+    { id: "pocket-ledger", title: "Pocket Ledger", kind: "App", genre: "Productivity", status: "archived", tone: "#4A4A52", tech: "Svelte", browser: true, license: "MIT", featured: true,
+      note: "A vibe-coded budget tracker that does one job well. Archived, but forkable if you want bank imports." },
+    { id: "night-market", title: "Night Market", kind: "Game", genre: "Narrative", status: "archived", tone: "#4A4A52", tech: "Ink", browser: true, license: "CC BY-SA",
+      note: "Finished short story game. Archived but forkable for a sequel." },
+    { id: "gutter-run", title: "Gutter Run", kind: "Game", genre: "Platformer", status: "help", tone: "#6B4A3A", tech: "LÖVE", browser: true, license: "zlib",
+      note: "Tight movement, three worlds done, two to go." },
+    { id: "coldharbor", title: "Coldharbor", kind: "Game", genre: "Strategy", status: "help", tone: "#3F4E58", tech: "Godot 4", browser: false, license: "GPL-3.0",
+      note: "Port-city strategy game. Needs a web export before it can be listed as playable." },
+    { id: "spokewheel", title: "Spokewheel", kind: "Game", genre: "Racing", status: "test", tone: "#5A5631", tech: "Three.js", browser: true, license: "MIT",
+      note: "Bike racing with physics that might be too floaty. Tell us." },
+    { id: "deep-ore", title: "Deep Ore", kind: "Mod", game: "Luanti", genre: "Sandbox", status: "adopt", tone: "#4E4038", license: "MIT",
+      note: "Adds deep-cave ores and a smelting chain." },
+    { id: "weather-systems", title: "Weather Systems", kind: "Mod", game: "Luanti", genre: "Simulation", status: "test", tone: "#34506A", license: "LGPL-2.1",
+      note: "Rain, snow and seasons. Needs testing on large servers." },
+    { id: "freight-signals", title: "Freight Signals+", kind: "Mod", game: "OpenTTD", genre: "Simulation", status: "adopt", tone: "#4B5A3A", license: "GPL-2.0",
+      note: "Smarter freight signalling. Needs updating for the current release." },
+    { id: "tram-pack", title: "Tram Pack Revival", kind: "Mod", game: "OpenTTD", genre: "Simulation", status: "archived", tone: "#4A4A52", license: "GPL-2.0",
+      note: "Classic tram set, frozen at its last working version." },
+    { id: "sky-pirates", title: "Sky Pirates Campaign", kind: "Mod", game: "Battle for Wesnoth", genre: "Strategy", status: "adopt", tone: "#56404F", license: "GPL-2.0",
+      note: "Eight-scenario campaign; the last two are drafts." },
+    { id: "ironclad-era", title: "Ironclad Era", kind: "Mod", game: "0 A.D.", genre: "Strategy", status: "help", tone: "#5B4B3B", license: "GPL-2.0",
+      note: "Steam-age naval units. Art is done, balance isn't." },
+    { id: "night-tracks", title: "Night Tracks", kind: "Mod", game: "SuperTuxKart", genre: "Racing", status: "adopt", tone: "#2E3F5E", license: "CC BY-SA",
+      note: "Four neon night tracks." },
+    { id: "tab-tamer", title: "Tab Tamer", kind: "App", genre: "Utility", status: "adopt", tone: "#3D5A4F", tech: "Browser extension", browser: false, license: "MIT",
+      note: "Groups and sleeps tabs. Works in Chrome and Firefox." },
+    { id: "loop-sketch", title: "Loop Sketch", kind: "App", genre: "Creative tools", status: "help", tone: "#5A3F5E", tech: "Web Audio", browser: true, license: "GPL-3.0",
+      note: "A music sketchpad for quick loops. Needs a better export." }
+  ]
+};

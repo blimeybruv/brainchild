@@ -3,21 +3,22 @@
 | Folder | What it is | How it's deployed |
 |---|---|---|
 | `site/` | The website: plain HTML, CSS and JavaScript, no build step | Built from GitHub by the Worker `royal-firefly-b80b` (see `wrangler.jsonc`) |
-| `api/worker.js` | Read-only backend (Worker `brainchild-api`) | Already deployed by Claude on the route `brainchild.nexus/api/*` |
+| `api/worker.js` | Read-only backend: the same Worker's script, answering `/api/*` | Deployed together with the site by the same push |
 | `db/schema.sql` | Database structure for D1 `brainchild-db` | Already applied |
 
-Only the **`site`** folder is served to visitors. The other folders are kept here as records; they contain no secrets.
+Only the **`site`** folder is served to visitors as files. `db/` is kept here as a record. Nothing in the repo is secret.
 
 ## Updating the website
 
-Pushing to the `main` branch on GitHub redeploys the site automatically (Cloudflare Workers Builds,
+Pushing to the `main` branch on GitHub redeploys the site and the API together, automatically (Cloudflare Workers Builds,
 connected under **royal-firefly-b80b → Settings → Builds**). Wait about a minute, then refresh
 https://brainchild.nexus. Cloudflare runs the build on its servers, so nothing needs installing locally.
 
 ## How it fits together
 
-- Pages call `/api/projects` and `/api/projects/<id>` on the same domain. The `brainchild-api` Worker answers
-  those from the D1 database; Worker routes take priority over the site Worker on that path.
+- Pages call `/api/projects` and `/api/projects/<id>` on the same domain. One Worker serves everything:
+  requests to `/api/*` run `api/worker.js`, which answers from the D1 database; every other path is a
+  static file from `site/` (`run_worker_first` in `wrangler.jsonc`).
 - Responses are cached at Cloudflare's edge for 60 seconds to save database reads.
 - If the API can't be reached (or you open the files locally), pages fall back to the sample list in
   `site/js/data.js`, so the site never shows up empty.
@@ -29,8 +30,7 @@ https://brainchild.nexus. Cloudflare runs the build on its servers, so nothing n
 
 | Resource | Name / ID | Notes |
 |---|---|---|
-| Site Worker | `royal-firefly-b80b` | Static assets, custom domain `brainchild.nexus` |
-| API Worker | `brainchild-api` | Route `brainchild.nexus/api/*`, binding `DB`, workers.dev disabled |
+| Worker | `royal-firefly-b80b` | Static assets plus `/api/*`, custom domain `brainchild.nexus`. Bindings: `DB` (D1), `BUILDS` (R2), `ASSETS` (the `site/` files) |
 | D1 database | `brainchild-db` · `6e241536-91de-49b7-b885-35429bd01efb` | Tables: users, projects, packets, lineage, proposals, votes, posts. 19 sample projects, 1 sample packet |
 | R2 bucket | `brainchild-builds` (ENAM, private) | Lifecycle rule deletes unfinished uploads after 24 h |
 

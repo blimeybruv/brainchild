@@ -25,7 +25,7 @@ The site's tagline is "Hand it off, or take it on." "Adopt" is the deliberate wo
 | Thing | Where |
 |---|---|
 | Site | This repo. `site/` is served by the Worker `royal-firefly-b80b` on brainchild.nexus. Pushing to `main` redeploys it via Workers Builds (`wrangler.jsonc`). |
-| API | `api/worker.js`, deployed separately as the Worker `brainchild-api` on the route `brainchild.nexus/api/*`. It is read-only for now, with a 60s edge cache. |
+| API | `api/worker.js`, the main script of the same Worker. It handles `/api/*` first (`run_worker_first`) and passes everything else to the static files. Bindings: `DB` (D1), `BUILDS` (R2), `ASSETS`. It is read-only for now, with a 60s edge cache. |
 | Database | D1 `brainchild-db` (`6e241536-91de-49b7-b885-35429bd01efb`). The schema is in `db/schema.sql`. It holds 19 sample projects plus one real one, `zombie-outbreak-simulator` (owner blimeybruv). |
 | Storage | R2 `brainchild-builds` (private; incomplete uploads are deleted after 24h). |
 | Designs | `design/mockups/*.dc.html`, exported from the design canvas on 9 Nov. The live canvas, which may be newer, is at https://claude.ai/artifact/DmMeLYto8YNwpSZcxNr9Mr |
@@ -50,9 +50,12 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
 
 ## Work for this session, in order
 
-1. **Merge the API into the site Worker.** Give `royal-firefly-b80b` a main script, with `/api/*` handled
-   first (`run_worker_first`) and D1 and R2 bindings in `wrangler.jsonc`, so one push deploys everything.
-   Then remove the `brainchild-api` route and Worker.
+1. **Merge the API into the site Worker.** *Code done (12 Nov); cleanup pending.* `royal-firefly-b80b`
+   now has a main script, with `/api/*` handled first (`run_worker_first`) and D1 and R2 bindings in
+   `wrangler.jsonc`, so one push deploys everything.
+   **Still to do, once this has deployed from `main`:** remove the old route `brainchild.nexus/api/*`
+   (it points at the Worker `brainchild-api` and takes priority until removed), check `/api/health` and
+   `/api/projects` still answer, then delete the Worker `brainchild-api`.
 2. **GitHub sign-in.** Use a GitHub OAuth App with minimal scope, so no repo write access. Store sessions
    in D1 behind an HttpOnly, Secure, SameSite=Lax cookie, and use the state parameter for CSRF.
    Take the user's handle and avatar from GitHub. Never show an email address.

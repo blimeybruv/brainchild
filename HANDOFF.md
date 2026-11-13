@@ -26,10 +26,11 @@ The site's tagline is "Hand it off, or take it on." "Adopt" is the deliberate wo
 |---|---|
 | Site | This repo. `site/` is served by the Worker `royal-firefly-b80b` on brainchild.nexus. Pushing to `main` redeploys it via Workers Builds (`wrangler.jsonc`). |
 | API | `api/worker.js`, the main script of the same Worker. It handles `/api/*` first (`run_worker_first`) and passes everything else to the static files. Bindings: `DB` (D1), `BUILDS` (R2), `ASSETS`. It is read-only for now, with a 60s edge cache. |
-| Database | D1 `brainchild-db` (`6e241536-91de-49b7-b885-35429bd01efb`). The schema is in `db/schema.sql`. It holds 19 sample projects plus one real one, `zombie-outbreak-simulator` (owner blimeybruv). |
+| Database | D1 `brainchild-db` (`6e241536-91de-49b7-b885-35429bd01efb`). The schema is in `db/schema.sql`; changes are in `db/migrations/` and must be applied to both databases. It holds 19 sample projects plus one real one, `zombie-outbreak-simulator` (owner blimeybruv). |
 | Storage | R2 `brainchild-builds` (private; incomplete uploads are deleted after 24h). |
 | Previews | Every branch other than `main` gets a preview build (`npx wrangler preview`), linked from its pull request. Previews use the test database `brainchild-db-preview` (`3b6e6ea2-8a4a-469c-9150-4dcbad16ab64`) and bucket `brainchild-builds-preview`, set in the `previews` block of `wrangler.jsonc`. Any binding added at the top level needs a matching entry there, and schema changes must be applied to both databases. |
 | Designs | `design/mockups/*.dc.html`, exported from the design canvas on 9 Nov. The live canvas, which may be newer, is at https://claude.ai/artifact/DmMeLYto8YNwpSZcxNr9Mr |
+| Secrets | `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` are set on the Worker (dashboard, type Secret). The OAuth App's callback is `https://brainchild.nexus/api/auth/callback`, with wildcard matching off and expiring tokens on. Token encryption is keyed from the client secret, so replacing the secret makes everyone link GitHub again. |
 | Spending | Cloudflare budget alerts are set. Keep everything within the free tiers. |
 
 **Owner constraint:** the owner does not use Linux or Wrangler. Every deploy must happen by pushing to
@@ -54,12 +55,24 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
 1. **Merge the API into the site Worker.** *Done 12 Nov.* `royal-firefly-b80b` has a main script, with
    `/api/*` handled first (`run_worker_first`) and D1 and R2 bindings in `wrangler.jsonc`, so one push
    deploys everything. The old `brainchild-api` route and Worker are deleted.
-2. **GitHub sign-in.** Use a GitHub OAuth App with minimal scope, so no repo write access. Store sessions
-   in D1 behind an HttpOnly, Secure, SameSite=Lax cookie, and use the state parameter for CSRF.
-   Take the user's handle and avatar from GitHub. Never show an email address.
-3. **Ownership check.** A user may list a repo, or change its listing, only if
-   `GET /repos/{owner}/{repo}` with their token returns `permissions.admin = true`. Run the check again at
-   handoff time.
+2. **GitHub sign-in.** *Done 13 Nov; waiting on the owner's first real sign-in (see "Waiting on the
+   owner").* GitHub OAuth App with no scopes (read-only public information, no repo access). Code in
+   `api/auth.js`:
+   - `/api/auth/login` → GitHub → `/api/auth/callback`, with the state parameter and PKCE, both held in a
+     10-minute `__Host-bc_oauth` cookie.
+   - Sessions live in D1 (`sessions` table) behind the `__Host-bc_session` cookie (HttpOnly, Secure,
+     SameSite=Lax, 30 days). The database stores only a hash of the cookie value.
+   - GitHub tokens are stored encrypted and never reach the browser. They last 8 hours and are renewed
+     with the refresh token (`githubToken()` in `api/github.js`).
+   - `POST /api/auth/logout` needs a same-origin `Origin` header and revokes the token at GitHub.
+   - `/api/me` returns only the handle and avatar. No email is requested or stored.
+   - Sign-in works only on `https://brainchild.nexus`; previews answer "unavailable".
+   - Every later route that changes data must check `isSameOrigin(request)` (in `api/http.js`).
+3. **Ownership check.** *Done 13 Nov; same wait as step 2.* `requireRepoAdmin(env, session, owner, repo)`
+   in `api/github.js` asks GitHub `GET /repos/{owner}/{repo}` with the user's token and passes only when
+   `permissions.admin` is exactly `true` and the repo is public. **Call it inside every route that
+   creates or changes a listing, and again inside the handoff route**; never reuse an earlier answer.
+   `GET /api/repos/{owner}/{repo}/access` exposes the same check to the listing form.
 4. **Listing flow (Handoff mockup, maker side).**
    - First ask whether the maker is staying with the project or leaving it.
    - Repo picker, then the admin check.
@@ -98,6 +111,20 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    - Screenshot uploads to R2: images only, with a size cap.
    - Blog votes (one per user per month, already in the schema).
    - Relay rounds last.
+
+## Waiting on the owner
+
+1. **Try sign-in once** (needed to confirm steps 2 and 3 against the real GitHub):
+   - Open https://brainchild.nexus, click **Sign in**, and approve Brainchild on GitHub. You should land
+     back on the site with your avatar, `@blimeybruv` and **Sign out** in the header.
+   - Then open https://brainchild.nexus/api/repos/blimeybruv/brainchild/access. It should show
+     `"admin":true` and `"can_list":true`.
+   - If sign-in shows "Sign-in didn't work", or the second page shows `"admin":false`, tell the agent.
+     The second case would mean GitHub hides admin rights from a token with no scopes, and the options
+     for that need your decision.
+2. **Optional tidy-up:** in Cloudflare, **Workers & Pages → royal-firefly-b80b → Settings → Build →
+   Variables and secrets**, delete `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. Those two are unused;
+   the working copies are under **Variables and Secrets** higher up the same page. Leave those alone.
 
 ## Rules that must hold
 

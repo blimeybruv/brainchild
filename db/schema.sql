@@ -1,12 +1,33 @@
--- Brainchild D1 schema (v1)
+-- Brainchild D1 schema (v2: adds GitHub sign-in). The full structure, for a new database.
+-- Changes to an existing database are in db/migrations/, applied in order to both
+-- brainchild-db and brainchild-db-preview.
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS users (
   id          TEXT PRIMARY KEY,                 -- random id
   handle      TEXT NOT NULL UNIQUE,             -- shown as @handle
-  email       TEXT UNIQUE,                      -- private, never shown
-  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+  email       TEXT UNIQUE,                      -- unused: sign-in never asks GitHub for an email
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  github_id   INTEGER,                          -- GitHub's permanent numeric id (handles can change)
+  avatar_url  TEXT
 );
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_github_id ON users (github_id);
+
+-- Sign-in sessions. The cookie holds a random id; only its SHA-256 hash is stored here.
+-- GitHub tokens are stored encrypted (see api/auth.js). Times are Unix seconds.
+CREATE TABLE IF NOT EXISTS sessions (
+  id_hash               TEXT PRIMARY KEY,
+  user_id               TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at            INTEGER NOT NULL,
+  expires_at            INTEGER NOT NULL,
+  gh_access             TEXT,
+  gh_access_expires_at  INTEGER,                -- NULL = the token does not expire
+  gh_refresh            TEXT,
+  gh_refresh_expires_at INTEGER,
+  gh_refresh_lock       INTEGER                 -- set while one request is refreshing the tokens
+);
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions (user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions (expires_at);
 
 CREATE TABLE IF NOT EXISTS projects (
   id            TEXT PRIMARY KEY,               -- url slug, e.g. moss-keeper

@@ -115,7 +115,8 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    - Left out from the mockup because nothing in this queue covers them: notifying the maker of a transfer
      request, verifying Codeberg or GitLab repos with a file, opening a pull request with the rules block
      (that would need repo write access), and storing a source archive.
-7. **Hosted browser builds.** *Done 13 Nov on `brainwave.nexus`; waiting on the owner's first upload.*
+7. **Hosted browser builds.** *Done 13 Nov on `brainwave.nexus`. The owner uploaded Zombie Outbreak
+   Simulator the same evening and it plays on its project page.*
    - **Upload** (`api/builds.js`, `site/js/play.js`): on the project page the maintainer chooses the
      folder their build tool wrote (for example `dist`). Files go to R2 one at a time under
      `builds/<project>/<build>/`. Nothing is served until the build is made live, and it needs an
@@ -136,6 +137,8 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
      inside the project page from its own sub-address, and the framed page was refused access to the
      Brainchild page. Cloudflare's analytics script is injected into game pages too and is blocked there
      by the game's own restrictions; that is intended.
+   - **Play area:** a running game gets most of the window's height (not the 16:9 preview box) and the
+     page scrolls it into view. The first upload showed why: the game's Start button was cut off.
    - **Not done:** cross-origin isolation headers, which some engines' threaded web exports need (Godot 4
      with threads); add them when a game needs them.
    - **First test:** the owner's Zombie Outbreak Simulator.
@@ -220,10 +223,8 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
      License record page once the save succeeds.
    - **What to send:** only the public repo URL, nothing about the user.
    - **Rate limit:** anonymous requests are rate-limited, so queue and retry gently.
-5. **Hosted builds: built 13 Nov on `brainwave.nexus`. Please try it:** on the Zombie Outbreak Simulator
-   page, signed in, click **Upload a browser build** and choose the `dist` folder that `npm run build`
-   made. When it finishes, click **Play in browser**. Tell the agent if the game doesn't start: its
-   scripts are confined to its own address, which can trip a game that calls an outside service.
+5. **Hosted builds: done and confirmed 13 Nov.** The owner's upload of Zombie Outbreak Simulator is live
+   at `zombie-outbreak-simulator.brainwave.nexus` and plays from its project page.
 6. **Moderation and outside reports: answered 13 Nov.**
    - **Moderators:** only the owner, for now.
    - **Reporting without GitHub:** build a signed-out report form behind Cloudflare Turnstile, the free bot

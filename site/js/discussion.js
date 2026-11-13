@@ -146,7 +146,6 @@
       ok.addEventListener("click", close);
       body.textContent = "";
       body.appendChild(h("p", null, [h("strong", { text: "Thanks, your report is in. " }), "A moderator reviews every report. You can see what happened to it under your account."]));
-      body.appendChild(h("p", { class: "muted", text: "Anything sexual involving a minor is removed immediately and reported to the authorities. If someone is in danger, contact the police." }));
       body.appendChild(h("div", { class: "actions" }, [ok]));
     }
     var x = h("button", { class: "btn btn-plain", type: "button", "aria-label": "Close", text: "×" });

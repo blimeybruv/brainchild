@@ -5,9 +5,19 @@
   var STEPS = ["Start", "Choose repo", "Ownership", "License", "Details", "Publish"];
   var NOTES = ["Violence", "Blood", "Horror", "Strong language", "Drug references", "Gambling-style mechanics", "Historical symbols"];
   var LICENSE_NOTES = {
-    "MIT": ["amber", "Accepted. MIT doesn't spell out that it can't be withdrawn; Apache-2.0 or GPLv3 say so explicitly, if you're happy to switch."],
+    "MIT": ["amber", "Accepted. MIT works for handing off. Apache-2.0 and GPLv3 go further and state in writing that the permission is permanent, if you'd like that certainty."],
     "Apache-2.0": ["good", "Recommended: the license states its permissions are perpetual and irrevocable. It grants no rights to the project's name, so the name question below matters."],
     "GPL-3.0": ["good", "Recommended: irrevocable, and future versions must stay open too."]
+  };
+  // What the server's field names are called on screen, with the step they're on.
+  var FIELD_LABELS = {
+    repo: "Repository (step 2)", title: "Title (step 5)", kind: "Type (step 5)", genre: "Genre (step 5)",
+    base_game: "Base game (step 5)", tech: "Built with (step 5)", note: "One-line description (step 5)",
+    works: "What works (step 5)", broken: "What's broken (step 5)", vision: "What you were going for (step 5)",
+    agent_context: "Agent context file (step 5)", provenance: "Where the parts came from (step 5)",
+    assets_license: "Art, music and other assets license (step 4)", name_rights: "The project name question (step 4)",
+    status: "Status (step 6)", rating: "Content rating (step 6)", content_notes: "Content notes (step 6)",
+    agreed: "The agreement checkbox (step 6)"
   };
   var params = new URLSearchParams(window.location.search);
   var st = {
@@ -67,7 +77,7 @@
   function fail(res) {
     var e = res.data || {};
     st.error = e.error === "invalid_fields" && e.fields
-      ? "Please check: " + e.fields.join(", ").replace(/_/g, " ") + "."
+      ? "Please fill in or fix: " + e.fields.map(function (k) { return FIELD_LABELS[k] || k.replace(/_/g, " "); }).join(", ") + "."
       : BC.errorText(e.error);
     st.busy = false;
     render();

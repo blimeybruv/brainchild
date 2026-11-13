@@ -56,8 +56,7 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
 1. **Merge the API into the site Worker.** *Done 12 Nov.* `royal-firefly-b80b` has a main script, with
    `/api/*` handled first (`run_worker_first`) and D1 and R2 bindings in `wrangler.jsonc`, so one push
    deploys everything. The old `brainchild-api` route and Worker are deleted.
-2. **GitHub sign-in.** *Done 13 Nov; waiting on the owner's first real sign-in (see "Waiting on the
-   owner").* GitHub OAuth App with no scopes (read-only public information, no repo access). Code in
+2. **GitHub sign-in.** *Done 13 Nov and confirmed by the owner's first real sign-in the same day.* GitHub OAuth App with no scopes (read-only public information, no repo access). Code in
    `api/auth.js`:
    - `/api/auth/login` → GitHub → `/api/auth/callback`, with the state parameter and PKCE, both held in a
      10-minute `__Host-bc_oauth` cookie.
@@ -164,16 +163,11 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
 
 ## Waiting on the owner
 
-1. **Try sign-in once** (needed to confirm steps 2 and 3 against the real GitHub):
-   - Open https://brainchild.nexus, click **Sign in**, and approve Brainchild on GitHub. You should land
-     back on the site with your avatar, `@blimeybruv` and **Sign out** in the header.
-   - Then open https://brainchild.nexus/api/repos/blimeybruv/brainchild/access. It should show
-     `"admin":true` and `"can_list":true`.
-   - This is the first real test: the agent's sandbox can't reach github.com, so everything up to the
-     jump to GitHub was checked live, and everything after it only against a stand-in for GitHub.
-   - If sign-in shows "Sign-in didn't work", or the second page shows `"admin":false`, tell the agent.
-     The second case would mean GitHub hides admin rights from a token with no scopes, and the options
-     for that need your decision.
+1. **Sign-in works against the real GitHub** (the owner signed in at 16:23 GMT on 13 Nov: the session,
+   the 8-hour token and its refresh token were stored, and no email). **Still to confirm:** while signed
+   in, open https://brainchild.nexus/api/repos/blimeybruv/brainchild/access. It should show
+   `"admin":true` and `"can_list":true`. If it shows `"admin":false`, tell the agent: that would mean
+   GitHub hides admin rights from a token with no scopes, and the options for that need your decision.
 2. **Then try listing a project** (the real test of steps 4 to 6): click **List a project**, choose
    `blimeybruv/zombie-outbreak-simulator`, and publish. It should update the existing Zombie Outbreak
    Simulator page rather than make a second one, and add a **License record** link under Details.

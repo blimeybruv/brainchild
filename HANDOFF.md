@@ -158,7 +158,13 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    Say yes or no; the agent can set it through the Cloudflare API.
 4. **Ask Software Heritage to archive each handed-off repo?** It is a free public archive. It would mean
    Brainchild sends the repo's address to a third party at handoff. Say yes or no.
-5. **Optional tidy-up:** in Cloudflare, **Workers & Pages → royal-firefly-b80b → Settings → Build →
+5. **Cloudflare's visitor-analytics script is being blocked.** Cloudflare adds its Web Analytics script
+   (`static.cloudflareinsights.com`) to every page, and the site's strict content rules refuse to run it,
+   so no visitor numbers are being collected and each page logs one harmless error. Choose one: switch
+   Web Analytics off for brainchild.nexus in the Cloudflare dashboard, or tell the agent to allow that
+   one script (a small loosening of the "nothing from third parties" rule). This was already the case
+   before the backend work.
+6. **Optional tidy-up:** in Cloudflare, **Workers & Pages → royal-firefly-b80b → Settings → Build →
    Variables and secrets**, delete `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. Those two are unused;
    the working copies are under **Variables and Secrets** higher up the same page. Leave those alone.
 

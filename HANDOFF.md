@@ -114,7 +114,7 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    - Left out from the mockup because nothing in this queue covers them: notifying the maker of a transfer
      request, verifying Codeberg or GitLab repos with a file, opening a pull request with the rules block
      (that would need repo write access), and storing a source archive.
-7. **Hosted browser builds.** *Not started: waiting on the owner's choice of separate origin (see
+7. **Hosted browser builds.** *Unblocked 13 Nov: serve from `brainwave.nexus` (see "Waiting on the owner", item 5). Earlier note: waiting on the owner's choice of separate origin (see
    "Waiting on the owner"). Everything else in this step follows from that choice.* The "Play in browser"
    button currently links to the repo
    (`site/js/project.js`).
@@ -127,7 +127,31 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    - **Limits:** set size caps and scan file types.
    - **First test:** the owner's Zombie Outbreak Simulator. Its `npm run build` gives a static `dist/`
      with a Web Worker, and it is fine at the domain root.
-8. **Then, in this order:**
+8. **Edit a project page** (requested by the owner 13 Nov). Do this before the items in step 9.
+   - **Who and how:** add an "Edit page" button on the project page, shown only to the current maintainer.
+     Re-run `requireRepoAdmin` on every save, not only when the page opens. Reuse the listing flow's
+     fields and validation.
+   - **Editable:**
+     - Title, one-line description, genre, "built with" (tech), browser flag
+     - The packet: works, broken, vision, agent context, provenance
+     - Screenshots (already done)
+     - Status, limited to choices that fit the maintainer's plans: Open for collaboration, Needs testers,
+       Active or Archived. Moving to Up for adoption must go through the handoff flow, so the name and
+       license questions are asked.
+     - Content rating and notes. Every rating change is logged with the old and new values, and is visible
+       to moderators.
+   - **Not editable:**
+     - Lineage and credit
+     - Existing license snapshots. If the repo's license changed, take a new snapshot and add it to the
+       License record history, keeping the old ones.
+     - The repo link (a different repo means a transfer or a new listing)
+     - The name-rights answer after a handoff
+   - **Shown on the page:**
+     - "Packet updated [date]" (packets.updated_at), so adopters can judge freshness
+     - A short public change log: field names changed and when, not the old text
+   - **Safety:** apply the same same-origin and CSRF checks as the other write routes. All text goes in
+     with textContent.
+9. **Then, in this order:**
    - **Discussion board.** *Done 13 Nov.* On the project page (`site/js/discussion.js`, `api/community.js`):
      comments with one level of replies, GitHub avatars, role labels (Maker, Original maker, Maintainer),
      "Helpful" marks, Top and Newest sorting. The maintainer can pin; authors can delete their own. Limit:

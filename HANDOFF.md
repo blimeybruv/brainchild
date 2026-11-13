@@ -109,7 +109,8 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    - Report button feeding a moderation queue. Record a statement of reasons for each removal (EU DSA
      notice-and-action).
    - Screenshot uploads to R2: images only, with a size cap.
-   - Blog votes (one per user per month, already in the schema).
+   - Blog votes (one per user per month, already in the schema). Note: `site/js/blog.js` hard-codes three
+     sample listing ids and the page throws if any of them is missing from the database; fix that here.
    - Relay rounds last.
 
 ## Waiting on the owner
@@ -119,6 +120,8 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
      back on the site with your avatar, `@blimeybruv` and **Sign out** in the header.
    - Then open https://brainchild.nexus/api/repos/blimeybruv/brainchild/access. It should show
      `"admin":true` and `"can_list":true`.
+   - This is the first real test: the agent's sandbox can't reach github.com, so everything up to the
+     jump to GitHub was checked live, and everything after it only against a stand-in for GitHub.
    - If sign-in shows "Sign-in didn't work", or the second page shows `"admin":false`, tell the agent.
      The second case would mean GitHub hides admin rights from a token with no scopes, and the options
      for that need your decision.

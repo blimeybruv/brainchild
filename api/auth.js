@@ -29,8 +29,13 @@ export const USER_AGENT = "brainchild.nexus";
 function webBase(env) { return env.GITHUB_WEB_BASE || "https://github.com"; }
 export function apiBase(env) { return env.GITHUB_API_BASE || "https://api.github.com"; }
 
+// The two secrets are pasted into the Cloudflare dashboard by hand, so ignore any stray
+// space or line break around them.
+function clientId(env) { return typeof env.GITHUB_CLIENT_ID === "string" ? env.GITHUB_CLIENT_ID.trim() : ""; }
+function clientSecret(env) { return typeof env.GITHUB_CLIENT_SECRET === "string" ? env.GITHUB_CLIENT_SECRET.trim() : ""; }
+
 export function signInConfigured(env) {
-  return !!(env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET);
+  return !!(clientId(env) && clientSecret(env));
 }
 
 // ---------- Token encryption (AES-GCM, key derived from the OAuth client secret) ----------
@@ -39,14 +44,15 @@ let cachedKey = null;
 let cachedKeySecret = null;
 
 async function tokenKey(env) {
-  if (cachedKey && cachedKeySecret === env.GITHUB_CLIENT_SECRET) return cachedKey;
+  const secret = clientSecret(env);
+  if (cachedKey && cachedKeySecret === secret) return cachedKey;
   const enc = new TextEncoder();
-  const material = await crypto.subtle.importKey("raw", enc.encode(env.GITHUB_CLIENT_SECRET), "HKDF", false, ["deriveKey"]);
+  const material = await crypto.subtle.importKey("raw", enc.encode(secret), "HKDF", false, ["deriveKey"]);
   cachedKey = await crypto.subtle.deriveKey(
     { name: "HKDF", hash: "SHA-256", salt: enc.encode("brainchild.nexus"), info: enc.encode("github-token-encryption-v1") },
     material, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]
   );
-  cachedKeySecret = env.GITHUB_CLIENT_SECRET;
+  cachedKeySecret = secret;
   return cachedKey;
 }
 
@@ -101,8 +107,8 @@ function withNotice(path, code, origin) {
 // GitHub's token endpoint: used for the first exchange and for refreshing.
 export async function tokenRequest(env, params) {
   const body = new URLSearchParams({
-    client_id: env.GITHUB_CLIENT_ID,
-    client_secret: env.GITHUB_CLIENT_SECRET,
+    client_id: clientId(env),
+    client_secret: clientSecret(env),
     ...params
   });
   const res = await fetch(webBase(env) + "/login/oauth/access_token", {
@@ -188,7 +194,7 @@ export async function login(request, env, url) {
   const state = randomToken(32);
   const verifier = randomToken(32);
   const query = new URLSearchParams({
-    client_id: env.GITHUB_CLIENT_ID,
+    client_id: clientId(env),
     redirect_uri: origin + CALLBACK_PATH,
     state,
     code_challenge: b64urlEncode(await sha256(verifier)),
@@ -262,10 +268,10 @@ export async function logout(request, env, ctx) {
     const access = await unseal(env, session.access, session.idHash);
     if (access && signInConfigured(env)) {
       // Tell GitHub to cancel this token too. Best effort: signing out here succeeds either way.
-      ctx.waitUntil(fetch(apiBase(env) + "/applications/" + encodeURIComponent(env.GITHUB_CLIENT_ID) + "/token", {
+      ctx.waitUntil(fetch(apiBase(env) + "/applications/" + encodeURIComponent(clientId(env)) + "/token", {
         method: "DELETE",
         headers: {
-          authorization: "Basic " + btoa(env.GITHUB_CLIENT_ID + ":" + env.GITHUB_CLIENT_SECRET),
+          authorization: "Basic " + btoa(clientId(env) + ":" + clientSecret(env)),
           accept: "application/vnd.github+json", "content-type": "application/json", "user-agent": USER_AGENT
         },
         body: JSON.stringify({ access_token: access })

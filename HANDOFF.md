@@ -237,6 +237,17 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    Variables and secrets**, delete `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. Those two are unused;
    the working copies are under **Variables and Secrets** higher up the same page. Leave those alone.
 
+## Owner request, 13 Nov: updating hosted builds
+
+The maintainer must be able to upload a new version of a hosted browser build at any time, from the
+project page or the Edit page (step 8), with the same ownership check.
+- **The new build replaces the live one** at the game's sub-address on brainwave.nexus.
+- **Keep the previous build** so the maintainer can roll back with one click.
+- **Show a version label and upload date** under the player.
+- **Purge the edge cache** for that game's sub-address after each upload, so players get the new version
+  straight away.
+- **Same rules as the first upload:** size caps, file-type checks and the "Built from" commit if known.
+
 ## Relay rules (decided by the owner, 13 Nov; confirmed again in chat the same evening)
 
 A round lasts one calendar month. The Relay mockup shows the stages.

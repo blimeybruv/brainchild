@@ -4,14 +4,14 @@
 |---|---|---|
 | `site/` | The website: plain HTML, CSS and JavaScript, no build step | Built from GitHub by the Worker `royal-firefly-b80b` (see `wrangler.jsonc`) |
 | `api/worker.js` | Read-only backend: the same Worker's script, answering `/api/*` | Deployed together with the site by the same push |
-| `builds-worker/` | The Worker that serves hosted game builds on `brainwave.nexus` (Worker `brainchild-builds`) | Deployed by the same push, after the site |
+| `builds-worker/` | The Worker that serves hosted game builds on `brainwave.nexus` (Worker `brainchild-builds`) | Has its own Cloudflare build; redeploys when its files change on `main` |
 | `db/schema.sql` | Database structure for D1 `brainchild-db` | Already applied |
 
 Only the **`site`** folder is served to visitors as files. `db/` is kept here as a record. Nothing in the repo is secret.
 
 ## Updating the website
 
-Pushing to the `main` branch on GitHub redeploys the site and the API together, automatically (Cloudflare Workers Builds,
+Pushing to the `main` branch on GitHub redeploys the site and the API together, automatically, and the builds Worker too when its files changed (Cloudflare Workers Builds,
 connected under **royal-firefly-b80b → Settings → Builds**). Wait about a minute, then refresh
 https://brainchild.nexus. Cloudflare runs the build on its servers, so nothing needs installing locally.
 

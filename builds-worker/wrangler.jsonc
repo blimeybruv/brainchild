@@ -1,6 +1,8 @@
 // The Worker that serves hosted game builds on brainwave.nexus (see worker.js).
-// It is deployed by the same GitHub push as the site: the deploy command runs wrangler
-// for the site first, then for this file.
+// It has its own Cloudflare build, connected to this repo with this folder as its root, which
+// redeploys it when a file here or api/build-rules.js changes on main.
+// Never deploy this file from the site's own build: Cloudflare forces that build's Worker
+// name, so this code would replace the website.
 // Its routes (brainwave.nexus/* and *.brainwave.nexus/*) are set in Cloudflare, not here.
 {
   "name": "brainchild-builds",

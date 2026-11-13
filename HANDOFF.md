@@ -30,7 +30,7 @@ The site's tagline is "Hand it off, or take it on." "Adopt" is the deliberate wo
 | Storage | R2 `brainchild-builds` (private; incomplete uploads are deleted after 24h). |
 | Caching | Public API answers tell browsers not to keep a copy (`max-age=0`) and let Cloudflare's edge keep one for 60s (`s-maxage=60`). Publishing and adopting clear the edge copies they affect. |
 | Previews | Every branch other than `main` gets a preview build (`npx wrangler preview`), linked from its pull request. Previews use the test database `brainchild-db-preview` (`3b6e6ea2-8a4a-469c-9150-4dcbad16ab64`) and bucket `brainchild-builds-preview`, set in the `previews` block of `wrangler.jsonc`. Any binding added at the top level needs a matching entry there, and schema changes must be applied to both databases. |
-| Builds | Hosted game builds are served by a second Worker, `brainchild-builds` (`builds-worker/`), on `brainwave.nexus` (zone `129edd4f3cddb7357da7ae5d2c2bcc8b`), one sub-address per game. Its routes `brainwave.nexus/*` and `*.brainwave.nexus/*` and the two DNS records are set in Cloudflare, not in the repo. The Workers Builds deploy command is `npx wrangler deploy && npx wrangler deploy --config builds-worker/wrangler.jsonc`, so one push deploys both Workers. |
+| Builds | Hosted game builds are served by a second Worker, `brainchild-builds` (`builds-worker/`), on `brainwave.nexus` (zone `129edd4f3cddb7357da7ae5d2c2bcc8b`), one sub-address per game. Its routes `brainwave.nexus/*` and `*.brainwave.nexus/*` and the two DNS records are set in Cloudflare, not in the repo. It has its own Workers Builds trigger (root `/builds-worker`, runs when `builds-worker/*` or `api/build-rules.js` changes on `main`), so a push deploys whichever Worker changed. **Never add a second `wrangler deploy` to the site's deploy command:** Workers Builds forces the connected Worker's name, so on 13 Nov that put the builds code on the site Worker for about 20 seconds until it was rolled back. If Cloudflare opens a pull request renaming the Worker in `builds-worker/wrangler.jsonc`, close it without merging. |
 | Designs | `design/mockups/*.dc.html`, exported from the design canvas on 9 Nov. The live canvas, which may be newer, is at https://claude.ai/artifact/DmMeLYto8YNwpSZcxNr9Mr |
 | Secrets | `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` are set on the Worker (dashboard, type Secret). The OAuth App's callback is `https://brainchild.nexus/api/auth/callback`, with wildcard matching off and expiring tokens on. Token encryption is keyed from the client secret, so replacing the secret makes everyone link GitHub again. |
 | Spending | Cloudflare budget alerts are set. Keep everything within the free tiers. |
@@ -132,6 +132,10 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
      an outside service; that would be a per-game exception.
    - **Embedding:** the Play button puts the game in a sandboxed iframe (`allow-scripts allow-same-origin
      allow-pointer-lock`); `frame-src` allows `https://*.brainwave.nexus`.
+   - **Checked live on 13 Nov** with a temporary test build on a sample listing (since removed): it played
+     inside the project page from its own sub-address, and the framed page was refused access to the
+     Brainchild page. Cloudflare's analytics script is injected into game pages too and is blocked there
+     by the game's own restrictions; that is intended.
    - **Not done:** cross-origin isolation headers, which some engines' threaded web exports need (Godot 4
      with threads); add them when a game needs them.
    - **First test:** the owner's Zombie Outbreak Simulator.

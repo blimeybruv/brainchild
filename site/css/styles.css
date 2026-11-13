@@ -360,3 +360,53 @@ input[type="checkbox"] { accent-color: var(--accent); width: 18px; height: 18px;
 .fingerprint { font-family: var(--font-mono); font-size: 12px; overflow-wrap: anywhere; color: var(--text-2); }
 .license-file { display: flex; flex-direction: column; gap: 12px; padding: 20px; }
 blockquote.agree { margin: 0; padding-left: 14px; border-left: 3px solid var(--accent); color: var(--text); }
+
+/* ---------- Discussion, reports, screenshots, moderation ---------- */
+.account-name { text-decoration: none; }
+.account-link { font-size: 15px; color: var(--text-2); }
+.discussion { margin-top: 40px; display: flex; flex-direction: column; gap: 16px; }
+.disc-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 12px; }
+.disc-head h2 { margin: 0; font-size: 28px; }
+.disc-head h2 span { font-size: 16px; font-family: var(--font-body); font-weight: 400; }
+.comment-box { display: flex; flex-direction: column; gap: 10px; }
+.comment-box-foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; font-size: 14px; }
+.comments { display: flex; flex-direction: column; gap: 12px; }
+.comment { border: 1px solid var(--line); background: var(--panel); border-radius: 10px; padding: 16px; }
+.comment.pinned { border-color: var(--accent); }
+.pin-note { margin: 0 0 10px; font-size: 12px; font-family: var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.comment-row { display: flex; gap: 12px; }
+.comment-row.reply { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.comment-main { flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.comment-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 15px; }
+.comment-body { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-2); }
+.comment-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; }
+.comment .avatar { width: 40px; height: 40px; }
+.comment .reply .avatar { width: 30px; height: 30px; }
+.chip { font: inherit; font-size: 13px; padding: 6px 10px; border-radius: 999px; cursor: pointer; background: transparent; color: var(--muted); border: 1px solid var(--line-strong); }
+.chip:hover { color: var(--text); border-color: var(--text-2); }
+.chip[aria-pressed="true"] { background: #23262D; color: var(--accent); border-color: var(--accent); }
+.report-dialog { width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; background: var(--panel); color: var(--text); border: 1px solid var(--line-strong); border-radius: 12px; padding: 24px; }
+.report-dialog::backdrop { background: rgba(0, 0, 0, 0.65); }
+.report-dialog h2 { margin: 0; font-size: 22px; }
+.report-dialog p { margin: 4px 0 0; }
+.report-body { display: flex; flex-direction: column; gap: 14px; margin-top: 16px; }
+.report-body .choice { padding: 10px 14px; }
+.shots { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 0 18px 16px; }
+.shots:empty { display: none; }
+.thumb-wrap { display: inline-flex; flex-direction: column; gap: 6px; align-items: center; }
+.thumb { padding: 0; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--panel-deep); cursor: pointer; overflow: hidden; width: 96px; height: 60px; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.player-stage { position: relative; overflow: hidden; }
+.stage-shot { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.55; }
+.player-stage > .hint, .player-stage > .btn { position: relative; }
+.shot { position: relative; overflow: hidden; }
+.shot-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.queue { display: flex; flex-direction: column; gap: 14px; }
+.queue-item { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.queue-item h3 { margin: 0; font-size: 18px; }
+.queue-item p { margin: 0; }
+.quote { margin: 0; padding: 10px 14px; border-left: 3px solid var(--line-strong); background: var(--panel-deep); white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-2); }
+.wizard-list { display: flex; flex-direction: column; gap: 18px; }
+.wizard-list h2 { margin: 12px 0 0; font-size: 24px; }
+.shot span { position: relative; }

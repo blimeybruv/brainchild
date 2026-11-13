@@ -47,7 +47,7 @@
         ]);
     return h("article", { class: "card" }, [
       h("div", { class: "shot", style: "background:" + item.tone, "aria-hidden": "true" }, [
-        h("span", { text: "[ screenshot ]" }),
+        item.shot ? h("img", { class: "shot-img", src: "/api/screenshots/" + item.shot, alt: "", loading: "lazy" }) : h("span", { text: "[ screenshot ]" }),
         compact ? h("span", { class: "kind", text: item.kind }) : null
       ]),
       h("div", { class: "card-body" }, [
@@ -87,7 +87,7 @@
       repo: r.repo_url || null,
       owner: r.owner || null, ownerVerified: !!r.owner_verified, rating: r.rating || "everyone",
       notes: Array.isArray(r.content_notes) ? r.content_notes : [], handedOffAt: r.handed_off_at || null,
-      openToTransfer: !!r.open_to_transfer, nameRights: r.name_rights || null
+      openToTransfer: !!r.open_to_transfer, nameRights: r.name_rights || null, shot: r.shot || null
     };
   }
 
@@ -238,7 +238,9 @@
       : null;
     var out = h("button", { class: "btn btn-plain", type: "button", text: "Sign out" });
     out.addEventListener("click", function () { signOut(out); });
-    link.replaceWith(h("span", { class: "account" }, [avatar, h("span", { class: "account-name", text: "@" + user.handle }), out]));
+    link.replaceWith(h("span", { class: "account" }, [
+      user.moderator ? h("a", { class: "account-link", href: "mod.html", text: "Moderation" }) : null,
+      avatar, h("a", { class: "account-name", href: "account.html", title: "Your notices", text: "@" + user.handle }), out]));
   }
 
   var mePromise = null;

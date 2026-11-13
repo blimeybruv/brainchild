@@ -37,8 +37,8 @@ Previews run the same code against the test database and bucket (the `previews` 
 | Resource | Name / ID | Notes |
 |---|---|---|
 | Worker | `royal-firefly-b80b` | Static assets plus `/api/*`, custom domain `brainchild.nexus`. Bindings: `DB` (D1), `BUILDS` (R2), `ASSETS` (the `site/` files) |
-| D1 database | `brainchild-db` · `6e241536-91de-49b7-b885-35429bd01efb` | Tables: users, sessions, projects, packets, lineage, license_records, proposals, votes, posts. 19 sample projects, 1 sample packet |
-| R2 bucket | `brainchild-builds` (ENAM, private) | Holds the stored license copies under `licenses/`. Lifecycle rule deletes unfinished uploads after 24 h |
+| D1 database | `brainchild-db` · `6e241536-91de-49b7-b885-35429bd01efb` | Tables: users, sessions, projects, packets, lineage, license_records, comments, comment_likes, reports, moderation_actions, screenshots, proposals, votes, posts. 19 sample projects, 1 sample packet |
+| R2 bucket | `brainchild-builds` (ENAM, private) | Holds the stored license copies under `licenses/` and screenshots under `screenshots/`. Lifecycle rule deletes unfinished uploads after 24 h |
 | Preview D1 database | `brainchild-db-preview` · `3b6e6ea2-8a4a-469c-9150-4dcbad16ab64` | Test copy used only by pull-request previews. Same tables and sample rows as the live database |
 | Preview R2 bucket | `brainchild-builds-preview` (ENAM, private) | Used only by pull-request previews. Same lifecycle rule |
 
@@ -58,13 +58,20 @@ Previews run the same code against the test database and bucket (the `previews` 
 | `POST /api/projects/<id>/adopt` | Takes a project on, by fork or transfer |
 | `GET /api/projects/<id>/license` | The public license record: every release with its commit and fingerprint |
 | `GET /api/license-text/<fingerprint>` | The stored copy of a license file |
+| `GET`/`POST /api/projects/<id>/comments` | The project's discussion; posting needs sign-in |
+| `POST /api/comments/<id>/like`, `/pin`, `/delete` | Mark helpful (anyone signed in), pin (maintainer), delete (author) |
+| `POST /api/reports` | Report a project or a comment |
+| `GET /api/mod/reports`, `POST /api/mod/reports/<id>/resolve`, `POST /api/mod/actions/<id>/appeal` | Moderation queue (moderators only) |
+| `GET /api/my/notices`, `POST /api/my/notices/<id>/appeal` | Decisions about your own posts, and your reports |
+| `POST /api/projects/<id>/screenshots`, `POST /api/screenshots/<id>/delete` | Add or remove a screenshot (maintainer only) |
+| `GET /api/screenshots/<id>` | A screenshot image |
 | `GET /api/repos/<owner>/<repo>/access` | Whether the signed-in user is an admin of that GitHub repo (the rule for listing it) |
 
 ## What's still sample / placeholder
 
 - The 19 listings, blog posts and community candidates are sample content.
 - Downloads and the proposal form don't save anything yet. Sign-in, listing a project, the license
-  record and adopting a project work.
+  record, adopting a project, discussion, reports and moderation, and screenshots work.
 - Votes are remembered only in the visitor's own browser.
 - Anything in `[brackets]` is a gap to fill.
 

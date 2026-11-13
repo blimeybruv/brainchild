@@ -410,7 +410,7 @@ export async function licenseRecord(env, id) {
   if (!/^[a-z0-9-]{1,80}$/.test(id)) return json({ error: "not_found" }, 404, NO_STORE);
   const project = await env.DB.prepare(
     `SELECT p.id, p.title, p.kind, p.base_game, p.status, u.handle AS owner
-       FROM projects p LEFT JOIN users u ON u.id = p.owner_id WHERE p.id = ?`
+       FROM projects p LEFT JOIN users u ON u.id = p.owner_id WHERE p.id = ? AND p.hidden_at IS NULL`
   ).bind(id).first();
   if (!project) return json({ error: "not_found" }, 404, NO_STORE);
   const { results: records } = await env.DB.prepare(
@@ -457,7 +457,7 @@ export async function adoptProject(request, env, ctx, session, id) {
   const p = await env.DB.prepare(
     `SELECT p.id, p.title, p.kind, p.base_game, p.status, p.owner_id, p.repo_id, p.repo_full_name, p.repo_url,
             p.name_rights, p.assets_license, p.open_to_transfer, p.intent, u.handle AS owner
-       FROM projects p LEFT JOIN users u ON u.id = p.owner_id WHERE p.id = ?`
+       FROM projects p LEFT JOIN users u ON u.id = p.owner_id WHERE p.id = ? AND p.hidden_at IS NULL`
   ).bind(id).first();
   if (!p) return bad("not_found", 404);
   if (p.status !== "adopt") return bad("not_up_for_adoption", 409);

@@ -34,6 +34,16 @@ export function apiBase(env) { return env.GITHUB_API_BASE || "https://api.github
 function clientId(env) { return typeof env.GITHUB_CLIENT_ID === "string" ? env.GITHUB_CLIENT_ID.trim() : ""; }
 function clientSecret(env) { return typeof env.GITHUB_CLIENT_SECRET === "string" ? env.GITHUB_CLIENT_SECRET.trim() : ""; }
 
+// Who may see the moderation queue: GitHub account ids (permanent, unlike handles).
+const MODERATOR_GITHUB_IDS = [255218751]; // @blimeybruv, the site owner
+export function isModerator(env, session) {
+  if (!session || !session.githubId) return false;
+  const ids = typeof env.MODERATOR_GITHUB_IDS === "string" && env.MODERATOR_GITHUB_IDS.trim()
+    ? env.MODERATOR_GITHUB_IDS.split(",").map((x) => Number(x.trim()))
+    : MODERATOR_GITHUB_IDS;
+  return ids.includes(session.githubId);
+}
+
 export function signInConfigured(env) {
   return !!(clientId(env) && clientSecret(env));
 }
@@ -285,7 +295,7 @@ export async function logout(request, env, ctx) {
 export async function me(request, env, url) {
   const session = await getSession(request, env);
   return privateJson({
-    user: session ? { handle: session.handle, avatar_url: session.avatarUrl } : null,
+    user: session ? { handle: session.handle, avatar_url: session.avatarUrl, moderator: isModerator(env, session) } : null,
     sign_in: signInConfigured(env) && url.origin === siteOrigin(env)
   });
 }

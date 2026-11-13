@@ -115,7 +115,9 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    - Left out from the mockup because nothing in this queue covers them: notifying the maker of a transfer
      request, verifying Codeberg or GitLab repos with a file, opening a pull request with the rules block
      (that would need repo write access), and storing a source archive.
-7. **Hosted browser builds.** The "Play in browser" button currently links to the repo
+7. **Hosted browser builds.** *Not started: waiting on the owner's choice of separate origin (see
+   "Waiting on the owner"). Everything else in this step follows from that choice.* The "Play in browser"
+   button currently links to the repo
    (`site/js/project.js`).
    - **Upload:** makers upload a static build (e.g. a Vite `dist/`) to R2.
    - **Origin:** serve every build from a **separate origin**, never brainchild.nexus or a subdomain of
@@ -127,14 +129,31 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    - **First test:** the owner's Zombie Outbreak Simulator. Its `npm run build` gives a static `dist/`
      with a Web Worker, and it is fine at the domain root.
 8. **Then, in this order:**
-   - Discussion board with comments, badges and GitHub avatars (add `avatars.githubusercontent.com` to
-     `img-src` in `site/_headers`).
-   - Report button feeding a moderation queue. Record a statement of reasons for each removal (EU DSA
-     notice-and-action).
-   - Screenshot uploads to R2: images only, with a size cap.
+   - **Discussion board.** *Done 13 Nov.* On the project page (`site/js/discussion.js`, `api/community.js`):
+     comments with one level of replies, GitHub avatars, role labels (Maker, Original maker, Maintainer),
+     "Helpful" marks, Top and Newest sorting. The maintainer can pin; authors can delete their own. Limit:
+     10 comments per person per 10 minutes. Badges are returned as an empty list until Relay rounds exist.
+     `avatars.githubusercontent.com` is in `img-src`.
+   - **Report button and moderation queue.** *Done 13 Nov.* Signed-in people can report a project (link in
+     the project page footer) or a comment, in the mockup's 7 categories (`POST /api/reports`).
+     Moderators work the queue at `site/mod.html`. A removal is refused unless it carries a ground (house
+     rules or illegal content) and written reasons; that statement of reasons is stored in
+     `moderation_actions` and never deleted. The affected person reads it at `site/account.html` and can
+     ask once for a review; a moderator then puts the content back or upholds the removal. Removing a
+     project sets `projects.hidden_at`: the page, its API answers and its screenshots disappear, while
+     lineage and license records stay. Moderators are listed by GitHub id in `api/auth.js`
+     (`MODERATOR_GITHUB_IDS`, currently only the owner).
+   - **Screenshot uploads.** *Done 13 Nov.* The maintainer adds up to 6 images per project from the project
+     page (`api/screenshots.js`). PNG, JPEG and WebP only, judged by the file's first bytes; 2 MB each; SVG
+     refused. Admin rights on the repo are re-checked with GitHub on every upload and delete. Images are
+     served from `/api/screenshots/<id>` with a fixed image type and `nosniff`, cached for 5 minutes. The
+     first screenshot shows on the project page and on cards.
    - Blog votes (one per user per month, already in the schema). Note: `site/js/blog.js` hard-codes three
      sample listing ids and the page throws if any of them is missing from the database; fix that here.
-   - Relay rounds last.
+   - Relay rounds last. (The exact Relay rules are an Open decision.)
+   Not in this queue and not built: the Mature gate from the Project mockup. Ratings and content notes are
+   stored and shown in the project page's byline; the gate itself depends on the Open decision about
+   German visitors.
 
 ## Waiting on the owner
 
@@ -158,13 +177,28 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    Say yes or no; the agent can set it through the Cloudflare API.
 4. **Ask Software Heritage to archive each handed-off repo?** It is a free public archive. It would mean
    Brainchild sends the repo's address to a third party at handoff. Say yes or no.
-5. **Cloudflare's visitor-analytics script is being blocked.** Cloudflare adds its Web Analytics script
+5. **Where should hosted game builds be served from?** (Blocks step 7.) Builds are other people's
+   JavaScript, so they must run on an address that is not brainchild.nexus or under it. Two options:
+   - **A second domain** (roughly £10 a year). Each game can get its own sub-address
+     (`moss-keeper.<your-domain>`), which also stops one game reading another game's saved data. You
+     would buy the domain and add it to Cloudflare; the agent does the rest.
+   - **A free `workers.dev` address** (for example `brainchild-builds.blimeybruv.workers.dev`). Nothing to
+     buy and it can be set up at once, but every game shares that one address, so games could read each
+     other's saved data, and the address shows your Cloudflare account name.
+   The agent's suggestion: the second domain if you are happy to spend the money, because of the
+   per-game separation; otherwise start on `workers.dev` and move later.
+6. **Who else should moderate, and how do people without a GitHub account reach you?** Today only you
+   (GitHub id 255218751) see the moderation queue, and reporting needs a GitHub sign-in. EU rules expect
+   anyone to be able to flag illegal content and expect a contact point. The site never shows email
+   addresses, so say how you want outside reports to arrive (for example a public issue tracker or a
+   contact form), and name any other moderators by GitHub handle.
+7. **Cloudflare's visitor-analytics script is being blocked.** Cloudflare adds its Web Analytics script
    (`static.cloudflareinsights.com`) to every page, and the site's strict content rules refuse to run it,
    so no visitor numbers are being collected and each page logs one harmless error. Choose one: switch
    Web Analytics off for brainchild.nexus in the Cloudflare dashboard, or tell the agent to allow that
    one script (a small loosening of the "nothing from third parties" rule). This was already the case
    before the backend work.
-6. **Optional tidy-up:** in Cloudflare, **Workers & Pages → royal-firefly-b80b → Settings → Build →
+8. **Optional tidy-up:** in Cloudflare, **Workers & Pages → royal-firefly-b80b → Settings → Build →
    Variables and secrets**, delete `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. Those two are unused;
    the working copies are under **Variables and Secrets** higher up the same page. Leave those alone.
 

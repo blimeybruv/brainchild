@@ -71,6 +71,7 @@ window.BC.load(function () {
   // Facts from the database: who owns it, the license record, the lineage, and how to adopt it.
   function renderRecord(p, lineage) {
     var pid = encodeURIComponent(p.id);
+    document.dispatchEvent(new CustomEvent("bc:project", { detail: p })); // discussion.js adds screenshots
     var cta = document.getElementById("p-cta");
     if (p.status === "adopt") cta.setAttribute("href", "adopt.html?id=" + pid);
     var fork = document.getElementById("p-fork");

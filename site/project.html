@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Project · Brainchild</title>
 <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/styles.css?v=3">
+<link rel="stylesheet" href="css/styles.css?v=4">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -48,6 +48,7 @@
           </button>
         </div>
         <div class="player-meta" id="p-meta"></div>
+        <div class="shots" id="p-shots"></div>
       </div>
 
       <section aria-labelledby="packet-h">
@@ -58,6 +59,8 @@
         <div class="tabs" role="tablist" aria-label="Handoff packet sections" id="tabs"></div>
         <div class="panel tabpanel" role="tabpanel" id="tabpanel" tabindex="0"></div>
       </section>
+
+      <section aria-labelledby="disc-h" id="discussion" class="discussion"></section>
     </div>
 
     <aside class="side-col">
@@ -102,13 +105,16 @@
     <span class="grow">A free home for projects that deserve another go.</span>
     <a href="#">About</a>
     <a href="#">Licensing guide</a>
-    <a href="#">Report a project</a>
+    <a href="#" data-report-project>Report this project</a>
     <a href="#">Source</a>
   </div>
 </footer>
 
 <script src="js/data.js"></script>
-<script src="js/common.js?v=3"></script>
-<script src="js/project.js?v=3"></script>
+<script src="js/common.js?v=4"></script>
+<dialog id="report-dialog" class="report-dialog" aria-labelledby="report-h"></dialog>
+
+<script src="js/project.js?v=4"></script>
+<script src="js/discussion.js?v=4"></script>
 </body>
 </html>

@@ -15,17 +15,28 @@
 //   POST /api/projects/<id>/adopt                         take a project on
 //   GET  /api/projects/<id>/license                       public license record, cached for 60s
 //   GET  /api/license-text/<fingerprint>                  the stored copy of a license file
+//   GET/POST /api/projects/<id>/comments                  discussion (community.js)
+//   POST /api/comments/<id>/like | pin | delete
+//   POST /api/reports                                     report a project or a comment
+//   GET  /api/mod/reports, POST /api/mod/reports/<id>/resolve, POST /api/mod/actions/<id>/appeal   moderators only
+//   GET  /api/my/notices, POST /api/my/notices/<id>/appeal
+//   POST /api/projects/<id>/screenshots, POST /api/screenshots/<id>/delete   maintainer only (screenshots.js)
+//   GET  /api/screenshots/<id>                            public image
 
 import { json, privateJson, NO_STORE } from "./http.js";
 import { login, callback, logout, me, getSession } from "./auth.js";
 import { repoAccessRoute } from "./github.js";
 import { myRepos, listingInfo, createListing, adoptProject, licenseRecord, licenseText } from "./listings.js";
+import { listComments, postComment, commentAction, postReport, modQueue, modResolve, modAppeal, myNotices, appealNotice } from "./community.js";
+import { addScreenshot, deleteScreenshot, serveScreenshot } from "./screenshots.js";
 
 const PROJECT_FIELDS =
   "p.id, p.title, p.kind, p.genre, p.status, p.base_game, p.tech, p.browser, p.license, p.note, p.tone, p.featured, p.repo_url, " +
   "p.handed_off_at, p.updated_at, p.created_at, p.intent, p.rating, p.content_notes, p.assets_license, p.name_rights, p.open_to_transfer, " +
-  "u.handle AS owner, (u.github_id IS NOT NULL AND p.repo_id IS NOT NULL) AS owner_verified";
-const PROJECT_FROM = "FROM projects p LEFT JOIN users u ON u.id = p.owner_id";
+  "u.handle AS owner, (u.github_id IS NOT NULL AND p.repo_id IS NOT NULL) AS owner_verified"
+  + ", (SELECT s.id FROM screenshots s WHERE s.project_id = p.id ORDER BY s.id LIMIT 1) AS shot";
+// Projects removed by a moderator are hidden everywhere.
+const PROJECT_FROM = "FROM projects p LEFT JOIN users u ON u.id = p.owner_id WHERE p.hidden_at IS NULL";
 
 function shape(row) {
   try { row.content_notes = JSON.parse(row.content_notes || "[]"); } catch { row.content_notes = []; }
@@ -49,7 +60,7 @@ async function listProjects(env) {
 
 async function getProject(env, id) {
   if (!/^[a-z0-9-]{1,80}$/.test(id)) return notFound();
-  const project = await env.DB.prepare(`SELECT ${PROJECT_FIELDS} ${PROJECT_FROM} WHERE p.id = ?`).bind(id).first();
+  const project = await env.DB.prepare(`SELECT ${PROJECT_FIELDS} ${PROJECT_FROM} AND p.id = ?`).bind(id).first();
   if (!project) return notFound();
   shape(project);
   const packet = await env.DB.prepare(
@@ -64,6 +75,8 @@ async function getProject(env, id) {
     "SELECT version, spdx_id, commit_sha, recorded_at FROM license_records WHERE project_id = ? ORDER BY version DESC LIMIT 1"
   ).bind(id).first();
   project.license_record = record || null;
+  const { results: shots } = await env.DB.prepare("SELECT id FROM screenshots WHERE project_id = ? ORDER BY id").bind(id).all();
+  project.screenshots = shots.map((x) => x.id);
   if (packet && packet.provenance) {
     try { packet.provenance = JSON.parse(packet.provenance); } catch { packet.provenance = null; }
   }
@@ -89,6 +102,25 @@ async function handlePrivate(request, env, ctx, url, path) {
   if (path === "/api/projects") return createListing(request, env, ctx, await getSession(request, env)); // POST only (see handleApi)
   const adopt = path.match(/^\/api\/projects\/([a-z0-9-]{1,80})\/adopt$/);
   if (adopt) return method === "POST" ? adoptProject(request, env, ctx, await getSession(request, env), adopt[1]) : methodNotAllowed("POST");
+
+  const session = await getSession(request, env);
+  let m = path.match(/^\/api\/projects\/([a-z0-9-]{1,80})\/comments$/);
+  if (m) return method === "GET" ? listComments(env, session, m[1]) : method === "POST" ? postComment(request, env, session, m[1]) : methodNotAllowed("GET, POST");
+  m = path.match(/^\/api\/comments\/(\d{1,12})\/(like|pin|delete)$/);
+  if (m) return method === "POST" ? commentAction(request, env, session, Number(m[1]), m[2]) : methodNotAllowed("POST");
+  if (path === "/api/reports") return method === "POST" ? postReport(request, env, session) : methodNotAllowed("POST");
+  if (path === "/api/mod/reports") return method === "GET" ? modQueue(request, env, session, url) : methodNotAllowed("GET");
+  m = path.match(/^\/api\/mod\/reports\/(\d{1,12})\/resolve$/);
+  if (m) return method === "POST" ? modResolve(request, env, session, Number(m[1])) : methodNotAllowed("POST");
+  m = path.match(/^\/api\/mod\/actions\/(\d{1,12})\/appeal$/);
+  if (m) return method === "POST" ? modAppeal(request, env, session, Number(m[1])) : methodNotAllowed("POST");
+  if (path === "/api/my/notices") return method === "GET" ? myNotices(env, session) : methodNotAllowed("GET");
+  m = path.match(/^\/api\/my\/notices\/(\d{1,12})\/appeal$/);
+  if (m) return method === "POST" ? appealNotice(request, env, session, Number(m[1])) : methodNotAllowed("POST");
+  m = path.match(/^\/api\/projects\/([a-z0-9-]{1,80})\/screenshots$/);
+  if (m) return method === "POST" ? addScreenshot(request, env, session, m[1]) : methodNotAllowed("POST");
+  m = path.match(/^\/api\/screenshots\/(\d{1,12})\/delete$/);
+  if (m) return method === "POST" ? deleteScreenshot(request, env, session, Number(m[1])) : methodNotAllowed("POST");
   return null;
 }
 
@@ -96,7 +128,8 @@ async function handleApi(request, env, ctx, url) {
   const path = url.pathname.replace(/\/+$/, "");
 
   if (path.startsWith("/api/auth/") || path === "/api/me" || path.startsWith("/api/repos/") || path.startsWith("/api/my/") ||
-      (path === "/api/projects" && request.method === "POST") || /^\/api\/projects\/[^/]+\/adopt$/.test(path)) {
+      (path === "/api/projects" && request.method === "POST") || /^\/api\/projects\/[^/]+\/(adopt|comments|screenshots)$/.test(path) ||
+      path.startsWith("/api/comments/") || path === "/api/reports" || path.startsWith("/api/mod/") || /^\/api\/screenshots\/\d+\/delete$/.test(path)) {
     try {
       return (await handlePrivate(request, env, ctx, url, path)) || notFound();
     } catch (err) {
@@ -109,8 +142,10 @@ async function handleApi(request, env, ctx, url) {
   if (request.method !== "GET" && request.method !== "HEAD") return methodNotAllowed("GET, HEAD");
 
   // Serve from Cloudflare's edge cache when we can, to save database reads.
+  // A fault in the cache must never take the API down, so it is treated as a miss.
   const cache = caches.default;
-  const cached = await cache.match(request);
+  let cached = null;
+  try { cached = await cache.match(request); } catch { cached = null; }
   if (cached) return cached;
 
   let response;
@@ -121,6 +156,8 @@ async function handleApi(request, env, ctx, url) {
       response = await listProjects(env);
     } else if (/^\/api\/projects\/[^/]+\/license$/.test(path)) {
       response = await licenseRecord(env, path.split("/")[3]);
+    } else if (/^\/api\/screenshots\/\d{1,12}$/.test(path)) {
+      response = await serveScreenshot(env, Number(path.split("/")[3]));
     } else if (path.startsWith("/api/license-text/")) {
       response = await licenseText(env, url, path.slice("/api/license-text/".length));
     } else if (path.startsWith("/api/projects/")) {
@@ -136,7 +173,7 @@ async function handleApi(request, env, ctx, url) {
   }
 
   if (response.status === 200 && response.headers.get("cache-control") !== "no-store") {
-    ctx.waitUntil(cache.put(request, response.clone()));
+    ctx.waitUntil(cache.put(request, response.clone()).catch(() => {}));
   }
   return response;
 }

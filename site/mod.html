@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moderation · Brainchild</title>
+<meta name="description" content="Moderation queue for Brainchild.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/styles.css?v=4">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <nav class="wrap site-nav" aria-label="Main">
+    <a class="brand" href="index.html">
+      <svg aria-hidden="true" width="30" height="20" viewBox="0 0 30 20" fill="none" stroke="#F5B83D" stroke-width="3" stroke-linecap="round"><path d="M2 10c3-8 6-8 8.7 0s5.6 8 8.6 0 5.7-8 8.7 0"/></svg>
+      <span class="brand-name">Brainchild</span>
+    </a>
+    <div class="nav-links">
+      <a href="browse.html">Browse</a>
+      <a href="blog.html">Blog</a>
+      <a href="index.html#handoff">How handoff works</a>
+    </div>
+    <div class="nav-actions">
+      <a class="btn btn-plain" href="/api/auth/login" data-auth="signin">Sign in</a>
+      <a class="btn btn-primary" href="list.html">List a project</a>
+    </div>
+  </nav>
+</header>
+
+<main id="main" class="wrap wizard-page">
+  <div class="wizard-head">
+    <div>
+      <p class="eyebrow">Moderators only</p>
+      <h1>Moderation queue</h1>
+      <p class="sub">Every report lands here. A removal always needs its reasons written down; the person affected can read them and ask for a review.</p>
+    </div>
+  </div>
+  <div class="wizard-list" id="m-body"><p class="muted">Loading…</p></div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span class="brand-name">Brainchild</span>
+    <span class="grow">A free home for projects that deserve another go.</span>
+    <a href="#">About</a>
+    <a href="#">Licensing guide</a>
+    <a href="#">Report a project</a>
+    <a href="#">Source</a>
+  </div>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/common.js?v=4"></script>
+<script src="js/mod.js?v=4"></script>
+</body>
+</html>

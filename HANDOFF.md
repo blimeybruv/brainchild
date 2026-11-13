@@ -156,7 +156,7 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
      candidates are gone, so the page no longer depends on particular listings existing.
      Not built: choosing and announcing the winner at month end, and reporting a proposal's text (the
      report form covers projects and comments only).
-   - Relay rounds last. (The exact Relay rules are an Open decision.)
+   - Relay rounds last. The rules were decided on 13 Nov; see "Relay rules" below.
    Not in this queue and not built: the Mature gate from the Project mockup. Ratings and content notes are
    stored and shown in the project page's byline; the gate itself depends on the Open decision about
    German visitors.
@@ -212,6 +212,39 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    Variables and secrets**, delete `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. Those two are unused;
    the working copies are under **Variables and Secrets** higher up the same page. Leave those alone.
 
+## Relay rules (decided by the owner, 13 Nov)
+
+A round lasts one calendar month. The Relay mockup shows the stages.
+
+1. **Entry (week 1).**
+   - Each person nominates one project they maintain. It must be listed on Brainchild and accept pull
+     requests.
+   - Minimum 4 entries. With fewer, the round doesn't run and the entries roll over to next month.
+2. **Vote (week 1, after entry closes).**
+   - Each entrant ranks three projects other than their own, scored 3, 2 and 1 points. Entrants can't rank
+     their own project.
+   - Ties go to whoever has more first places, then whoever entered first.
+   - The highest total wins.
+3. **Task board (within 3 days of the result).** The winning maintainer posts tasks. Contributors may take
+   a task or bring their own idea, called a "wildcard".
+4. **Contribute (the rest of the month).**
+   - Every entrant except the winner must open at least one pull request on the winner's repo, checked
+     through the GitHub API (PR author = the entrant's GitHub account, opened during the round).
+   - A PR doesn't have to be merged to count, only real.
+5. **Review.** The maintainer can flag a PR as junk. A moderator reviews each flag; if it's upheld, that PR
+   doesn't count. Record a statement of reasons, as with other moderation decisions.
+6. **Recap and badges.**
+   - The maintainer awards **Most helpful contributor · Relay round [n]** and, optionally,
+     **Best wildcard · Relay round [n]**. The maintainer can't award badges to themself.
+   - Badges show on the user's page and next to their name in discussions.
+
+**Consequences**
+- **No counting PR:** an entrant with no counting PR (none, or only junk that was upheld) can't enter the
+  next round. They may still contribute to it, and doing so restores eligibility for the round after.
+- **Repeat wins:** allowed. A winning project may enter and win again the next month.
+- **No badges:** if the maintainer awards none within 7 days of the round ending, the round still counts,
+  contributors keep credit, and a moderator may award the badges.
+
 ## Rules that must hold
 
 - Build the DOM with `textContent` only; never put user text into `innerHTML`.
@@ -235,5 +268,4 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
 
 - Logo: the C cradling a B, with the B drawn as a brain or as nerd glasses. The owner has their own sketches.
 - Hero background: the Julia, smoke or contour option from `HeroFractal`.
-- Exact Relay rules.
 - How Mature listings are handled for German visitors.

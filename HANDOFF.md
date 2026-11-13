@@ -184,10 +184,17 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
      License record page once the save succeeds.
    - **What to send:** only the public repo URL, nothing about the user.
    - **Rate limit:** anonymous requests are rate-limited, so queue and retry gently.
-5. **Hosted builds address: answered 13 Nov.** The owner prefers a separate domain, for per-game
-   separation, but hasn't bought one for builds yet. **Never use `brainwave.nexus`**: the owner bought it
-   for a different site. Step 7 stays blocked until the owner names a builds domain. Don't start on
-   `workers.dev`.
+5. **Hosted builds address: `brainwave.nexus` (decided 13 Nov). Step 7 is unblocked.**
+   - **Domain:** the owner bought it for this purpose. It's active in the same Cloudflare account (zone id
+     `129edd4f3cddb7357da7ae5d2c2bcc8b`).
+   - **One origin per game:** serve each build from its own sub-address, e.g.
+     `zombie-outbreak-simulator.brainwave.nexus`, so games are separated from each other and from
+     brainchild.nexus. A wildcard route or custom domain on a builds Worker reading from R2 is fine.
+   - **Embedding:** embed builds on project pages in a sandboxed iframe, and allow
+     `https://*.brainwave.nexus` in `frame-src`.
+   - **Isolation:** brainwave.nexus must never receive Brainchild cookies or session data.
+   - **Bare domain:** serve a minimal page that links back to brainchild.nexus.
+   - **First test:** the owner's Zombie Outbreak Simulator (`npm run build` gives a static `dist/`).
 6. **Moderation and outside reports: answered 13 Nov.**
    - **Moderators:** only the owner, for now.
    - **Reporting without GitHub:** build a signed-out report form behind Cloudflare Turnstile, the free bot

@@ -52,6 +52,16 @@
         btn("Open reports", view === "open" ? "btn-light" : "btn-ghost", function () { view = "open"; load(); }),
         btn("Closed reports", view === "closed" ? "btn-light" : "btn-ghost", function () { view = "closed"; load(); })]));
       if (d.appeals.length) { root.appendChild(h("h2", { text: "Requests to review a removal" })); root.appendChild(h("div", { class: "queue" }, d.appeals.map(appealItem))); }
+      if (d.rating_changes && d.rating_changes.length) {
+        root.appendChild(h("h2", { text: "Rating changes by maintainers" }));
+        root.appendChild(h("div", { class: "queue" }, d.rating_changes.map(function (c) {
+          var notes = function (t) { try { var a = JSON.parse(t || "[]"); return a.length ? " (" + a.join(", ").toLowerCase() + ")" : ""; } catch (e) { return ""; } };
+          return h("div", { class: "panel queue-item" }, [
+            h("p", null, [h("a", { href: "project.html?id=" + encodeURIComponent(c.project_id), text: c.project_title }), " · @" + (c.changed_by || "unknown") + " · " + BC.niceDate(c.changed_at)]),
+            h("p", { text: "From " + c.rating_old + notes(c.notes_old) + " to " + c.rating_new + notes(c.notes_new) })
+          ]);
+        })));
+      }
       root.appendChild(h("h2", { text: view === "open" ? "Open reports" : "Closed reports" }));
       root.appendChild(d.reports.length ? h("div", { class: "queue" }, d.reports.map(reportItem)) : h("p", { class: "muted", text: view === "open" ? "Nothing waiting. Every report has been dealt with." : "No closed reports yet." }));
     });

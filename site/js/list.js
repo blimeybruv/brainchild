@@ -22,7 +22,7 @@
   var params = new URLSearchParams(window.location.search);
   var st = {
     step: 1, user: null, intent: params.get("intent") === "leave" ? "leave" : "stay",
-    repos: null, repo: "", manual: "", info: null, error: "", busy: false,
+    repos: null, repo: "", manual: params.get("repo") || "", info: null, error: "", busy: false,
     assets: "CC BY 4.0", nameRights: "continuation", agreed: false,
     f: { title: "", kind: "Game", genre: D.genres[0], base_game: "", tech: "", browser: false, note: "", works: "", broken: "", vision: "", agent_context: "" },
     prov: [{ part: "Code", how: "" }, { part: "Art", how: "" }, { part: "Audio", how: "" }],
@@ -151,13 +151,36 @@
       if (!st.f.title || st.f.title === st.auto.title) st.f.title = title;
       if (!st.f.agent_context || st.f.agent_context === st.auto.agent) st.f.agent_context = agent;
       st.auto = { title: title, agent: agent };
+      // Handing off a project that is already listed: start from what its page says now.
+      if (res.data.listed && res.data.can_hand_off) {
+        return BC.api("GET", "/api/projects/" + encodeURIComponent(res.data.listed) + "?t=" + Date.now()).then(function (cur) {
+          if (cur.ok) {
+            var c = cur.data.project, k = cur.data.packet || {};
+            st.f = { title: c.title || "", kind: c.kind, genre: c.genre, base_game: c.base_game || "", tech: c.tech || "", browser: !!c.browser, note: c.note || "",
+              works: k.works || "", broken: k.broken || "", vision: k.vision || "", agent_context: k.agent_context || agent };
+            if (Array.isArray(k.provenance) && k.provenance.length) st.prov = k.provenance.map(function (x) { return { part: String(x.part || ""), how: String(x.how || "") }; });
+            st.rating = c.rating || "everyone";
+            st.notes = {};
+            (c.content_notes || []).forEach(function (n) { st.notes[n] = true; });
+            if (c.assets_license) st.assets = c.assets_license;
+          }
+          go(3);
+        });
+      }
       go(3);
     });
   }
 
   function stepOwnership() {
     var i = st.info, where = "github.com/" + i.repo.full_name;
-    if (i.listed && !i.can_update) {
+    if (i.listed && i.can_hand_off && st.intent !== "leave") {
+      return [h("h2", { text: "Ownership check" }),
+        h("div", { class: "callout plain" }, [
+          h("p", null, [h("strong", { text: "This project is already listed, and you maintain it." })]),
+          h("p", null, ["To change its page, ", h("a", { href: "edit.html?id=" + encodeURIComponent(i.listed), text: "edit the page" }), ". To hand it off, go back to step 1 and choose \"Stepping away\"."])]),
+        h("div", { class: "actions" }, [btn("Back to step 1", function () { go(1); }, "btn-ghost")])];
+    }
+    if (i.listed && !i.can_update && !i.can_hand_off) {
       return [h("h2", { text: "Ownership check" }),
         h("div", { class: "callout bad" }, [h("span", { class: "mark", "aria-hidden": "true", text: "!" }), h("div", null, [
           h("p", null, [h("strong", { text: "Already listed" })]),
@@ -176,7 +199,8 @@
       h("div", { class: "callout" }, [h("span", { class: "mark", "aria-hidden": "true", text: "✓" }), h("div", null, [
         h("p", null, [h("strong", { text: "Verified: @" + st.user.handle + " has admin rights on " + where })]),
         h("p", { text: "GitHub confirmed this just now, and Brainchild asks again when you publish. You'll show as a verified owner on the project page." })])]),
-      i.listed ? h("p", { text: "This project already has a page on Brainchild from before sign-in existed. Publishing here updates that page and adds its license record; it doesn't create a second listing." }) : null,
+      i.listed && i.can_hand_off ? h("p", { text: "This project is already listed. Finishing these steps puts it up for adoption on the same page, with a new license snapshot; nothing is duplicated and its lineage stays." }) : null,
+      i.listed && !i.can_hand_off ? h("p", { text: "This project already has a page on Brainchild from before sign-in existed. Publishing here updates that page and adds its license record; it doesn't create a second listing." }) : null,
       h("p", { class: "muted", text: "Why this matters: nobody can list your project, or claim to be you, without control of the repository." }),
       h("div", { class: "actions" }, [btn("Continue to license", function () { go(4); }), back()])
     ];

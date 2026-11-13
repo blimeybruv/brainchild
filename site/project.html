@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Project · Brainchild</title>
 <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/styles.css?v=7">
+<link rel="stylesheet" href="css/styles.css?v=8">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -32,6 +32,7 @@
       <p class="sub" id="p-sub"></p>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:12px">
+      <a class="btn btn-ghost" href="#" id="p-edit" hidden>Edit page</a>
       <a class="btn btn-ghost" href="#" id="p-fork">Just fork it</a>
       <a class="btn btn-primary" href="#" id="p-cta"></a>
     </div>
@@ -55,7 +56,7 @@
 
       <section aria-labelledby="packet-h">
         <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:16px">
-          <h2 id="packet-h" style="margin:0;font-size:28px">Handoff packet</h2>
+          <h2 id="packet-h" style="margin:0;font-size:28px">Handoff packet <span class="muted packet-date" id="p-packet-date"></span></h2>
           <a href="#" style="font-size:15px">Download packet (.zip)</a>
         </div>
         <div class="tabs" role="tablist" aria-label="Handoff packet sections" id="tabs"></div>
@@ -93,6 +94,10 @@
         <h2>Details</h2>
         <dl class="details" id="p-details"></dl>
       </div>
+      <div class="panel" id="p-changes-panel" hidden>
+        <h2>Recent changes</h2>
+        <ul class="changes" id="p-changes"></ul>
+      </div>
       <div class="panel">
         <h2 style="margin-bottom:6px">Forks</h2>
         <p class="muted" style="margin:0;font-size:15px">No forks yet. Make the first continuation.</p>
@@ -113,10 +118,10 @@
 </footer>
 
 <script src="js/data.js"></script>
-<script src="js/common.js?v=6"></script>
+<script src="js/common.js?v=8"></script>
 <dialog id="report-dialog" class="report-dialog" aria-labelledby="report-h"></dialog>
 
-<script src="js/project.js?v=6"></script>
+<script src="js/project.js?v=8"></script>
 <script src="js/discussion.js?v=6"></script>
 <script src="js/play.js?v=7"></script>
 </body>

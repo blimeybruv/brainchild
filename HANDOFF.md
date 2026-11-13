@@ -142,30 +142,27 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    - **Not done:** cross-origin isolation headers, which some engines' threaded web exports need (Godot 4
      with threads); add them when a game needs them.
    - **First test:** the owner's Zombie Outbreak Simulator.
-8. **Edit a project page** (requested by the owner 13 Nov). Do this before the items in step 9.
-   - **Who and how:** add an "Edit page" button on the project page, shown only to the current maintainer.
-     Re-run `requireRepoAdmin` on every save, not only when the page opens. Reuse the listing flow's
-     fields and validation.
-   - **Editable:**
-     - Title, one-line description, genre, "built with" (tech), browser flag
-     - The packet: works, broken, vision, agent context, provenance
-     - Screenshots (already done)
-     - Status, limited to choices that fit the maintainer's plans: Open for collaboration, Needs testers,
-       Active or Archived. Moving to Up for adoption must go through the handoff flow, so the name and
-       license questions are asked.
-     - Content rating and notes. Every rating change is logged with the old and new values, and is visible
-       to moderators.
-   - **Not editable:**
-     - Lineage and credit
-     - Existing license snapshots. If the repo's license changed, take a new snapshot and add it to the
-       License record history, keeping the old ones.
-     - The repo link (a different repo means a transfer or a new listing)
-     - The name-rights answer after a handoff
-   - **Shown on the page:**
-     - "Packet updated [date]" (packets.updated_at), so adopters can judge freshness
-     - A short public change log: field names changed and when, not the old text
-   - **Safety:** apply the same same-origin and CSRF checks as the other write routes. All text goes in
-     with textContent.
+8. **Edit a project page.** *Done 13 Nov.* The maintainer sees an **Edit page** button on the project page
+   (`site/edit.html`, `site/js/edit.js`, `POST /api/projects/<id>/edit` in `api/listings.js`).
+   - **Editable:** title, one-line description, genre, built with, browser flag, the packet, status (Open
+     for collaboration, Needs testers, Active, Archived), content rating and notes. Screenshots and the
+     browser build stay on the project page.
+   - **Every save** re-runs `requireRepoAdmin`, checks same-origin, and validates with the listing rules.
+   - **Rating changes** are logged with old and new values in `project_changes` and listed for moderators
+     on `site/mod.html`.
+   - **License:** each save compares the repo's license file with the last snapshot. If it changed, a new
+     `license_change` record is added and the earlier ones are kept. A repo with no license file can't
+     be saved. A GPL-family project that has passed to another maintainer can't change license; its
+     original maker (the only lineage entry) may.
+   - **Not editable:** lineage, existing license records, the repo, type, base game, and the name-rights
+     answer.
+   - **Up for adoption** can't be chosen in the editor. The page links to the listing flow
+     (`list.html?intent=leave&repo=...`), which now accepts the maintainer's own listed project: it asks
+     the license and name questions, starts from the page's current content, puts the project up for
+     adoption in place and adds a `handoff` license record. A maintainer can also withdraw from adoption
+     by choosing another status in the editor.
+   - **Shown on the project page:** "updated [date]" beside the packet heading, and a "Recent changes"
+     panel listing field names and dates only.
 9. **Then, in this order:**
    - **Discussion board.** *Done 13 Nov.* On the project page (`site/js/discussion.js`, `api/community.js`):
      comments with one level of replies, GitHub avatars, role labels (Maker, Original maker, Maintainer),

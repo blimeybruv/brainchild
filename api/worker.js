@@ -12,6 +12,7 @@
 //   GET  /api/my/repos                                    the signed-in user's public repos (listings.js)
 //   GET  /api/repos/<owner>/<repo>/listing-info           ownership, license and agent file for the listing form
 //   POST /api/projects                                    publish a listing (dry_run: true only previews it)
+//   POST /api/projects/<id>/edit                          the maintainer edits the page
 //   POST /api/projects/<id>/adopt                         take a project on
 //   GET  /api/projects/<id>/license                       public license record, cached for 60s
 //   GET  /api/license-text/<fingerprint>                  the stored copy of a license file
@@ -29,7 +30,7 @@
 import { json, privateJson, NO_STORE } from "./http.js";
 import { login, callback, logout, me, getSession } from "./auth.js";
 import { repoAccessRoute } from "./github.js";
-import { myRepos, listingInfo, createListing, adoptProject, licenseRecord, licenseText } from "./listings.js";
+import { myRepos, listingInfo, createListing, editProject, adoptProject, licenseRecord, licenseText } from "./listings.js";
 import { listComments, postComment, commentAction, postReport, modQueue, modResolve, modAppeal, myNotices, appealNotice } from "./community.js";
 import { addScreenshot, deleteScreenshot, serveScreenshot } from "./screenshots.js";
 import { listVotes, castVote, propose, withdrawProposal } from "./votes.js";
@@ -85,6 +86,11 @@ async function getProject(env, id) {
   project.license_record = record || null;
   const { results: shots } = await env.DB.prepare("SELECT id FROM screenshots WHERE project_id = ? ORDER BY id").bind(id).all();
   project.screenshots = shots.map((x) => x.id);
+  // The public change log: which fields changed and when (never the old text).
+  const { results: changes } = await env.DB.prepare(
+    "SELECT changed_at, fields FROM project_changes WHERE project_id = ? ORDER BY id DESC LIMIT 15"
+  ).bind(id).all();
+  project.changes = changes.map((c) => { let fields = []; try { fields = JSON.parse(c.fields); } catch { fields = []; } return { at: c.changed_at, fields }; });
   if (packet && packet.provenance) {
     try { packet.provenance = JSON.parse(packet.provenance); } catch { packet.provenance = null; }
   }
@@ -108,6 +114,8 @@ async function handlePrivate(request, env, ctx, url, path) {
     return repo[3] === "access" ? repoAccessRoute(env, session, owner, name) : listingInfo(env, session, owner, name);
   }
   if (path === "/api/projects") return createListing(request, env, ctx, await getSession(request, env)); // POST only (see handleApi)
+  const edit = path.match(/^\/api\/projects\/([a-z0-9-]{1,80})\/edit$/);
+  if (edit) return method === "POST" ? editProject(request, env, ctx, await getSession(request, env), edit[1]) : methodNotAllowed("POST");
   const adopt = path.match(/^\/api\/projects\/([a-z0-9-]{1,80})\/adopt$/);
   if (adopt) return method === "POST" ? adoptProject(request, env, ctx, await getSession(request, env), adopt[1]) : methodNotAllowed("POST");
 
@@ -148,7 +156,7 @@ async function handleApi(request, env, ctx, url) {
   const path = url.pathname.replace(/\/+$/, "");
 
   if (path.startsWith("/api/auth/") || path === "/api/me" || path.startsWith("/api/repos/") || path.startsWith("/api/my/") ||
-      (path === "/api/projects" && request.method === "POST") || /^\/api\/projects\/[^/]+\/(adopt|comments|screenshots|builds)(\/.*)?$/.test(path) ||
+      (path === "/api/projects" && request.method === "POST") || /^\/api\/projects\/[^/]+\/(adopt|edit|comments|screenshots|builds)(\/.*)?$/.test(path) ||
       path.startsWith("/api/comments/") || path === "/api/reports" || path === "/api/votes" || path.startsWith("/api/proposals") || path.startsWith("/api/mod/") || /^\/api\/screenshots\/\d+\/delete$/.test(path)) {
     try {
       return (await handlePrivate(request, env, ctx, url, path)) || notFound();

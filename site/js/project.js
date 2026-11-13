@@ -69,8 +69,20 @@ window.BC.load(function () {
   function lines(t) { return String(t).split(/\n+/).filter(Boolean); }
 
   // Facts from the database: who owns it, the license record, the lineage, and how to adopt it.
-  function renderRecord(p, lineage) {
+  function renderRecord(p, lineage, packet) {
     var pid = encodeURIComponent(p.id);
+    // How fresh the packet is, and what has changed lately (field names only).
+    if (packet && packet.updated_at) document.getElementById("p-packet-date").textContent = "· updated " + window.BC.niceDate(packet.updated_at);
+    if (p.changes && p.changes.length) {
+      var log = document.getElementById("p-changes");
+      p.changes.slice(0, 8).forEach(function (c) { log.appendChild(h("li", null, [h("span", { class: "muted", text: window.BC.niceDate(c.at) + " · " }), c.fields.join(", ")])); });
+      document.getElementById("p-changes-panel").hidden = false;
+    }
+    // Only the maintainer sees the Edit button; the server checks again on every save.
+    window.BC.whoAmI().then(function (u) {
+      var edit = document.getElementById("p-edit");
+      if (u && u.handle === p.owner && p.owner_verified) { edit.setAttribute("href", "edit.html?id=" + pid); edit.hidden = false; }
+    });
     document.dispatchEvent(new CustomEvent("bc:project", { detail: p })); // discussion.js adds screenshots
     var cta = document.getElementById("p-cta");
     if (p.status === "adopt") cta.setAttribute("href", "adopt.html?id=" + pid);
@@ -182,7 +194,7 @@ window.BC.load(function () {
     renderPacket(null);
   } else {
     window.BC.getJSON("/api/projects/" + encodeURIComponent(item.id))
-      .then(function (j) { renderPacket(j && j.packet); if (j && j.project) renderRecord(j.project, j.lineage || []); }, function () { renderPacket(null); });
+      .then(function (j) { renderPacket(j && j.packet); if (j && j.project) renderRecord(j.project, j.lineage || [], j.packet); }, function () { renderPacket(null); });
   }
   }
 });

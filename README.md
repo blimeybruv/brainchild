@@ -38,7 +38,7 @@ Previews run the same code against the test database and bucket (the `previews` 
 | Resource | Name / ID | Notes |
 |---|---|---|
 | Worker | `royal-firefly-b80b` | Static assets plus `/api/*`, custom domain `brainchild.nexus`. Bindings: `DB` (D1), `BUILDS` (R2), `ASSETS` (the `site/` files) |
-| D1 database | `brainchild-db` · `6e241536-91de-49b7-b885-35429bd01efb` | Tables: users, sessions, projects, packets, lineage, license_records, comments, comment_likes, reports, moderation_actions, screenshots, builds, proposals, votes, posts. 19 sample projects, 1 sample packet |
+| D1 database | `brainchild-db` · `6e241536-91de-49b7-b885-35429bd01efb` | Tables: users, sessions, projects, packets, lineage, license_records, comments, comment_likes, reports, moderation_actions, screenshots, builds, project_changes, proposals, votes, posts. 19 sample projects, 1 sample packet |
 | R2 bucket | `brainchild-builds` (ENAM, private) | Holds the stored license copies under `licenses/` screenshots under `screenshots/` and hosted builds under `builds/`. Lifecycle rule deletes unfinished uploads after 24 h |
 | Builds Worker | `brainchild-builds` | Serves `brainwave.nexus` and `*.brainwave.nexus`. Bindings: `DB` (read only), `BUILDS`. No workers.dev address |
 | Preview D1 database | `brainchild-db-preview` · `3b6e6ea2-8a4a-469c-9150-4dcbad16ab64` | Test copy used only by pull-request previews. Same tables and sample rows as the live database |
@@ -57,6 +57,7 @@ Previews run the same code against the test database and bucket (the `previews` 
 | `GET /api/my/repos` | The signed-in user's public GitHub repos, for the listing form |
 | `GET /api/repos/<owner>/<repo>/listing-info` | Ownership, detected license and agent file for one repo |
 | `POST /api/projects` | Publishes a listing (signed-in admins of the repo only) |
+| `POST /api/projects/<id>/edit` | The maintainer edits the page; logs which fields changed |
 | `POST /api/projects/<id>/adopt` | Takes a project on, by fork or transfer |
 | `GET /api/projects/<id>/license` | The public license record: every release with its commit and fingerprint |
 | `GET /api/license-text/<fingerprint>` | The stored copy of a license file |

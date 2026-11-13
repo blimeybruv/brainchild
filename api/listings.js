@@ -192,7 +192,7 @@ export async function myRepos(env, session) {
 // GitHub repo id, so those are matched on the repo address instead.
 async function findListing(env, repo) {
   return env.DB.prepare(
-    "SELECT id, owner_id, repo_id FROM projects WHERE repo_id = ?1 OR (repo_id IS NULL AND lower(repo_url) = lower(?2)) ORDER BY repo_id IS NULL LIMIT 1"
+    "SELECT id, owner_id, repo_id, status FROM projects WHERE repo_id = ?1 OR (repo_id IS NULL AND lower(repo_url) = lower(?2)) ORDER BY repo_id IS NULL LIMIT 1"
   ).bind(repo.id, "https://github.com/" + repo.full_name).first();
 }
 // An older listing that belongs to this user: listing the repo again completes that listing
@@ -212,6 +212,8 @@ export async function listingInfo(env, session, owner, name) {
   if (existing) {
     out.listed = existing.id;
     out.can_update = out.can_list && isLegacyOwn(existing, session); // see createListing
+    // The maintainer of a listed project can still put it up for adoption through the listing flow.
+    out.can_hand_off = out.can_list && !out.can_update && existing.owner_id === session.userId && existing.status !== "adopt";
   }
   if (!out.can_list) return privateJson(out);
   const lic = await fetchLicense(env, session, a.repo.full_name, null);
@@ -320,13 +322,20 @@ export async function createListing(request, env, ctx, session) {
   if (!r.default_branch) return bad("no_commits", 409);
   const existing = await findListing(env, r);
   const upgrade = isLegacyOwn(existing, session);
-  if (existing && !upgrade) return bad("already_listed", 409, { id: existing.id });
+  // The maintainer of an already-listed project who is now leaving: the same flow puts it up
+  // for adoption in place, so the license and name questions are asked.
+  const handoff = !!existing && !upgrade && existing.owner_id === session.userId && existing.status !== "adopt" && f.intent === "leave";
+  if (existing && !upgrade && !handoff) return bad("already_listed", 409, { id: existing.id });
 
   const head = await headCommit(env, session, r.full_name, r.default_branch);
   if (head.error) return bad(head.error, head.status);
   const lic = await fetchLicense(env, session, r.full_name, head.sha);
   if (lic.error) return bad(lic.error, lic.status);
   if (!lic.license) return bad("no_license", 409);
+  const last = existing ? await env.DB.prepare(
+    "SELECT version, spdx_id FROM license_records WHERE project_id = ? ORDER BY version DESC LIMIT 1"
+  ).bind(existing.id).first() : null;
+  if (last && !(await licenseChangeAllowed(env, existing.id, last, lic.license.spdx))) return bad("license_must_stay", 409, { license: last.spdx_id });
 
   const date = today();
   const rules = handoffRules({
@@ -341,7 +350,7 @@ export async function createListing(request, env, ctx, session) {
 
   const mine = await env.DB.prepare("SELECT COUNT(*) AS n FROM projects WHERE owner_id = ?").bind(session.userId).first();
   if (mine && mine.n >= MAX_LISTINGS_PER_USER) return bad("too_many_listings", 429);
-  const id = upgrade ? existing.id : await uniqueSlug(env, r.name || repo.name, r.owner || repo.owner);
+  const id = existing ? existing.id : await uniqueSlug(env, r.name || repo.name, r.owner || repo.owner);
   if (!id) return bad("server_error", 500);
   const licenseKey = await storeLicense(env, lic.license);
   const now = new Date().toISOString().replace("T", " ").slice(0, 19);
@@ -349,15 +358,15 @@ export async function createListing(request, env, ctx, session) {
 
   const label = licenseLabel(lic.license.spdx, f.assets_license);
   const repoUrl = "https://github.com/" + r.full_name;
-  const statements = upgrade ? [
+  const statements = existing ? [
     env.DB.prepare(
       `UPDATE projects SET title = ?, kind = ?, genre = ?, status = ?, base_game = ?, tech = ?, browser = ?, license = ?, note = ?,
               repo_url = ?, updated_at = ?, handed_off_at = ?, intent = ?, repo_id = ?, repo_full_name = ?, rating = ?,
               content_notes = ?, assets_license = ?, name_rights = ?, open_to_transfer = ?
-        WHERE id = ? AND repo_id IS NULL AND owner_id = ?`
+        WHERE id = ? AND owner_id = ? AND (repo_id IS NULL OR repo_id = ?)`
     ).bind(f.title, f.kind, f.genre, f.status, f.base_game || null, f.tech || null, f.browser, label, f.note, repoUrl, now, handedOff,
       f.intent, r.id, r.full_name, f.rating, JSON.stringify(f.content_notes), f.assets_license, f.name_rights, f.open_to_transfer,
-      id, session.userId),
+      id, session.userId, r.id),
     env.DB.prepare(
       `INSERT INTO packets (project_id, works, broken, vision, agent_context, provenance, handoff_rules, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT (project_id) DO UPDATE SET works = excluded.works, broken = excluded.broken, vision = excluded.vision,
@@ -390,9 +399,10 @@ export async function createListing(request, env, ctx, session) {
   statements.push(env.DB.prepare(
     `INSERT INTO license_records (project_id, version, kind, repo_full_name, commit_sha, spdx_id, license_sha256, license_key,
                                   license_path, assets_license, name_rights, recorded_by, recorded_at)
-     VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  ).bind(id, f.intent === "leave" ? "handoff" : "listing", r.full_name, head.sha, lic.license.spdx, lic.license.sha256, licenseKey,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(id, (last ? last.version : 0) + 1, f.intent === "leave" ? "handoff" : "listing", r.full_name, head.sha, lic.license.spdx, lic.license.sha256, licenseKey,
     lic.license.path, f.assets_license, f.name_rights, session.userId, now));
+  if (handoff) statements.push(changeRow(env, id, session.userId, now, ["status", "handed off"], null));
   try {
     await env.DB.batch(statements);
   } catch (err) {
@@ -402,6 +412,148 @@ export async function createListing(request, env, ctx, session) {
   }
   ctx.waitUntil(forgetCached(request, ["/api/projects", "/api/projects/" + id, "/api/projects/" + id + "/license"]));
   return privateJson({ ok: true, id, url: "/project.html?id=" + encodeURIComponent(id), summary, rules }, 201);
+}
+
+// A project's license may change only where the rules allow it: GPL-family code that has
+// passed to another maintainer stays under the license it was released with.
+async function licenseChangeAllowed(env, projectId, last, newSpdx) {
+  if (!last || !isCopyleft(last.spdx_id) || newSpdx === last.spdx_id) return true;
+  const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM lineage WHERE project_id = ?").bind(projectId).first();
+  return n.n <= 1; // only the original maker, who holds the rights, may relicense it
+}
+
+// One line of the public change log: which fields changed and when, never the old text.
+// Rating changes also keep their old and new values, for moderators.
+function changeRow(env, projectId, userId, now, fields, rating) {
+  return env.DB.prepare(
+    "INSERT INTO project_changes (project_id, user_id, changed_at, fields, rating_old, rating_new, notes_old, notes_new) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+  ).bind(projectId, userId, now, JSON.stringify(fields), rating ? rating.oldRating : null, rating ? rating.newRating : null,
+    rating ? rating.oldNotes : null, rating ? rating.newNotes : null);
+}
+
+// ---------- POST /api/projects/<id>/edit : the maintainer edits the page ----------
+//
+// Editable: title, description, genre, built with, browser flag, the packet, status (not
+// "up for adoption": that goes through the listing flow), rating and content notes.
+// Not editable here: lineage, license records, the repo, the name-rights answer, type, base game.
+
+export async function editProject(request, env, ctx, session, id) {
+  if (!isSameOrigin(request)) return bad("forbidden", 403);
+  if (!session) return bad("not_signed_in", 401);
+  if (!/^[a-z0-9-]{1,80}$/.test(id)) return bad("not_found", 404);
+  const body = await readJson(request);
+  if (!body) return bad("bad_request");
+  const p = await env.DB.prepare(
+    `SELECT id, owner_id, repo_full_name, title, kind, genre, tech, browser, note, status, intent, rating, content_notes, assets_license
+       FROM projects WHERE id = ? AND hidden_at IS NULL`
+  ).bind(id).first();
+  if (!p) return bad("not_found", 404);
+  if (p.owner_id !== session.userId) return bad("not_maintainer", 403);
+  if (!p.repo_full_name) return bad("listing_not_verified", 409);
+
+  const errors = [], f = {};
+  const take = (key, max, opts) => { const r = text(body[key], max, opts); if (r.error) errors.push(key); else f[key] = r.value; };
+  take("title", 80, { required: true });
+  take("note", 200, { required: true });
+  take("tech", 60);
+  f.genre = GENRES.includes(body.genre) ? body.genre : null;
+  if (!f.genre) errors.push("genre");
+  f.browser = body.browser === true && p.kind !== "Mod" ? 1 : 0;
+  // "Up for adoption" can be kept but not chosen here; choosing it means handing off.
+  const statuses = ["help", "test", "active", "archived"].concat(p.status === "adopt" ? ["adopt"] : []);
+  f.status = statuses.includes(body.status) ? body.status : null;
+  if (!f.status) errors.push("status");
+  f.rating = ["everyone", "teen", "mature"].includes(body.rating) ? body.rating : null;
+  if (!f.rating) errors.push("rating");
+  const notes = Array.isArray(body.content_notes) ? body.content_notes : [];
+  f.content_notes = JSON.stringify(CONTENT_NOTES.filter((n) => notes.includes(n)));
+  if (notes.some((n) => !CONTENT_NOTES.includes(n))) errors.push("content_notes");
+  take("works", 2000, { multiline: true, required: true });
+  take("broken", 2000, { multiline: true });
+  take("vision", 2000, { multiline: true });
+  take("agent_context", 20000, { multiline: true });
+  const prov = Array.isArray(body.provenance) ? body.provenance : [];
+  const provenance = [];
+  if (prov.length > 30) errors.push("provenance");
+  for (const row of prov.slice(0, 30)) {
+    const part = text(row && row.part, 80), how = text(row && row.how, 200);
+    if (part.error || how.error) { errors.push("provenance"); break; }
+    if (part.value || how.value) provenance.push({ part: part.value, how: how.value });
+  }
+  f.provenance = JSON.stringify(provenance);
+  if (errors.length) return bad("invalid_fields", 400, { fields: [...new Set(errors)] });
+
+  // GitHub is asked on every save whether this person still has admin rights on the repo.
+  const [owner, name] = p.repo_full_name.split("/");
+  const own = await requireRepoAdmin(env, session, owner, name);
+  if (own.response) return own.response;
+  const r = own.repo;
+
+  // If the repo's license has changed since the last snapshot, a new snapshot is added to the
+  // record. The earlier ones stay exactly as they were.
+  const last = await env.DB.prepare(
+    "SELECT version, spdx_id, license_sha256 FROM license_records WHERE project_id = ? ORDER BY version DESC LIMIT 1"
+  ).bind(id).first();
+  let snapshot = null;
+  if (r.default_branch) {
+    const head = await headCommit(env, session, r.full_name, r.default_branch);
+    if (head.error) return bad(head.error, head.status);
+    const lic = await fetchLicense(env, session, r.full_name, head.sha);
+    if (lic.error) return bad(lic.error, lic.status);
+    if (!lic.license) return bad("no_license", 409);
+    if (!last || last.license_sha256 !== lic.license.sha256) {
+      if (!(await licenseChangeAllowed(env, id, last, lic.license.spdx))) return bad("license_must_stay", 409, { license: last.spdx_id });
+      snapshot = { head, license: lic.license, key: await storeLicense(env, lic.license) };
+    }
+  }
+
+  const packet = await env.DB.prepare("SELECT works, broken, vision, agent_context, provenance FROM packets WHERE project_id = ?").bind(id).first() || {};
+  const changed = [];
+  const differs = (a, b) => (a === null || a === undefined ? "" : String(a)) !== (b === null || b === undefined ? "" : String(b));
+  for (const [key, label] of [["title", "title"], ["note", "description"], ["genre", "genre"], ["tech", "built with"], ["browser", "runs in browser"], ["status", "status"]]) {
+    if (differs(p[key], f[key])) changed.push(label);
+  }
+  const ratingChanged = differs(p.rating, f.rating) || differs(p.content_notes, f.content_notes);
+  if (differs(p.rating, f.rating)) changed.push("rating");
+  if (differs(p.content_notes, f.content_notes)) changed.push("content notes");
+  const packetChanged = [];
+  for (const [key, label] of [["works", "what works"], ["broken", "what's broken"], ["vision", "vision"], ["agent_context", "agent context"], ["provenance", "asset provenance"]]) {
+    if (differs(packet[key], f[key])) packetChanged.push(label);
+  }
+  if (snapshot) changed.push("license snapshot");
+  const all = changed.concat(packetChanged);
+  if (!all.length) return privateJson({ ok: true, changed: [] });
+
+  const now = new Date().toISOString().replace("T", " ").slice(0, 19);
+  const leavingAdoption = p.status === "adopt" && f.status !== "adopt"; // the maker is staying after all
+  const label = snapshot ? licenseLabel(snapshot.license.spdx, p.assets_license) : null;
+  const statements = [
+    env.DB.prepare(
+      `UPDATE projects SET title = ?, note = ?, genre = ?, tech = ?, browser = ?, status = ?, rating = ?, content_notes = ?, updated_at = ?,
+              intent = CASE WHEN ?10 = 1 THEN 'stay' ELSE intent END, open_to_transfer = CASE WHEN ?10 = 1 THEN 0 ELSE open_to_transfer END,
+              license = COALESCE(?11, license)
+        WHERE id = ?12 AND owner_id = ?13`
+    ).bind(f.title, f.note, f.genre, f.tech || null, f.browser, f.status, f.rating, f.content_notes, now, leavingAdoption ? 1 : 0, label, id, session.userId),
+    changeRow(env, id, session.userId, now, all, ratingChanged ? { oldRating: p.rating, newRating: f.rating, oldNotes: p.content_notes, newNotes: f.content_notes } : null)
+  ];
+  if (packetChanged.length) {
+    statements.push(env.DB.prepare(
+      `INSERT INTO packets (project_id, works, broken, vision, agent_context, provenance, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT (project_id) DO UPDATE SET works = excluded.works, broken = excluded.broken, vision = excluded.vision,
+         agent_context = excluded.agent_context, provenance = excluded.provenance, updated_at = excluded.updated_at`
+    ).bind(id, f.works, f.broken || null, f.vision || null, f.agent_context || null, f.provenance, now));
+  }
+  if (snapshot) {
+    statements.push(env.DB.prepare(
+      `INSERT INTO license_records (project_id, version, kind, repo_full_name, commit_sha, spdx_id, license_sha256, license_key,
+                                    license_path, assets_license, name_rights, recorded_by, recorded_at)
+       SELECT ?, ?, 'license_change', ?, ?, ?, ?, ?, ?, assets_license, name_rights, ?, ? FROM projects WHERE id = ?`
+    ).bind(id, (last ? last.version : 0) + 1, r.full_name, snapshot.head.sha, snapshot.license.spdx, snapshot.license.sha256, snapshot.key,
+      snapshot.license.path, session.userId, now, id));
+  }
+  await env.DB.batch(statements);
+  ctx.waitUntil(forgetCached(request, ["/api/projects", "/api/projects/" + id, "/api/projects/" + id + "/license"]));
+  return privateJson({ ok: true, changed: all });
 }
 
 // ---------- GET /api/projects/<id>/license : the public license record ----------

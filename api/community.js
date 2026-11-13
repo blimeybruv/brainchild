@@ -223,7 +223,13 @@ export async function modQueue(request, env, session, url) {
       WHERE a.action = 'remove' AND a.appeal_at IS NOT NULL AND a.appeal_outcome IS NULL
       ORDER BY a.appeal_at LIMIT 200`
   ).all();
-  return privateJson({ reports, appeals: closed ? [] : appeals });
+  // Rating changes made by maintainers, with the old and new values, newest first.
+  const { results: ratings } = await env.DB.prepare(
+    `SELECT c.project_id, p.title AS project_title, u.handle AS changed_by, c.changed_at, c.rating_old, c.rating_new, c.notes_old, c.notes_new
+       FROM project_changes c JOIN projects p ON p.id = c.project_id LEFT JOIN users u ON u.id = c.user_id
+      WHERE c.rating_new IS NOT NULL ORDER BY c.id DESC LIMIT 50`
+  ).all();
+  return privateJson({ reports, appeals: closed ? [] : appeals, rating_changes: closed ? [] : ratings });
 }
 
 // POST /api/mod/reports/<id>/resolve  { decision: "remove" | "dismiss", ground, reasons }

@@ -9,11 +9,16 @@
   function copyleft(s) { return /^(GPL|AGPL|LGPL)-/.test(s || ""); }
   function licName(r) { return r.spdx_id || "Custom license"; }
   function short(sha) { return String(sha || "").slice(0, 7); }
-  function kicker(r) { return { handoff: "At handoff", listing: "When listed", adoption: "After adoption", relicense: "Relicensed" }[r.kind] || "Version " + r.version; }
+  function kicker(r) { return { handoff: "At handoff", listing: "When listed", adoption: "After adoption", relicense: "Relicensed", license_change: "License changed" }[r.kind] || "Version " + r.version; }
   function nameRule(n) { return { keep: "Adopters may keep it", continuation: "Keep it, as a continuation", rename: "Adopters must rename" }[n] || "Stays with the maintainer"; }
 
   function meaning(r) {
     var first = data.records[0], lic = licName(r), c = short(r.commit_sha);
+    if (r.version > 1 && r.kind === "license_change") {
+      var prev = data.records.filter(function (x) { return x.version === r.version - 1; })[0] || first;
+      return "The repository's license file changed. From commit " + c + " the maintainer releases the project under " + lic + ". " +
+        "Everything released before that, up to commit " + short(prev.commit_sha) + ", stays under " + licName(prev) + ", and that can't be taken back.";
+    }
     if (r.version > 1 && r.kind === "relicense") {
       return "The new maintainer releases their version under " + lic + ". That's allowed because " + licName(first) + " permits it, but only for their version. " +
         "The original code up to commit " + short(first.commit_sha) + " is still " + licName(first) + ", and that can't be taken back.";
@@ -32,7 +37,9 @@
     var items = [];
     data.records.forEach(function (r) {
       var by = r.recorded_by ? "@" + r.recorded_by + " · " : "";
-      if (r.kind === "adoption" || r.kind === "relicense") {
+      if (r.kind === "license_change") {
+        items.push({ title: "License changed to " + licName(r), detail: by + "from commit " + short(r.commit_sha) + " · " + BC.niceDate(r.recorded_at) });
+      } else if (r.kind === "adoption" || r.kind === "relicense") {
         var l = data.lineage.filter(function (x) { return x.repo_full_name === r.repo_full_name && x.how !== "created"; })[0];
         items.push({ title: "Adopted by @" + (r.recorded_by || "a new maintainer"), detail: (l && l.how === "transferred" ? "Repository transferred to " : "Forked to ") + "github.com/" + r.repo_full_name + " · " + BC.niceDate(r.recorded_at) });
         items.push({ title: r.kind === "relicense" ? "New work relicensed " + licName(r) : "Stays under " + licName(r), detail: by + "from commit " + short(r.commit_sha) });

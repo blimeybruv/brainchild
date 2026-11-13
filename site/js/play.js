@@ -21,6 +21,8 @@
       stage.textContent = "";
       stage.classList.add("playing");
       stage.appendChild(frame);
+      // Bring the whole play area into the window, so the game's lower controls aren't below the fold.
+      try { stage.scrollIntoView({ block: "start", behavior: "smooth" }); } catch (e) { stage.scrollIntoView(true); }
       var full = h("button", { class: "chip", type: "button", text: "Full screen" });
       full.addEventListener("click", function () { if (frame.requestFullscreen) frame.requestFullscreen(); });
       var stop = h("button", { class: "chip", type: "button", text: "Stop" });

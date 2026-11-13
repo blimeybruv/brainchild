@@ -172,12 +172,18 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    `blimeybruv/zombie-outbreak-simulator`, and publish. It should update the existing Zombie Outbreak
    Simulator page rather than make a second one, and add a **License record** link under Details.
    Everything GitHub-facing in these steps has only been tested against a stand-in for GitHub.
-3. **Lock the stored license copies?** Cloudflare R2 can lock the `licenses/` folder so the copies can't be
-   deleted or overwritten by anyone, including you, until the lock is removed. It makes the records
-   stronger evidence, but a file stored by mistake couldn't be removed without lifting the lock first.
-   Say yes or no; the agent can set it through the Cloudflare API.
-4. **Ask Software Heritage to archive each handed-off repo?** It is a free public archive. It would mean
-   Brainchild sends the repo's address to a third party at handoff. Say yes or no.
+3. **License copy lock: done 13 Nov.** The owner said yes. The R2 bucket `brainchild-builds` has a lock
+   rule, `license-records` (prefix `licenses/`, indefinite). Objects there can't be deleted or overwritten
+   until the rule is removed. `storeLicense` already skips existing keys, so nothing needs to change. Don't
+   write anything under `licenses/` except license copies.
+4. **Software Heritage: answered yes, 13 Nov. To build.**
+   - **When:** at handoff (and at first listing), request an archive of the repo with Software Heritage's
+     "save code now" API: `POST https://archive.softwareheritage.org/api/1/origin/save/git/url/<repo url>/`.
+     Use `ctx.waitUntil` so the listing never waits on it or fails because of it.
+   - **What to store:** the request id and status, then show a "Archived at Software Heritage" link on the
+     License record page once the save succeeds.
+   - **What to send:** only the public repo URL, nothing about the user.
+   - **Rate limit:** anonymous requests are rate-limited, so queue and retry gently.
 5. **Hosted builds address: answered 13 Nov.** The owner prefers a separate domain, for per-game
    separation, but hasn't bought one for builds yet. **Never use `brainwave.nexus`**: the owner bought it
    for a different site. Step 7 stays blocked until the owner names a builds domain. Don't start on

@@ -40,7 +40,7 @@
   <section class="panel vote" aria-labelledby="vote-h">
     <div class="vote-head">
       <div>
-        <p class="eyebrow">Community project · voting closes [DATE]</p>
+        <p class="eyebrow" id="vote-eyebrow">Community project</p>
         <h2 id="vote-h">Pick next month's community project</h2>
         <p>Members proposed these. The winner gets a shared goal list, a pinned thread, and everyone's help for a month.</p>
       </div>
@@ -65,7 +65,7 @@
         </div>
         <div class="field">
           <label for="goal">What should the community do with it?</label>
-          <textarea id="goal" class="textarea" rows="4" required placeholder="e.g. finish the last three levels and fix the save bug"></textarea>
+          <textarea id="goal" class="textarea" rows="4" required maxlength="300" placeholder="e.g. finish the last three levels and fix the save bug"></textarea>
         </div>
         <button type="submit" class="btn btn-primary btn-block">Submit proposal</button>
         <p class="form-note" id="propose-note" role="status"></p>
@@ -103,6 +103,6 @@
 
 <script src="js/data.js"></script>
 <script src="js/common.js?v=4"></script>
-<script src="js/blog.js"></script>
+<script src="js/blog.js?v=5"></script>
 </body>
 </html>

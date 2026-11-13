@@ -65,14 +65,15 @@ Previews run the same code against the test database and bucket (the `previews` 
 | `GET /api/my/notices`, `POST /api/my/notices/<id>/appeal` | Decisions about your own posts, and your reports |
 | `POST /api/projects/<id>/screenshots`, `POST /api/screenshots/<id>/delete` | Add or remove a screenshot (maintainer only) |
 | `GET /api/screenshots/<id>` | A screenshot image |
+| `GET`/`POST /api/votes` | This month's community-project vote; one vote per person |
+| `POST /api/proposals`, `POST /api/proposals/<id>/delete` | Propose a project for the vote, or withdraw your proposal |
 | `GET /api/repos/<owner>/<repo>/access` | Whether the signed-in user is an admin of that GitHub repo (the rule for listing it) |
 
 ## What's still sample / placeholder
 
 - The 19 listings, blog posts and community candidates are sample content.
-- Downloads and the proposal form don't save anything yet. Sign-in, listing a project, the license
-  record, adopting a project, discussion, reports and moderation, and screenshots work.
-- Votes are remembered only in the visitor's own browser.
+- Downloads don't work yet, and the blog posts are samples. Sign-in, listing a project, the license
+  record, adopting a project, discussion, reports and moderation, screenshots, and the monthly vote work.
 - Anything in `[brackets]` is a gap to fill.
 
 ## Next steps

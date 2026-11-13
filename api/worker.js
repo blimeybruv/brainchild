@@ -22,6 +22,7 @@
 //   GET  /api/my/notices, POST /api/my/notices/<id>/appeal
 //   POST /api/projects/<id>/screenshots, POST /api/screenshots/<id>/delete   maintainer only (screenshots.js)
 //   GET  /api/screenshots/<id>                            public image
+//   GET/POST /api/votes, POST /api/proposals, POST /api/proposals/<id>/delete   monthly community vote (votes.js)
 
 import { json, privateJson, NO_STORE } from "./http.js";
 import { login, callback, logout, me, getSession } from "./auth.js";
@@ -29,6 +30,7 @@ import { repoAccessRoute } from "./github.js";
 import { myRepos, listingInfo, createListing, adoptProject, licenseRecord, licenseText } from "./listings.js";
 import { listComments, postComment, commentAction, postReport, modQueue, modResolve, modAppeal, myNotices, appealNotice } from "./community.js";
 import { addScreenshot, deleteScreenshot, serveScreenshot } from "./screenshots.js";
+import { listVotes, castVote, propose, withdrawProposal } from "./votes.js";
 
 const PROJECT_FIELDS =
   "p.id, p.title, p.kind, p.genre, p.status, p.base_game, p.tech, p.browser, p.license, p.note, p.tone, p.featured, p.repo_url, " +
@@ -117,6 +119,10 @@ async function handlePrivate(request, env, ctx, url, path) {
   if (path === "/api/my/notices") return method === "GET" ? myNotices(env, session) : methodNotAllowed("GET");
   m = path.match(/^\/api\/my\/notices\/(\d{1,12})\/appeal$/);
   if (m) return method === "POST" ? appealNotice(request, env, session, Number(m[1])) : methodNotAllowed("POST");
+  if (path === "/api/votes") return method === "GET" ? listVotes(env, session) : method === "POST" ? castVote(request, env, session) : methodNotAllowed("GET, POST");
+  if (path === "/api/proposals") return method === "POST" ? propose(request, env, session) : methodNotAllowed("POST");
+  m = path.match(/^\/api\/proposals\/(\d{1,12})\/delete$/);
+  if (m) return method === "POST" ? withdrawProposal(request, env, session, Number(m[1])) : methodNotAllowed("POST");
   m = path.match(/^\/api\/projects\/([a-z0-9-]{1,80})\/screenshots$/);
   if (m) return method === "POST" ? addScreenshot(request, env, session, m[1]) : methodNotAllowed("POST");
   m = path.match(/^\/api\/screenshots\/(\d{1,12})\/delete$/);
@@ -129,7 +135,7 @@ async function handleApi(request, env, ctx, url) {
 
   if (path.startsWith("/api/auth/") || path === "/api/me" || path.startsWith("/api/repos/") || path.startsWith("/api/my/") ||
       (path === "/api/projects" && request.method === "POST") || /^\/api\/projects\/[^/]+\/(adopt|comments|screenshots)$/.test(path) ||
-      path.startsWith("/api/comments/") || path === "/api/reports" || path.startsWith("/api/mod/") || /^\/api\/screenshots\/\d+\/delete$/.test(path)) {
+      path.startsWith("/api/comments/") || path === "/api/reports" || path === "/api/votes" || path.startsWith("/api/proposals") || path.startsWith("/api/mod/") || /^\/api\/screenshots\/\d+\/delete$/.test(path)) {
     try {
       return (await handlePrivate(request, env, ctx, url, path)) || notFound();
     } catch (err) {

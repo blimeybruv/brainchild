@@ -148,8 +148,15 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
      refused. Admin rights on the repo are re-checked with GitHub on every upload and delete. Images are
      served from `/api/screenshots/<id>` with a fixed image type and `nosniff`, cached for 5 minutes. The
      first screenshot shows on the project page and on cards.
-   - Blog votes (one per user per month, already in the schema). Note: `site/js/blog.js` hard-codes three
-     sample listing ids and the page throws if any of them is missing from the database; fix that here.
+   - **Blog votes.** *Done 13 Nov.* The blog page's vote and proposal form now use the database
+     (`api/votes.js`, `site/js/blog.js`). During each calendar month (UTC) people propose and vote on next
+     month's community project. Any project that is up for adoption can be proposed once per month, with a
+     goal of 10 to 300 characters; each person can make three proposals a month and withdraw their own.
+     One vote per person per month, enforced by the `votes` table's key; a vote can be changed or
+     withdrawn until the month ends. Counts are not shown while voting is open. The hard-coded sample
+     candidates are gone, so the page no longer depends on particular listings existing.
+     Not built: choosing and announcing the winner at month end, and reporting a proposal's text (the
+     report form covers projects and comments only).
    - Relay rounds last. (The exact Relay rules are an Open decision.)
    Not in this queue and not built: the Mature gate from the Project mockup. Ratings and content notes are
    stored and shown in the project page's byline; the gate itself depends on the Open decision about

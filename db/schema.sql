@@ -1,4 +1,4 @@
--- Brainchild D1 schema (v4: sign-in, listings, license records, adoption, discussion, reports, screenshots). The full structure, for a new database.
+-- Brainchild D1 schema (v4: sign-in, listings, license records, adoption, discussion, reports, screenshots, blog votes). The full structure, for a new database.
 -- Changes to an existing database are in db/migrations/, applied in order to both
 -- brainchild-db and brainchild-db-preview.
 PRAGMA foreign_keys = ON;
@@ -192,6 +192,7 @@ CREATE TABLE IF NOT EXISTS proposals (
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_proposals_month ON proposals (month);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_proposals_project_month ON proposals (project_id, month);  -- once per project per month
 
 CREATE TABLE IF NOT EXISTS votes (
   user_id     TEXT NOT NULL REFERENCES users(id),

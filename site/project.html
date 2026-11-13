@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Project · Brainchild</title>
 <link rel="icon" href="img/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="css/styles.css?v=2">
+<link rel="stylesheet" href="css/styles.css?v=3">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -26,13 +26,13 @@
     <div>
       <div class="byline">
         <span class="badge" id="p-badge"></span>
-        <span>Handed off [DATE] by @[original-maker]</span>
+        <span id="p-byline">Handed off [DATE] by @[original-maker]</span>
       </div>
       <h1 id="p-title"></h1>
       <p class="sub" id="p-sub"></p>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:12px">
-      <a class="btn btn-ghost" href="#">Just fork it</a>
+      <a class="btn btn-ghost" href="#" id="p-fork">Just fork it</a>
       <a class="btn btn-primary" href="#" id="p-cta"></a>
     </div>
   </div>
@@ -73,7 +73,7 @@
       </div>
       <div class="panel">
         <h2>Lineage</h2>
-        <ol class="lineage">
+        <ol class="lineage" id="p-lineage">
           <li>
             <div class="rail"><span class="node" aria-hidden="true"></span><span class="line" aria-hidden="true"></span></div>
             <div><p class="who">@[original-maker]</p><p class="when">Created it · [DATE] to [DATE]</p></div>
@@ -108,7 +108,7 @@
 </footer>
 
 <script src="js/data.js"></script>
-<script src="js/common.js?v=2"></script>
+<script src="js/common.js?v=3"></script>
 <script src="js/project.js"></script>
 </body>
 </html>

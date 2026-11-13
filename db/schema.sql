@@ -1,4 +1,4 @@
--- Brainchild D1 schema (v2: adds GitHub sign-in). The full structure, for a new database.
+-- Brainchild D1 schema (v3: sign-in, listings, license records, adoption). The full structure, for a new database.
 -- Changes to an existing database are in db/migrations/, applied in order to both
 -- brainchild-db and brainchild-db-preview.
 PRAGMA foreign_keys = ON;
@@ -48,8 +48,17 @@ CREATE TABLE IF NOT EXISTS projects (
   created_at    TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at    TEXT NOT NULL DEFAULT (datetime('now')),
   handed_off_at TEXT,
+  intent        TEXT,                           -- stay | leave (what the maker chose when listing)
+  repo_id       INTEGER,                        -- GitHub's permanent repo id
+  repo_full_name TEXT,                          -- owner/name
+  rating        TEXT NOT NULL DEFAULT 'everyone', -- everyone | teen | mature
+  content_notes TEXT NOT NULL DEFAULT '[]',     -- JSON list, e.g. ["Violence","Historical symbols"]
+  assets_license TEXT,
+  name_rights   TEXT,                           -- keep | continuation | rename (only when leaving)
+  open_to_transfer INTEGER NOT NULL DEFAULT 0,
   CHECK (kind <> 'Mod' OR base_game IS NOT NULL)
 );
+CREATE UNIQUE INDEX IF NOT EXISTS idx_projects_repo_id ON projects (repo_id);
 CREATE INDEX IF NOT EXISTS idx_projects_filters ON projects (kind, status, genre);
 CREATE INDEX IF NOT EXISTS idx_projects_base_game ON projects (base_game);
 
@@ -61,6 +70,7 @@ CREATE TABLE IF NOT EXISTS packets (
   vision         TEXT,
   agent_context  TEXT,                          -- CLAUDE.md / AGENTS.md contents
   provenance     TEXT,                          -- JSON: [{part, how}]
+  handoff_rules  TEXT,                          -- the generated block for CLAUDE.md / AGENTS.md
   updated_at     TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -71,9 +81,30 @@ CREATE TABLE IF NOT EXISTS lineage (
   user_id     TEXT NOT NULL REFERENCES users(id),
   role        TEXT NOT NULL DEFAULT 'maintainer',  -- creator | maintainer | collaborator
   started_at  TEXT NOT NULL DEFAULT (datetime('now')),
-  ended_at    TEXT
+  ended_at    TEXT,                             -- set when someone else takes over; rows are never deleted
+  how         TEXT,                             -- created | forked | transferred
+  repo_full_name TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_lineage_project ON lineage (project_id, started_at);
+
+-- One row per release. Rows are only ever added: an earlier release can't be taken back.
+CREATE TABLE IF NOT EXISTS license_records (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id     TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  version        INTEGER NOT NULL,              -- 1 = when first listed or handed off
+  kind           TEXT NOT NULL,                 -- listing | handoff | adoption | relicense
+  repo_full_name TEXT NOT NULL,
+  commit_sha     TEXT NOT NULL,
+  spdx_id        TEXT,                          -- NULL = a license file GitHub doesn't recognise
+  license_sha256 TEXT NOT NULL,                 -- fingerprint of the license text
+  license_key    TEXT NOT NULL,                 -- where the stored copy is in R2
+  license_path   TEXT,
+  assets_license TEXT,
+  name_rights    TEXT,
+  recorded_by    TEXT REFERENCES users(id),
+  recorded_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (project_id, version)
+);
 
 -- Community project proposals and votes (one vote per user per month)
 CREATE TABLE IF NOT EXISTS proposals (

@@ -28,6 +28,7 @@ The site's tagline is "Hand it off, or take it on." "Adopt" is the deliberate wo
 | API | `api/worker.js`, the main script of the same Worker. It handles `/api/*` first (`run_worker_first`) and passes everything else to the static files. Bindings: `DB` (D1), `BUILDS` (R2), `ASSETS`. It is read-only for now, with a 60s edge cache. |
 | Database | D1 `brainchild-db` (`6e241536-91de-49b7-b885-35429bd01efb`). The schema is in `db/schema.sql`; changes are in `db/migrations/` and must be applied to both databases. It holds 19 sample projects plus one real one, `zombie-outbreak-simulator` (owner blimeybruv). |
 | Storage | R2 `brainchild-builds` (private; incomplete uploads are deleted after 24h). |
+| Caching | Public API answers tell browsers not to keep a copy (`max-age=0`) and let Cloudflare's edge keep one for 60s (`s-maxage=60`). Publishing and adopting clear the edge copies they affect. |
 | Previews | Every branch other than `main` gets a preview build (`npx wrangler preview`), linked from its pull request. Previews use the test database `brainchild-db-preview` (`3b6e6ea2-8a4a-469c-9150-4dcbad16ab64`) and bucket `brainchild-builds-preview`, set in the `previews` block of `wrangler.jsonc`. Any binding added at the top level needs a matching entry there, and schema changes must be applied to both databases. |
 | Designs | `design/mockups/*.dc.html`, exported from the design canvas on 9 Nov. The live canvas, which may be newer, is at https://claude.ai/artifact/DmMeLYto8YNwpSZcxNr9Mr |
 | Secrets | `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` are set on the Worker (dashboard, type Secret). The OAuth App's callback is `https://brainchild.nexus/api/auth/callback`, with wildcard matching off and expiring tokens on. Token encryption is keyed from the client secret, so replacing the secret makes everyone link GitHub again. |
@@ -73,25 +74,47 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    `permissions.admin` is exactly `true` and the repo is public. **Call it inside every route that
    creates or changes a listing, and again inside the handoff route**; never reuse an earlier answer.
    `GET /api/repos/{owner}/{repo}/access` exposes the same check to the listing form.
-4. **Listing flow (Handoff mockup, maker side).**
-   - First ask whether the maker is staying with the project or leaving it.
-   - Repo picker, then the admin check.
-   - License step: detect the license via `GET /repos/{o}/{r}/license`. Ask the name-rights question only
-     if the maker is leaving.
-   - Status choices filtered by that intent.
-   - Content rating (Everyone, Teen or Mature) with notes.
-   - Packet fields.
-   - Show the generated "AI handoff rules" block.
-5. **License snapshot and record page.** At handoff, record the commit SHA, the SPDX id and a hash of the
-   license text, and store a copy of LICENSE in R2 (consider a bucket lock). Optionally request a Software
-   Heritage archive. Build the License record page from the mockup.
-   Rules to encode:
-   - Releases made under the earlier license can't be taken back.
-   - Adopters may relicense permissive code.
-   - GPL code stays GPL.
-   - Apache-2.0 grants no name or trademark rights.
-6. **Adopter flow.** The adopter either takes a repo transfer or makes a fork. Verify a fork via the repo's
-   `parent` field. Write lineage rows. Show the block the adopter pastes into their CLAUDE.md or AGENTS.md.
+4. **Listing flow (Handoff mockup, maker side).** *Done 13 Nov; untested against the real GitHub.* Page
+   `site/list.html` (`site/js/list.js`), six steps: Start (staying or leaving, sign in), Choose repo,
+   Ownership, License, Details, Publish. Backend in `api/listings.js`:
+   - `GET /api/my/repos` feeds the repo picker; `GET /api/repos/{o}/{r}/listing-info` returns the admin
+     check, the detected license and the repo's CLAUDE.md or AGENTS.md.
+   - `POST /api/projects` publishes. With `dry_run: true` it checks everything and returns the generated
+     "AI handoff rules" block without saving; the Publish step shows that preview.
+   - The server re-checks ownership at publish, requires a license file, asks the name-rights question
+     only of makers who are leaving, limits status to `adopt` (leaving) or `help`/`test` (staying), and
+     requires `base_game` for mods.
+   - A details step was added to the mockup's five, because the mockup has no place for the title, type,
+     genre and packet fields.
+   - An owner who lists a repo that already has a pre-sign-in listing (matched on the repo address)
+     updates that listing in place; it gains its repo id and license record. Nobody else can.
+   - Judgment calls the owner may want to change: a license file GitHub doesn't recognise is accepted and
+     shown as "Custom license"; one account can hold at most 25 listings.
+5. **License snapshot and record page.** *Done 13 Nov, apart from the two optional items below.* Publishing
+   and adopting each add a row to `license_records` with the commit SHA, the SPDX id and a SHA-256
+   fingerprint of the license text, read at that exact commit. A copy of the text goes to R2 under
+   `licenses/<fingerprint>`, so it is stored once and never overwritten by different content. Rows are
+   only ever added. Record page: `site/license.html?id=<project>` (`GET /api/projects/<id>/license`,
+   `GET /api/license-text/<fingerprint>`), with a version switch, an in-browser fingerprint check, the
+   snapshot panel and the history.
+   Rules encoded (all in `api/listings.js`):
+   - Releases made under the earlier license can't be taken back: records are append-only.
+   - Adopters may relicense permissive code: recorded as a new `relicense` version.
+   - GPL code stays GPL: adoption is refused if a GPL, AGPL or LGPL project's new copy has a different license.
+   - Apache-2.0 grants no name or trademark rights: said in the form, the rules block and the record page.
+   Not done (see "Waiting on the owner"): the R2 bucket lock and the Software Heritage archive request.
+6. **Adopter flow.** *Done 13 Nov; untested against the real GitHub.* Page `site/adopt.html?id=<project>`
+   (`site/js/adopt.js`), reached from the project page's Adopt button. `POST /api/projects/<id>/adopt`:
+   - Only projects with status `adopt`; the adopter must be an admin of the repo they link.
+   - Fork: GitHub's `parent` field must be the project's repo. Transfer (only if the maker offered it):
+     the linked repo must have the same GitHub id as the project's repo.
+   - The maker's name rule is enforced (`rename` needs a new title; `continuation` must keep the old name).
+   - Lineage: the previous entry gets an end date and a new one is added; nothing is deleted.
+   - The project becomes `active` under the adopter, and the page shows the rules block to paste into
+     CLAUDE.md or AGENTS.md. If two people adopt at once, exactly one succeeds.
+   - Left out from the mockup because nothing in this queue covers them: notifying the maker of a transfer
+     request, verifying Codeberg or GitLab repos with a file, opening a pull request with the rules block
+     (that would need repo write access), and storing a source archive.
 7. **Hosted browser builds.** The "Play in browser" button currently links to the repo
    (`site/js/project.js`).
    - **Upload:** makers upload a static build (e.g. a Vite `dist/`) to R2.
@@ -125,7 +148,17 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    - If sign-in shows "Sign-in didn't work", or the second page shows `"admin":false`, tell the agent.
      The second case would mean GitHub hides admin rights from a token with no scopes, and the options
      for that need your decision.
-2. **Optional tidy-up:** in Cloudflare, **Workers & Pages → royal-firefly-b80b → Settings → Build →
+2. **Then try listing a project** (the real test of steps 4 to 6): click **List a project**, choose
+   `blimeybruv/zombie-outbreak-simulator`, and publish. It should update the existing Zombie Outbreak
+   Simulator page rather than make a second one, and add a **License record** link under Details.
+   Everything GitHub-facing in these steps has only been tested against a stand-in for GitHub.
+3. **Lock the stored license copies?** Cloudflare R2 can lock the `licenses/` folder so the copies can't be
+   deleted or overwritten by anyone, including you, until the lock is removed. It makes the records
+   stronger evidence, but a file stored by mistake couldn't be removed without lifting the lock first.
+   Say yes or no; the agent can set it through the Cloudflare API.
+4. **Ask Software Heritage to archive each handed-off repo?** It is a free public archive. It would mean
+   Brainchild sends the repo's address to a third party at handoff. Say yes or no.
+5. **Optional tidy-up:** in Cloudflare, **Workers & Pages → royal-firefly-b80b → Settings → Build →
    Variables and secrets**, delete `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. Those two are unused;
    the working copies are under **Variables and Secrets** higher up the same page. Leave those alone.
 

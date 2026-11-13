@@ -2,7 +2,13 @@ window.BC.load(function () {
   var D = window.BC_DATA;
   var h = window.BC.h;
   var id = new URLSearchParams(window.location.search).get("id") || "moss-keeper";
-  var item = D.items.filter(function (i) { return i.id === id; })[0] || D.items[0];
+  var listed = D.items.filter(function (i) { return i.id === id; })[0];
+  if (listed || window.location.protocol === "file:") return start(listed || D.items[0]);
+  // Not in the list we have (for example, published a moment ago): ask for it directly.
+  window.BC.getJSON("/api/projects/" + encodeURIComponent(id))
+    .then(function (j) { start(j && j.project ? window.BC.fromRow(j.project) : D.items[0]); }, function () { start(D.items[0]); });
+
+  function start(item) {
   var S = D.statuses[item.status];
 
   document.title = item.title + " · Brainchild";
@@ -61,6 +67,42 @@ window.BC.load(function () {
   });
 
   function lines(t) { return String(t).split(/\n+/).filter(Boolean); }
+
+  // Facts from the database: who owns it, the license record, the lineage, and how to adopt it.
+  function renderRecord(p, lineage) {
+    var pid = encodeURIComponent(p.id);
+    var cta = document.getElementById("p-cta");
+    if (p.status === "adopt") cta.setAttribute("href", "adopt.html?id=" + pid);
+    var fork = document.getElementById("p-fork");
+    if (fork && p.repo_url && /^https:\/\/github\.com\//.test(p.repo_url)) { fork.setAttribute("href", p.repo_url + "/fork"); fork.setAttribute("rel", "noopener"); }
+    var by = document.getElementById("p-byline");
+    if (by && p.owner) {
+      by.textContent = (p.handed_off_at ? "Handed off " + window.BC.niceDate(p.handed_off_at) : "Listed " + window.BC.niceDate(p.created_at)) +
+        " by @" + p.owner + (p.owner_verified ? " · ✓ verified owner" : "") +
+        (p.rating && p.rating !== "everyone" ? " · Rated " + (p.rating === "mature" ? "Mature" : "Teen") : "") +
+        (p.content_notes && p.content_notes.length ? " (" + p.content_notes.join(", ").toLowerCase() + ")" : "");
+    }
+    if (p.license_record) {
+      details.appendChild(h("dt", { text: "Record" }));
+      details.appendChild(h("dd", null, [h("a", { href: "license.html?id=" + pid, text: "License record, commit " + String(p.license_record.commit_sha).slice(0, 7) })]));
+    }
+    var list = document.getElementById("p-lineage");
+    if (list && lineage.length) {
+      list.textContent = "";
+      lineage.forEach(function (l) {
+        var what = l.how === "forked" ? "Forked it" : l.how === "transferred" ? "Took over the repo" : l.role === "creator" ? "Created it" : "Maintainer";
+        list.appendChild(h("li", null, [
+          h("div", { class: "rail" }, [h("span", { class: "node", "aria-hidden": "true" }), h("span", { class: "line", "aria-hidden": "true" })]),
+          h("div", null, [h("p", { class: "who", text: "@" + l.handle }),
+            h("p", { class: "when", text: what + " · " + window.BC.niceDate(l.started_at) + (l.ended_at ? " to " + window.BC.niceDate(l.ended_at) : " to now") })])
+        ]));
+      });
+      list.appendChild(h("li", null, [
+        h("div", { class: "rail" }, [h("span", { class: "node next", "aria-hidden": "true" })]),
+        h("div", null, [h("p", { class: "who next", text: p.status === "adopt" ? "You?" : "Collaborators welcome" }), h("p", { class: "when", text: p.status === "adopt" ? "Next maintainer" : "Join in on GitHub" })])
+      ]));
+    }
+  }
 
   function renderPacket(P) {
     // Handoff packet. Moss Keeper has a full sample; others show what the maker would fill in.
@@ -139,6 +181,7 @@ window.BC.load(function () {
     renderPacket(null);
   } else {
     window.BC.getJSON("/api/projects/" + encodeURIComponent(item.id))
-      .then(function (j) { renderPacket(j && j.packet); }, function () { renderPacket(null); });
+      .then(function (j) { renderPacket(j && j.packet); if (j && j.project) renderRecord(j.project, j.lineage || []); }, function () { renderPacket(null); });
+  }
   }
 });

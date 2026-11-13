@@ -10,7 +10,9 @@ export function siteOrigin(env) {
 const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8",
   "x-content-type-options": "nosniff",
-  "cache-control": "public, max-age=60"
+  // Browsers always ask again (so people see their own changes at once); Cloudflare's edge
+  // keeps a copy for 60 seconds to save database reads.
+  "cache-control": "public, max-age=0, s-maxage=60"
 };
 
 export const NO_STORE = { "cache-control": "no-store" };

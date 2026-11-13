@@ -37,8 +37,8 @@ Previews run the same code against the test database and bucket (the `previews` 
 | Resource | Name / ID | Notes |
 |---|---|---|
 | Worker | `royal-firefly-b80b` | Static assets plus `/api/*`, custom domain `brainchild.nexus`. Bindings: `DB` (D1), `BUILDS` (R2), `ASSETS` (the `site/` files) |
-| D1 database | `brainchild-db` · `6e241536-91de-49b7-b885-35429bd01efb` | Tables: users, sessions, projects, packets, lineage, proposals, votes, posts. 19 sample projects, 1 sample packet |
-| R2 bucket | `brainchild-builds` (ENAM, private) | Lifecycle rule deletes unfinished uploads after 24 h |
+| D1 database | `brainchild-db` · `6e241536-91de-49b7-b885-35429bd01efb` | Tables: users, sessions, projects, packets, lineage, license_records, proposals, votes, posts. 19 sample projects, 1 sample packet |
+| R2 bucket | `brainchild-builds` (ENAM, private) | Holds the stored license copies under `licenses/`. Lifecycle rule deletes unfinished uploads after 24 h |
 | Preview D1 database | `brainchild-db-preview` · `3b6e6ea2-8a4a-469c-9150-4dcbad16ab64` | Test copy used only by pull-request previews. Same tables and sample rows as the live database |
 | Preview R2 bucket | `brainchild-builds-preview` (ENAM, private) | Used only by pull-request previews. Same lifecycle rule |
 
@@ -52,12 +52,19 @@ Previews run the same code against the test database and bucket (the `previews` 
 | `GET /api/auth/login` | Sends the visitor to GitHub to sign in, then back to the page they were on |
 | `POST /api/auth/logout` | Signs out |
 | `GET /api/me` | `{ "user": { "handle", "avatar_url" } }`, or `"user": null` when signed out |
+| `GET /api/my/repos` | The signed-in user's public GitHub repos, for the listing form |
+| `GET /api/repos/<owner>/<repo>/listing-info` | Ownership, detected license and agent file for one repo |
+| `POST /api/projects` | Publishes a listing (signed-in admins of the repo only) |
+| `POST /api/projects/<id>/adopt` | Takes a project on, by fork or transfer |
+| `GET /api/projects/<id>/license` | The public license record: every release with its commit and fingerprint |
+| `GET /api/license-text/<fingerprint>` | The stored copy of a license file |
 | `GET /api/repos/<owner>/<repo>/access` | Whether the signed-in user is an admin of that GitHub repo (the rule for listing it) |
 
 ## What's still sample / placeholder
 
 - The 19 listings, blog posts and community candidates are sample content.
-- "List a project", Adopt/Fork, downloads and the proposal form don't save anything yet. Sign-in works.
+- Downloads and the proposal form don't save anything yet. Sign-in, listing a project, the license
+  record and adopting a project work.
 - Votes are remembered only in the visitor's own browser.
 - Anything in `[brackets]` is a gap to fill.
 

@@ -142,6 +142,7 @@ export async function repoAccess(env, session, owner, name) {
       private: d.private === true,
       fork: d.fork === true,
       parent: d.parent && typeof d.parent.full_name === "string" ? d.parent.full_name : null,
+      parent_id: d.parent && Number.isSafeInteger(d.parent.id) ? d.parent.id : null,
       archived: d.archived === true,
       default_branch: typeof d.default_branch === "string" ? d.default_branch : null,
       license: d.license && typeof d.license.spdx_id === "string" ? d.license.spdx_id : null

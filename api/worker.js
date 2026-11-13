@@ -22,6 +22,8 @@
 //   GET  /api/my/notices, POST /api/my/notices/<id>/appeal
 //   POST /api/projects/<id>/screenshots, POST /api/screenshots/<id>/delete   maintainer only (screenshots.js)
 //   GET  /api/screenshots/<id>                            public image
+//   POST /api/projects/<id>/builds, PUT .../builds/<build>/files?path=, POST .../builds/<build>/activate,
+//   POST /api/projects/<id>/builds/remove                 hosted browser build, maintainer only (builds.js)
 //   GET/POST /api/votes, POST /api/proposals, POST /api/proposals/<id>/delete   monthly community vote (votes.js)
 
 import { json, privateJson, NO_STORE } from "./http.js";
@@ -31,17 +33,21 @@ import { myRepos, listingInfo, createListing, adoptProject, licenseRecord, licen
 import { listComments, postComment, commentAction, postReport, modQueue, modResolve, modAppeal, myNotices, appealNotice } from "./community.js";
 import { addScreenshot, deleteScreenshot, serveScreenshot } from "./screenshots.js";
 import { listVotes, castVote, propose, withdrawProposal } from "./votes.js";
+import { startBuild, putBuildFile, activateBuild, removeBuild, playUrl } from "./builds.js";
 
 const PROJECT_FIELDS =
   "p.id, p.title, p.kind, p.genre, p.status, p.base_game, p.tech, p.browser, p.license, p.note, p.tone, p.featured, p.repo_url, " +
   "p.handed_off_at, p.updated_at, p.created_at, p.intent, p.rating, p.content_notes, p.assets_license, p.name_rights, p.open_to_transfer, " +
   "u.handle AS owner, (u.github_id IS NOT NULL AND p.repo_id IS NOT NULL) AS owner_verified"
-  + ", (SELECT s.id FROM screenshots s WHERE s.project_id = p.id ORDER BY s.id LIMIT 1) AS shot";
+  + ", (SELECT s.id FROM screenshots s WHERE s.project_id = p.id ORDER BY s.id LIMIT 1) AS shot"
+  + ", EXISTS (SELECT 1 FROM builds b WHERE b.project_id = p.id AND b.status = 'active') AS has_build";
 // Projects removed by a moderator are hidden everywhere.
 const PROJECT_FROM = "FROM projects p LEFT JOIN users u ON u.id = p.owner_id WHERE p.hidden_at IS NULL";
 
 function shape(row) {
   try { row.content_notes = JSON.parse(row.content_notes || "[]"); } catch { row.content_notes = []; }
+  row.play_url = playUrl(row.id, !!row.has_build); // where the hosted build runs, if there is one
+  delete row.has_build;
   return row;
 }
 
@@ -119,6 +125,14 @@ async function handlePrivate(request, env, ctx, url, path) {
   if (path === "/api/my/notices") return method === "GET" ? myNotices(env, session) : methodNotAllowed("GET");
   m = path.match(/^\/api\/my\/notices\/(\d{1,12})\/appeal$/);
   if (m) return method === "POST" ? appealNotice(request, env, session, Number(m[1])) : methodNotAllowed("POST");
+  m = path.match(/^\/api\/projects\/([a-z0-9-]{1,80})\/builds$/);
+  if (m) return method === "POST" ? startBuild(request, env, ctx, session, m[1]) : methodNotAllowed("POST");
+  m = path.match(/^\/api\/projects\/([a-z0-9-]{1,80})\/builds\/remove$/);
+  if (m) return method === "POST" ? removeBuild(request, env, ctx, session, m[1]) : methodNotAllowed("POST");
+  m = path.match(/^\/api\/projects\/([a-z0-9-]{1,80})\/builds\/([a-f0-9]{20})\/files$/);
+  if (m) return method === "PUT" ? putBuildFile(request, env, session, m[1], m[2], url) : methodNotAllowed("PUT");
+  m = path.match(/^\/api\/projects\/([a-z0-9-]{1,80})\/builds\/([a-f0-9]{20})\/activate$/);
+  if (m) return method === "POST" ? activateBuild(request, env, ctx, session, m[1], m[2]) : methodNotAllowed("POST");
   if (path === "/api/votes") return method === "GET" ? listVotes(env, session) : method === "POST" ? castVote(request, env, session) : methodNotAllowed("GET, POST");
   if (path === "/api/proposals") return method === "POST" ? propose(request, env, session) : methodNotAllowed("POST");
   m = path.match(/^\/api\/proposals\/(\d{1,12})\/delete$/);
@@ -134,7 +148,7 @@ async function handleApi(request, env, ctx, url) {
   const path = url.pathname.replace(/\/+$/, "");
 
   if (path.startsWith("/api/auth/") || path === "/api/me" || path.startsWith("/api/repos/") || path.startsWith("/api/my/") ||
-      (path === "/api/projects" && request.method === "POST") || /^\/api\/projects\/[^/]+\/(adopt|comments|screenshots)$/.test(path) ||
+      (path === "/api/projects" && request.method === "POST") || /^\/api\/projects\/[^/]+\/(adopt|comments|screenshots|builds)(\/.*)?$/.test(path) ||
       path.startsWith("/api/comments/") || path === "/api/reports" || path === "/api/votes" || path.startsWith("/api/proposals") || path.startsWith("/api/mod/") || /^\/api\/screenshots\/\d+\/delete$/.test(path)) {
     try {
       return (await handlePrivate(request, env, ctx, url, path)) || notFound();

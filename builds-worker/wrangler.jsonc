@@ -1,0 +1,27 @@
+// The Worker that serves hosted game builds on brainwave.nexus (see worker.js).
+// It is deployed by the same GitHub push as the site: the deploy command runs wrangler
+// for the site first, then for this file.
+// Its routes (brainwave.nexus/* and *.brainwave.nexus/*) are set in Cloudflare, not here.
+{
+  "name": "brainchild-builds",
+  "main": "./worker.js",
+  "compatibility_date": "2026-10-13",
+  "workers_dev": false,
+  "preview_urls": false,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "brainchild-db",
+      "database_id": "6e241536-91de-49b7-b885-35429bd01efb"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "BUILDS",
+      "bucket_name": "brainchild-builds"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

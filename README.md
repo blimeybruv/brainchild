@@ -4,6 +4,7 @@
 |---|---|---|
 | `site/` | The website: plain HTML, CSS and JavaScript, no build step | Built from GitHub by the Worker `royal-firefly-b80b` (see `wrangler.jsonc`) |
 | `api/worker.js` | Read-only backend: the same Worker's script, answering `/api/*` | Deployed together with the site by the same push |
+| `builds-worker/` | The Worker that serves hosted game builds on `brainwave.nexus` (Worker `brainchild-builds`) | Deployed by the same push, after the site |
 | `db/schema.sql` | Database structure for D1 `brainchild-db` | Already applied |
 
 Only the **`site`** folder is served to visitors as files. `db/` is kept here as a record. Nothing in the repo is secret.
@@ -37,8 +38,9 @@ Previews run the same code against the test database and bucket (the `previews` 
 | Resource | Name / ID | Notes |
 |---|---|---|
 | Worker | `royal-firefly-b80b` | Static assets plus `/api/*`, custom domain `brainchild.nexus`. Bindings: `DB` (D1), `BUILDS` (R2), `ASSETS` (the `site/` files) |
-| D1 database | `brainchild-db` · `6e241536-91de-49b7-b885-35429bd01efb` | Tables: users, sessions, projects, packets, lineage, license_records, comments, comment_likes, reports, moderation_actions, screenshots, proposals, votes, posts. 19 sample projects, 1 sample packet |
-| R2 bucket | `brainchild-builds` (ENAM, private) | Holds the stored license copies under `licenses/` and screenshots under `screenshots/`. Lifecycle rule deletes unfinished uploads after 24 h |
+| D1 database | `brainchild-db` · `6e241536-91de-49b7-b885-35429bd01efb` | Tables: users, sessions, projects, packets, lineage, license_records, comments, comment_likes, reports, moderation_actions, screenshots, builds, proposals, votes, posts. 19 sample projects, 1 sample packet |
+| R2 bucket | `brainchild-builds` (ENAM, private) | Holds the stored license copies under `licenses/` screenshots under `screenshots/` and hosted builds under `builds/`. Lifecycle rule deletes unfinished uploads after 24 h |
+| Builds Worker | `brainchild-builds` | Serves `brainwave.nexus` and `*.brainwave.nexus`. Bindings: `DB` (read only), `BUILDS`. No workers.dev address |
 | Preview D1 database | `brainchild-db-preview` · `3b6e6ea2-8a4a-469c-9150-4dcbad16ab64` | Test copy used only by pull-request previews. Same tables and sample rows as the live database |
 | Preview R2 bucket | `brainchild-builds-preview` (ENAM, private) | Used only by pull-request previews. Same lifecycle rule |
 
@@ -65,6 +67,7 @@ Previews run the same code against the test database and bucket (the `previews` 
 | `GET /api/my/notices`, `POST /api/my/notices/<id>/appeal` | Decisions about your own posts, and your reports |
 | `POST /api/projects/<id>/screenshots`, `POST /api/screenshots/<id>/delete` | Add or remove a screenshot (maintainer only) |
 | `GET /api/screenshots/<id>` | A screenshot image |
+| `POST /api/projects/<id>/builds`, `PUT .../builds/<build>/files?path=`, `POST .../builds/<build>/activate`, `POST /api/projects/<id>/builds/remove` | Upload, publish or take down a hosted browser build (maintainer only) |
 | `GET`/`POST /api/votes` | This month's community-project vote; one vote per person |
 | `POST /api/proposals`, `POST /api/proposals/<id>/delete` | Propose a project for the vote, or withdraw your proposal |
 | `GET /api/repos/<owner>/<repo>/access` | Whether the signed-in user is an admin of that GitHub repo (the rule for listing it) |
@@ -72,7 +75,8 @@ Previews run the same code against the test database and bucket (the `previews` 
 ## What's still sample / placeholder
 
 - The 19 listings, blog posts and community candidates are sample content.
-- Downloads don't work yet, and the blog posts are samples. Sign-in, listing a project, the license
+- Hosted builds play from `https://<project>.brainwave.nexus/`, a separate domain, so a game's code can't
+  reach Brainchild's pages or sign-in. Downloads don't work yet, and the blog posts are samples. Sign-in, listing a project, the license
   record, adopting a project, discussion, reports and moderation, screenshots, and the monthly vote work.
 - Anything in `[brackets]` is a gap to fill.
 

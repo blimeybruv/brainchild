@@ -30,6 +30,7 @@ The site's tagline is "Hand it off, or take it on." "Adopt" is the deliberate wo
 | Storage | R2 `brainchild-builds` (private; incomplete uploads are deleted after 24h). |
 | Caching | Public API answers tell browsers not to keep a copy (`max-age=0`) and let Cloudflare's edge keep one for 60s (`s-maxage=60`). Publishing and adopting clear the edge copies they affect. |
 | Previews | Every branch other than `main` gets a preview build (`npx wrangler preview`), linked from its pull request. Previews use the test database `brainchild-db-preview` (`3b6e6ea2-8a4a-469c-9150-4dcbad16ab64`) and bucket `brainchild-builds-preview`, set in the `previews` block of `wrangler.jsonc`. Any binding added at the top level needs a matching entry there, and schema changes must be applied to both databases. |
+| Builds | Hosted game builds are served by a second Worker, `brainchild-builds` (`builds-worker/`), on `brainwave.nexus` (zone `129edd4f3cddb7357da7ae5d2c2bcc8b`), one sub-address per game. Its routes `brainwave.nexus/*` and `*.brainwave.nexus/*` and the two DNS records are set in Cloudflare, not in the repo. The Workers Builds deploy command is `npx wrangler deploy && npx wrangler deploy --config builds-worker/wrangler.jsonc`, so one push deploys both Workers. |
 | Designs | `design/mockups/*.dc.html`, exported from the design canvas on 9 Nov. The live canvas, which may be newer, is at https://claude.ai/artifact/DmMeLYto8YNwpSZcxNr9Mr |
 | Secrets | `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET` are set on the Worker (dashboard, type Secret). The OAuth App's callback is `https://brainchild.nexus/api/auth/callback`, with wildcard matching off and expiring tokens on. Token encryption is keyed from the client secret, so replacing the secret makes everyone link GitHub again. |
 | Spending | Cloudflare budget alerts are set. Keep everything within the free tiers. |
@@ -114,19 +115,26 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    - Left out from the mockup because nothing in this queue covers them: notifying the maker of a transfer
      request, verifying Codeberg or GitLab repos with a file, opening a pull request with the rules block
      (that would need repo write access), and storing a source archive.
-7. **Hosted browser builds.** *Unblocked 13 Nov: serve from `brainwave.nexus` (see "Waiting on the owner", item 5). Earlier note: waiting on the owner's choice of separate origin (see
-   "Waiting on the owner"). Everything else in this step follows from that choice.* The "Play in browser"
-   button currently links to the repo
-   (`site/js/project.js`).
-   - **Upload:** makers upload a static build (e.g. a Vite `dist/`) to R2.
-   - **Origin:** serve every build from a **separate origin**, never brainchild.nexus or a subdomain of
-     it, because a game is arbitrary JavaScript and must not be able to reach the session cookie. Options
-     are a second cheap domain or a `*.workers.dev` Worker; ask the owner which.
-   - **Embedding:** embed it in a sandboxed iframe (`allow-scripts`, plus `allow-same-origin` only on that
-     separate origin), and allow that origin in `frame-src`.
-   - **Limits:** set size caps and scan file types.
-   - **First test:** the owner's Zombie Outbreak Simulator. Its `npm run build` gives a static `dist/`
-     with a Web Worker, and it is fine at the domain root.
+7. **Hosted browser builds.** *Done 13 Nov on `brainwave.nexus`; waiting on the owner's first upload.*
+   - **Upload** (`api/builds.js`, `site/js/play.js`): on the project page the maintainer chooses the
+     folder their build tool wrote (for example `dist`). Files go to R2 one at a time under
+     `builds/<project>/<build>/`. Nothing is served until the build is made live, and it needs an
+     `index.html` at its top level. Admin rights on the repo are re-checked with GitHub when an upload
+     starts and when it goes live.
+   - **Limits and file types** (`api/build-rules.js`): 25 MB a file, 100 MB and 400 files a build, 9 GB for
+     all builds. Only the listed kinds of file are accepted, each is always served as the type on that
+     list, and hidden files such as `.env` are refused.
+   - **Origin** (`builds-worker/`): a second Worker, `brainchild-builds`, serves each game from its own
+     sub-address, `<project id>.brainwave.nexus`. It has no sign-in code and never reads or sets cookies.
+     A removed project's build stops being served. The bare domain shows a page linking back.
+   - **What a game may do:** the response headers let it run its own files only. It can't contact other
+     sites, submit forms, open pop-ups, or be framed anywhere except brainchild.nexus. Say if a game needs
+     an outside service; that would be a per-game exception.
+   - **Embedding:** the Play button puts the game in a sandboxed iframe (`allow-scripts allow-same-origin
+     allow-pointer-lock`); `frame-src` allows `https://*.brainwave.nexus`.
+   - **Not done:** cross-origin isolation headers, which some engines' threaded web exports need (Godot 4
+     with threads); add them when a game needs them.
+   - **First test:** the owner's Zombie Outbreak Simulator.
 8. **Edit a project page** (requested by the owner 13 Nov). Do this before the items in step 9.
    - **Who and how:** add an "Edit page" button on the project page, shown only to the current maintainer.
      Re-run `requireRepoAdmin` on every save, not only when the page opens. Reuse the listing flow's
@@ -208,17 +216,10 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
      License record page once the save succeeds.
    - **What to send:** only the public repo URL, nothing about the user.
    - **Rate limit:** anonymous requests are rate-limited, so queue and retry gently.
-5. **Hosted builds address: `brainwave.nexus` (decided 13 Nov). Step 7 is unblocked.**
-   - **Domain:** the owner bought it for this purpose. It's active in the same Cloudflare account (zone id
-     `129edd4f3cddb7357da7ae5d2c2bcc8b`).
-   - **One origin per game:** serve each build from its own sub-address, e.g.
-     `zombie-outbreak-simulator.brainwave.nexus`, so games are separated from each other and from
-     brainchild.nexus. A wildcard route or custom domain on a builds Worker reading from R2 is fine.
-   - **Embedding:** embed builds on project pages in a sandboxed iframe, and allow
-     `https://*.brainwave.nexus` in `frame-src`.
-   - **Isolation:** brainwave.nexus must never receive Brainchild cookies or session data.
-   - **Bare domain:** serve a minimal page that links back to brainchild.nexus.
-   - **First test:** the owner's Zombie Outbreak Simulator (`npm run build` gives a static `dist/`).
+5. **Hosted builds: built 13 Nov on `brainwave.nexus`. Please try it:** on the Zombie Outbreak Simulator
+   page, signed in, click **Upload a browser build** and choose the `dist` folder that `npm run build`
+   made. When it finishes, click **Play in browser**. Tell the agent if the game doesn't start: its
+   scripts are confined to its own address, which can trip a game that calls an outside service.
 6. **Moderation and outside reports: answered 13 Nov.**
    - **Moderators:** only the owner, for now.
    - **Reporting without GitHub:** build a signed-out report form behind Cloudflare Turnstile, the free bot
@@ -229,14 +230,13 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    - **Where they go:** into the same moderation queue, with a statement of reasons on any decision.
    - **Contact page:** add one saying how to report and that reports are reviewed by the operator. The
      owner's email must not appear anywhere.
-7. **Analytics script: answered 13 Nov.** Allow `static.cloudflareinsights.com` in `script-src`, and its
-   beacon endpoint in `connect-src`. It's Cloudflare's own cookieless analytics on the same account, so it
-   counts as first-party infrastructure, not a third-party tracker.
+7. **Analytics script: done 13 Nov.** `static.cloudflareinsights.com` is allowed in `script-src` and
+   `cloudflareinsights.com` in `connect-src`.
 8. **Optional tidy-up:** in Cloudflare, **Workers & Pages → royal-firefly-b80b → Settings → Build →
    Variables and secrets**, delete `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. Those two are unused;
    the working copies are under **Variables and Secrets** higher up the same page. Leave those alone.
 
-## Relay rules (decided by the owner, 13 Nov)
+## Relay rules (decided by the owner, 13 Nov; confirmed again in chat the same evening)
 
 A round lasts one calendar month. The Relay mockup shows the stages.
 

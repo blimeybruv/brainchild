@@ -87,7 +87,7 @@
       repo: r.repo_url || null,
       owner: r.owner || null, ownerVerified: !!r.owner_verified, rating: r.rating || "everyone",
       notes: Array.isArray(r.content_notes) ? r.content_notes : [], handedOffAt: r.handed_off_at || null,
-      openToTransfer: !!r.open_to_transfer, nameRights: r.name_rights || null, shot: r.shot || null
+      openToTransfer: !!r.open_to_transfer, nameRights: r.name_rights || null, shot: r.shot || null, playUrl: r.play_url || null
     };
   }
 

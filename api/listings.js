@@ -14,6 +14,7 @@
 
 import { json, privateJson, NO_STORE, isSameOrigin } from "./http.js";
 import { githubGet, repoAccess, requireRepoAdmin } from "./github.js";
+import { queueArchive, refreshArchives, archiveStatus } from "./archive.js";
 
 const GENRES = ["Puzzle", "Platformer", "Racing", "Roguelite", "Narrative", "Sandbox", "Simulation", "Strategy", "Tactics", "Productivity", "Utility", "Creative tools"];
 const CONTENT_NOTES = ["Violence", "Blood", "Horror", "Strong language", "Drug references", "Gambling-style mechanics", "Historical symbols"];
@@ -403,6 +404,8 @@ export async function createListing(request, env, ctx, session) {
   ).bind(id, (last ? last.version : 0) + 1, f.intent === "leave" ? "handoff" : "listing", r.full_name, head.sha, lic.license.spdx, lic.license.sha256, licenseKey,
     lic.license.path, f.assets_license, f.name_rights, session.userId, now));
   if (handoff) statements.push(changeRow(env, id, session.userId, now, ["status", "handed off"], null));
+  // Ask Software Heritage to archive the repo. Sent after the response; never holds up a listing.
+  statements.push(queueArchive(env, id, (last ? last.version : 0) + 1, r.full_name, now));
   try {
     await env.DB.batch(statements);
   } catch (err) {
@@ -411,6 +414,7 @@ export async function createListing(request, env, ctx, session) {
     return bad("already_listed", 409);
   }
   ctx.waitUntil(forgetCached(request, ["/api/projects", "/api/projects/" + id, "/api/projects/" + id + "/license"]));
+  ctx.waitUntil(refreshArchives(env, id, true).catch(() => {}));
   return privateJson({ ok: true, id, url: "/project.html?id=" + encodeURIComponent(id), summary, rules }, 201);
 }
 
@@ -558,7 +562,7 @@ export async function editProject(request, env, ctx, session, id) {
 
 // ---------- GET /api/projects/<id>/license : the public license record ----------
 
-export async function licenseRecord(env, id) {
+export async function licenseRecord(env, ctx, id) {
   if (!/^[a-z0-9-]{1,80}$/.test(id)) return json({ error: "not_found" }, 404, NO_STORE);
   const project = await env.DB.prepare(
     `SELECT p.id, p.title, p.kind, p.base_game, p.status, u.handle AS owner
@@ -575,7 +579,9 @@ export async function licenseRecord(env, id) {
     `SELECT u.handle, l.role, l.how, l.repo_full_name, l.started_at, l.ended_at
        FROM lineage l JOIN users u ON u.id = l.user_id WHERE l.project_id = ? ORDER BY l.started_at, l.id`
   ).bind(id).all();
-  return json({ project, records, lineage });
+  // Viewing the record is also the moment to look in on archive requests that aren't finished.
+  ctx.waitUntil(refreshArchives(env, id, false).catch(() => {}));
+  return json({ project, records, lineage, archive: await archiveStatus(env, id) });
 }
 
 // ---------- GET /api/license-text/<fingerprint> : the stored copy ----------
@@ -708,6 +714,8 @@ export async function adoptProject(request, env, ctx, session, id) {
       lic.license.path, p.assets_license, p.name_rights, session.userId, now, id, session.userId, now)
   ]);
   if (!result[0].meta || result[0].meta.changes !== 1) return bad("not_up_for_adoption", 409);
+  // The adopter's repo is archived too (queued only if the license record above was written).
+  ctx.waitUntil(queueArchive(env, id, version, r.full_name, now).run().then(() => refreshArchives(env, id, true)).catch(() => {}));
   ctx.waitUntil(forgetCached(request, ["/api/projects", "/api/projects/" + id, "/api/projects/" + id + "/license"]));
   return privateJson({ ok: true, id, url: "/project.html?id=" + encodeURIComponent(id), summary, rules });
 }

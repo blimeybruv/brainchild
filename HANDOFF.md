@@ -212,14 +212,13 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    rule, `license-records` (prefix `licenses/`, indefinite). Objects there can't be deleted or overwritten
    until the rule is removed. `storeLicense` already skips existing keys, so nothing needs to change. Don't
    write anything under `licenses/` except license copies.
-4. **Software Heritage: answered yes, 13 Nov. To build.**
-   - **When:** at handoff (and at first listing), request an archive of the repo with Software Heritage's
-     "save code now" API: `POST https://archive.softwareheritage.org/api/1/origin/save/git/url/<repo url>/`.
-     Use `ctx.waitUntil` so the listing never waits on it or fails because of it.
-   - **What to store:** the request id and status, then show a "Archived at Software Heritage" link on the
-     License record page once the save succeeds.
-   - **What to send:** only the public repo URL, nothing about the user.
-   - **Rate limit:** anonymous requests are rate-limited, so queue and retry gently.
+4. **Software Heritage: done 13 Nov** (`api/archive.js`). When a project is listed, handed off or adopted,
+   Brainchild asks Software Heritage to archive the repo, sending only its public address. The request
+   goes out after the page has answered, so a listing never waits on it or fails because of it. Requests
+   are kept in `archive_requests`. Unfinished ones are retried or looked up at most once every ten
+   minutes, when someone opens the project's license record, and a send is tried five times at most. The
+   License record page shows "Archived at Software Heritage" with a link once it succeeds. A request was
+   queued for the Zombie Outbreak Simulator record that existed before this was built.
 5. **Hosted builds: done and confirmed 13 Nov.** The owner's upload of Zombie Outbreak Simulator is live
    at `zombie-outbreak-simulator.brainwave.nexus` and plays from its project page.
 6. **Moderation and outside reports: answered 13 Nov.**

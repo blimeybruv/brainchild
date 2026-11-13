@@ -89,8 +89,19 @@
     var rows = [["Commit", short(r.commit_sha)], ["Taken", BC.niceDate(r.recorded_at)], ["Repository", "github.com/" + r.repo_full_name],
       ["By", r.recorded_by ? "@" + r.recorded_by + " ✓ verified" : "—"], ["Code", licName(r)], ["Assets", r.assets_license || "—"],
       ["Name", nameRule(r.name_rights)], ["Stored copy", "License text, kept by Brainchild"]];
+    // Software Heritage: an independent public archive of the repo, requested when this version was recorded.
+    var arch = (data.archive || []).filter(function (a) { return a.version === r.version; })[0];
+    var archDd = null;
+    if (arch && arch.status === "archived" && typeof arch.url === "string" && arch.url.indexOf("https://archive.softwareheritage.org/") === 0) {
+      archDd = h("dd", null, [h("a", { href: arch.url, rel: "noopener noreferrer", target: "_blank", text: "Archived at Software Heritage" })]);
+    } else if (arch && arch.status === "requested") {
+      archDd = h("dd", { text: "Requested from Software Heritage; not finished yet" });
+    } else if (arch && arch.status === "failed") {
+      archDd = h("dd", { text: "Software Heritage couldn't archive this repository" });
+    }
     var dl = h("dl", { class: "snap" });
     rows.forEach(function (x) { dl.appendChild(h("dt", { text: x[0] })); dl.appendChild(h("dd", { text: x[1] })); });
+    if (archDd) { dl.appendChild(h("dt", { text: "Independent archive" })); dl.appendChild(archDd); }
     var side = h("aside", { class: "side-col" }, [
       h("div", { class: "panel" }, [h("h2", { text: "Snapshot" }), dl]),
       h("div", { class: "panel" }, [h("h2", { text: "License history" }), history()]),

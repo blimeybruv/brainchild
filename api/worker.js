@@ -183,7 +183,7 @@ async function handleApi(request, env, ctx, url) {
     } else if (path === "/api/projects") {
       response = await listProjects(env);
     } else if (/^\/api\/projects\/[^/]+\/license$/.test(path)) {
-      response = await licenseRecord(env, path.split("/")[3]);
+      response = await licenseRecord(env, ctx, path.split("/")[3]);
     } else if (/^\/api\/screenshots\/\d{1,12}$/.test(path)) {
       response = await serveScreenshot(env, Number(path.split("/")[3]));
     } else if (path.startsWith("/api/license-text/")) {

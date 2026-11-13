@@ -178,27 +178,23 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    Say yes or no; the agent can set it through the Cloudflare API.
 4. **Ask Software Heritage to archive each handed-off repo?** It is a free public archive. It would mean
    Brainchild sends the repo's address to a third party at handoff. Say yes or no.
-5. **Where should hosted game builds be served from?** (Blocks step 7.) Builds are other people's
-   JavaScript, so they must run on an address that is not brainchild.nexus or under it. Two options:
-   - **A second domain** (roughly £10 a year). Each game can get its own sub-address
-     (`moss-keeper.<your-domain>`), which also stops one game reading another game's saved data. You
-     would buy the domain and add it to Cloudflare; the agent does the rest.
-   - **A free `workers.dev` address** (for example `brainchild-builds.blimeybruv.workers.dev`). Nothing to
-     buy and it can be set up at once, but every game shares that one address, so games could read each
-     other's saved data, and the address shows your Cloudflare account name.
-   The agent's suggestion: the second domain if you are happy to spend the money, because of the
-   per-game separation; otherwise start on `workers.dev` and move later.
-6. **Who else should moderate, and how do people without a GitHub account reach you?** Today only you
-   (GitHub id 255218751) see the moderation queue, and reporting needs a GitHub sign-in. EU rules expect
-   anyone to be able to flag illegal content and expect a contact point. The site never shows email
-   addresses, so say how you want outside reports to arrive (for example a public issue tracker or a
-   contact form), and name any other moderators by GitHub handle.
-7. **Cloudflare's visitor-analytics script is being blocked.** Cloudflare adds its Web Analytics script
-   (`static.cloudflareinsights.com`) to every page, and the site's strict content rules refuse to run it,
-   so no visitor numbers are being collected and each page logs one harmless error. Choose one: switch
-   Web Analytics off for brainchild.nexus in the Cloudflare dashboard, or tell the agent to allow that
-   one script (a small loosening of the "nothing from third parties" rule). This was already the case
-   before the backend work.
+5. **Hosted builds address: answered 13 Nov.** The owner prefers a separate domain, for per-game
+   separation, but hasn't bought one for builds yet. **Never use `brainwave.nexus`**: the owner bought it
+   for a different site. Step 7 stays blocked until the owner names a builds domain. Don't start on
+   `workers.dev`.
+6. **Moderation and outside reports: answered 13 Nov.**
+   - **Moderators:** only the owner, for now.
+   - **Reporting without GitHub:** build a signed-out report form behind Cloudflare Turnstile, the free bot
+     check. Create the widget through the API, and allow `challenges.cloudflare.com` in `script-src` and
+     `frame-src` for the report form only, where the CSP can be scoped.
+   - **What signed-out reports contain:** category, URL, reasons, and an optional reply-to address. The
+     address is stored privately, never shown, and deleted when the case closes.
+   - **Where they go:** into the same moderation queue, with a statement of reasons on any decision.
+   - **Contact page:** add one saying how to report and that reports are reviewed by the operator. The
+     owner's email must not appear anywhere.
+7. **Analytics script: answered 13 Nov.** Allow `static.cloudflareinsights.com` in `script-src`, and its
+   beacon endpoint in `connect-src`. It's Cloudflare's own cookieless analytics on the same account, so it
+   counts as first-party infrastructure, not a third-party tracker.
 8. **Optional tidy-up:** in Cloudflare, **Workers & Pages → royal-firefly-b80b → Settings → Build →
    Variables and secrets**, delete `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. Those two are unused;
    the working copies are under **Variables and Secrets** higher up the same page. Leave those alone.

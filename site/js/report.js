@@ -85,7 +85,7 @@
       h("div", { id: "r-cats" }),
       h("div", { class: "form-grid" }, [
         field("Address of the page", url, "Copy it from your browser's address bar. It must be a page on brainchild.nexus or a game on brainwave.nexus."),
-        field("Your reasons", details, "Required. If you believe something is illegal, say which law or right and why."),
+        field("Your reasons", details, "Required."),
         field("Reply-to address (optional)", reply, "Only the site's operator sees it. It is never shown on the site and is deleted when your report is closed.")
       ]),
       h("div", { id: "bot-check", class: "bot-check" }),

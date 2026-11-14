@@ -504,6 +504,16 @@ column `base_game`), so there is no migration and the CHECK constraint stays as 
   for Mature listings, or a path pattern if easier) as 18. Also add the `age-de-meta-label` meta tag
   on Mature project pages. Keep it simple; if a path-level label isn't possible for query-string pages,
   label at page level with the meta tag.
+- **Rating criteria (owner's decision, 14 Nov):** the listing and Edit pages now describe each tier
+  concretely.
+  - **Everyone:** no violence beyond cartoon or slapstick, no blood, no swearing.
+  - **Teen:** combat and non-graphic violence, mild blood, horror themes and jump scares, moderate
+    language, drug or alcohol references, war strategy.
+  - **Mature:** realistic or graphic violence and gore, strong language throughout, drug use shown,
+    disturbing themes.
+  - Reuse this wording on the About page and in the Mature gate notice. Moderators can re-rate a listing
+    that doesn't match: add a "Change rating" action to the moderation queue, with a statement of reasons
+    and a notice to the maintainer.
 - **Fallback:** if a complaint ever arrives, hiding Mature listings for `CF-IPCountry: DE` is the
   fallback. Don't build it now.
 - **"Historical symbols" is dropped (owner's decision):** it's removed from content notes in `list.js`

@@ -78,9 +78,9 @@
         p.status === "adopt" ? "Choosing another status withdraws the project from adoption." : "To put the project up for adoption, use the link at the bottom of this page: handing off asks about the license and the name.")]),
       h("h3", { text: "Content rating" }),
       BC.choices("Content rating", [
-        { value: "everyone", label: "Everyone", desc: "Nothing that would worry a parent." },
-        { value: "teen", label: "Teen", desc: "Mild violence, scares or language." },
-        { value: "mature", label: "Mature", desc: "Strong violence, gore, horror or language. Shown behind a warning." }
+        { value: "everyone", label: "Everyone", desc: "No violence beyond cartoon or slapstick, no blood, no swearing." },
+        { value: "teen", label: "Teen", desc: "Combat and non-graphic violence, mild blood, horror themes and jump scares, moderate language, drug or alcohol references, war strategy." },
+        { value: "mature", label: "Mature", desc: "Realistic or graphic violence and gore, strong language throughout, drug use shown, disturbing themes. Shown behind a warning. Sexual content isn't allowed at any rating." }
       ], f.rating, function (v) { f.rating = v; render(); }),
       h("div", { class: "check-list" }, NOTES.map(function (n) {
         var c = h("input", { type: "checkbox" });

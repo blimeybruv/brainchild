@@ -263,6 +263,18 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    stored and shown in the project page's byline; the gate itself depends on the Open decision about
    German visitors.
 
+**The queue above is finished (14 Nov).** What is left, for later batches:
+
+- **To build, not blocked:** the blog vote's winner. At month end nothing picks or shows which proposal
+  won (`api/votes.js`, `site/js/blog.js`). Show last month's winner and its vote count on the blog page.
+- **To build, not blocked:** reporting a blog vote proposal's text. The report form and the moderation
+  queue cover projects and comments only.
+- **Only if a listed game needs it:** cross-origin isolation headers on the builds Worker, for engines
+  that use threads (some Godot and Unity web exports). No listed game needs them today.
+- **Blocked on an Open decision:** the Mature gate.
+- **Needs real people, not code:** adoption, edit page saves, discussion and moderation actions,
+  screenshots, blog votes, build rollback and Relay rounds have only been exercised by tests.
+
 ## Waiting on the owner
 
 1. **Sign-in works against the real GitHub** (the owner signed in at 16:23 GMT on 13 Nov: the session,

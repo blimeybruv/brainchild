@@ -186,12 +186,14 @@ CREATE TABLE IF NOT EXISTS screenshots (
 CREATE TABLE IF NOT EXISTS builds (
   id           TEXT PRIMARY KEY,                 -- random
   project_id   TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-  status       TEXT NOT NULL,                    -- uploading | active | replaced | removed
+  status       TEXT NOT NULL,                    -- uploading | active | previous (kept for rollback) | replaced | removed
   files        INTEGER NOT NULL DEFAULT 0,
   bytes        INTEGER NOT NULL DEFAULT 0,
   created_by   TEXT NOT NULL REFERENCES users(id),
   created_at   TEXT NOT NULL DEFAULT (datetime('now')),
-  activated_at TEXT
+  activated_at TEXT,
+  version      INTEGER,                          -- 1, 2, 3 ... per project, set when the build goes live
+  commit_sha   TEXT                              -- the repo's latest commit when the upload started
 );
 CREATE INDEX IF NOT EXISTS idx_builds_project ON builds (project_id, status);
 

@@ -11,6 +11,17 @@
     var p = e.detail, stage = document.getElementById("p-stage"), box = document.getElementById("p-build");
     var live = typeof p.play_url === "string" && HOST.test(p.play_url) ? p.play_url : null;
     var mine = false, msg = "", busy = false;
+    var build = p.build || null;
+
+    // Under the player: which version this is, when it was uploaded, and the repo's commit at the time.
+    function versionLine() {
+      var el = document.getElementById("p-version");
+      if (!el) return;
+      el.textContent = "";
+      if (!live || !build) return;
+      el.appendChild(document.createTextNode("Version " + build.version + " · uploaded " + BC.niceDate(build.uploaded_at) +
+        (build.commit ? " · repository was at commit " + String(build.commit).slice(0, 7) : "")));
+    }
 
     function play() {
       var frame = h("iframe", {
@@ -102,8 +113,16 @@
       if (!mine) return;
       var input = h("input", { type: "file", class: "visually-hidden", id: "build-folder", webkitdirectory: true, multiple: true });
       input.addEventListener("change", function () { if (input.files.length) upload(input.files); });
-      box.appendChild(h("label", { class: "btn btn-ghost", for: "build-folder", "aria-disabled": busy ? "true" : null, text: live ? "Replace the browser build" : "Upload a browser build" }));
+      box.appendChild(h("label", { class: "btn btn-ghost", for: "build-folder", "aria-disabled": busy ? "true" : null, text: live ? "Upload a new version" : "Upload a browser build" }));
       if (!busy) box.appendChild(input);
+      if (live && !busy && build && build.previous) {
+        var back = h("button", { class: "chip", type: "button", text: "Roll back to version " + build.previous.version + " (" + BC.niceDate(build.previous.uploaded_at) + ")" });
+        back.addEventListener("click", function () {
+          back.disabled = true;
+          BC.api("POST", "/api/projects/" + encodeURIComponent(p.id) + "/builds/rollback", {}).then(function (res) { if (res.ok) window.location.reload(); else note(BC.errorText(res.data.error)); });
+        });
+        box.appendChild(back);
+      }
       if (live && !busy) {
         var rm = h("button", { class: "chip", type: "button", text: "Remove the hosted build" });
         rm.addEventListener("click", function () {
@@ -112,10 +131,13 @@
         });
         box.appendChild(rm);
       }
-      box.appendChild(h("p", { class: "muted", role: "status", text: msg || "Choose the folder your build tool wrote (for example dist). It needs an index.html at its top level; up to 400 files and 100 MB." }));
+      box.appendChild(h("p", { class: "muted", role: "status", text: msg || (live
+        ? "A new version replaces the live one at once. The version before it is kept, so you can roll back."
+        : "Choose the folder your build tool wrote (for example dist). It needs an index.html at its top level; up to 400 files and 100 MB.") }));
     }
 
     wirePlayButton();
+    versionLine();
     BC.whoAmI().then(function (u) { mine = !!u && u.handle === p.owner && p.owner_verified; draw(); });
   });
 })();

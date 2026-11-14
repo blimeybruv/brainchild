@@ -24,7 +24,7 @@
 //   POST /api/projects/<id>/screenshots, POST /api/screenshots/<id>/delete   maintainer only (screenshots.js)
 //   GET  /api/screenshots/<id>                            public image
 //   POST /api/projects/<id>/builds, PUT .../builds/<build>/files?path=, POST .../builds/<build>/activate,
-//   POST /api/projects/<id>/builds/remove                 hosted browser build, maintainer only (builds.js)
+//   POST /api/projects/<id>/builds/rollback | remove      hosted browser build, maintainer only (builds.js)
 //   GET/POST /api/votes, POST /api/proposals, POST /api/proposals/<id>/delete   monthly community vote (votes.js)
 
 import { json, privateJson, NO_STORE } from "./http.js";
@@ -34,7 +34,7 @@ import { myRepos, listingInfo, createListing, editProject, adoptProject, license
 import { listComments, postComment, commentAction, postReport, modQueue, modResolve, modAppeal, myNotices, appealNotice } from "./community.js";
 import { addScreenshot, deleteScreenshot, serveScreenshot } from "./screenshots.js";
 import { listVotes, castVote, propose, withdrawProposal } from "./votes.js";
-import { startBuild, putBuildFile, activateBuild, removeBuild, playUrl } from "./builds.js";
+import { startBuild, putBuildFile, activateBuild, rollbackBuild, removeBuild, buildInfo, playUrl } from "./builds.js";
 
 const PROJECT_FIELDS =
   "p.id, p.title, p.kind, p.genre, p.status, p.base_game, p.tech, p.browser, p.license, p.note, p.tone, p.featured, p.repo_url, " +
@@ -86,6 +86,7 @@ async function getProject(env, id) {
   project.license_record = record || null;
   const { results: shots } = await env.DB.prepare("SELECT id FROM screenshots WHERE project_id = ? ORDER BY id").bind(id).all();
   project.screenshots = shots.map((x) => x.id);
+  project.build = project.play_url ? await buildInfo(env, id) : null; // version, upload date and commit of the hosted build
   // The public change log: which fields changed and when (never the old text).
   const { results: changes } = await env.DB.prepare(
     "SELECT changed_at, fields FROM project_changes WHERE project_id = ? ORDER BY id DESC LIMIT 15"
@@ -135,6 +136,8 @@ async function handlePrivate(request, env, ctx, url, path) {
   if (m) return method === "POST" ? appealNotice(request, env, session, Number(m[1])) : methodNotAllowed("POST");
   m = path.match(/^\/api\/projects\/([a-z0-9-]{1,80})\/builds$/);
   if (m) return method === "POST" ? startBuild(request, env, ctx, session, m[1]) : methodNotAllowed("POST");
+  m = path.match(/^\/api\/projects\/([a-z0-9-]{1,80})\/builds\/rollback$/);
+  if (m) return method === "POST" ? rollbackBuild(request, env, ctx, session, m[1]) : methodNotAllowed("POST");
   m = path.match(/^\/api\/projects\/([a-z0-9-]{1,80})\/builds\/remove$/);
   if (m) return method === "POST" ? removeBuild(request, env, ctx, session, m[1]) : methodNotAllowed("POST");
   m = path.match(/^\/api\/projects\/([a-z0-9-]{1,80})\/builds\/([a-f0-9]{20})\/files$/);

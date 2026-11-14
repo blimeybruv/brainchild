@@ -68,7 +68,7 @@ Previews run the same code against the test database and bucket (the `previews` 
 | `GET /api/my/notices`, `POST /api/my/notices/<id>/appeal` | Decisions about your own posts, and your reports |
 | `POST /api/projects/<id>/screenshots`, `POST /api/screenshots/<id>/delete` | Add or remove a screenshot (maintainer only) |
 | `GET /api/screenshots/<id>` | A screenshot image |
-| `POST /api/projects/<id>/builds`, `PUT .../builds/<build>/files?path=`, `POST .../builds/<build>/activate`, `POST /api/projects/<id>/builds/remove` | Upload, publish or take down a hosted browser build (maintainer only) |
+| `POST /api/projects/<id>/builds`, `PUT .../builds/<build>/files?path=`, `POST .../builds/<build>/activate`, `POST /api/projects/<id>/builds/rollback`, `POST /api/projects/<id>/builds/remove` | Upload a version, make it live, roll back to the previous one, or take the hosted build down (maintainer only) |
 | `GET`/`POST /api/votes` | This month's community-project vote; one vote per person |
 | `POST /api/proposals`, `POST /api/proposals/<id>/delete` | Propose a project for the vote, or withdraw your proposal |
 | `GET /api/repos/<owner>/<repo>/access` | Whether the signed-in user is an admin of that GitHub repo (the rule for listing it) |

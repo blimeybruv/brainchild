@@ -137,6 +137,7 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
      inside the project page from its own sub-address, and the framed page was refused access to the
      Brainchild page. Cloudflare's analytics script is injected into game pages too and is blocked there
      by the game's own restrictions; that is intended.
+   - **Versions:** see "Updating hosted builds" below.
    - **Play area:** a running game gets most of the window's height (not the 16:9 preview box) and the
      page scrolls it into view. The first upload showed why: the game's Start button was cut off.
    - **Not done:** cross-origin isolation headers, which some engines' threaded web exports need (Godot 4
@@ -237,16 +238,20 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    Variables and secrets**, delete `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. Those two are unused;
    the working copies are under **Variables and Secrets** higher up the same page. Leave those alone.
 
-## Owner request, 13 Nov: updating hosted builds
+## Updating hosted builds (owner request 13 Nov; done 14 Nov)
 
-The maintainer must be able to upload a new version of a hosted browser build at any time, from the
-project page or the Edit page (step 8), with the same ownership check.
-- **The new build replaces the live one** at the game's sub-address on brainwave.nexus.
-- **Keep the previous build** so the maintainer can roll back with one click.
-- **Show a version label and upload date** under the player.
-- **Purge the edge cache** for that game's sub-address after each upload, so players get the new version
-  straight away.
-- **Same rules as the first upload:** size caps, file-type checks and the "Built from" commit if known.
+- **Upload a new version** at any time from the project page or the Edit page (the same control,
+  `site/js/play.js`). Admin rights on the repo are re-checked with GitHub when the upload starts, when it
+  goes live and on a rollback. The same size caps and file-type checks apply.
+- **The new version replaces the live one** at the game's sub-address. The version before it is kept
+  (`builds.status = 'previous'`) and anything older is deleted, so a game holds two versions at most.
+- **Roll back** with one click (`POST /api/projects/<id>/builds/rollback`). It swaps the live and kept
+  versions, so rolling back again returns to the newer one.
+- **Under the player:** "Version N · uploaded [date] · repository was at commit [sha]". The commit is the
+  repo's latest commit when the upload started; nobody declares what the build was actually built from.
+- **Players get a new version straight away.** No purge is needed: the builds Worker looks up the live
+  build on every request, files its edge copies under that build's id, and tells browsers to check before
+  reusing a file (`cache-control: no-cache` with an ETag, answering 304 when unchanged).
 
 ## Relay rules (decided by the owner, 13 Nov; confirmed again in chat the same evening)
 

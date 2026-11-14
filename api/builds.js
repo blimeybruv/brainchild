@@ -7,9 +7,12 @@
 //     hidden files are refused, and each file, each build and all builds together have size caps.
 //   - Nothing is served until the maintainer makes the build live, and a build needs an
 //     index.html. Builds are served only from brainwave.nexus (builds-worker/), never from here.
+//   - A new version can be uploaded at any time. It replaces the live one, and the one before
+//     is kept so the maintainer can roll back with one click. Older ones are deleted.
+//   - Each version gets a number, its upload date, and the repo's latest commit at that moment.
 
 import { privateJson, isSameOrigin } from "./http.js";
-import { requireRepoAdmin } from "./github.js";
+import { requireRepoAdmin, githubGet } from "./github.js";
 import { MAX_FILE_BYTES, MAX_BUILD_BYTES, MAX_BUILD_FILES, MAX_ALL_BUILDS_BYTES, cleanPath, typeFor, hostFor } from "./build-rules.js";
 
 function bad(error, status = 400, extra = {}) { return privateJson({ error, ...extra }, status); }
@@ -32,6 +35,7 @@ async function maintainer(request, env, session, projectId, askGitHub) {
     const [owner, name] = p.repo_full_name.split("/");
     const own = await requireRepoAdmin(env, session, owner, name);
     if (own.response) return { response: own.response };
+    return { project: p, repo: own.repo };
   }
   return { project: p };
 }
@@ -52,14 +56,20 @@ export async function startBuild(request, env, ctx, session, projectId) {
   const m = await maintainer(request, env, session, projectId, true);
   if (m.response) return m.response;
   if (!hostFor(projectId)) return bad("project_id_too_long", 409);
-  const total = await env.DB.prepare("SELECT COALESCE(SUM(bytes), 0) AS n FROM builds WHERE status IN ('uploading', 'active')").first();
+  const total = await env.DB.prepare("SELECT COALESCE(SUM(bytes), 0) AS n FROM builds WHERE status IN ('uploading', 'active', 'previous')").first();
   if (total.n + MAX_BUILD_BYTES > MAX_ALL_BUILDS_BYTES) return bad("storage_full", 507);
   // Starting again abandons any half-finished upload for this project.
   const { results: stale } = await env.DB.prepare("SELECT id FROM builds WHERE project_id = ? AND status = 'uploading'").bind(projectId).all();
   const id = crypto.randomUUID().replace(/-/g, "").slice(0, 20);
+  // Note which commit the repo was at, so the version can say what it was probably built from.
+  let commit = null;
+  if (m.repo && m.repo.default_branch) {
+    const head = await githubGet(env, session, "/repos/" + m.repo.full_name + "/commits/" + encodeURIComponent(m.repo.default_branch));
+    if (head.status === 200 && head.data && typeof head.data.sha === "string" && /^[0-9a-f]{40}$/.test(head.data.sha)) commit = head.data.sha;
+  }
   await env.DB.batch([
     env.DB.prepare("UPDATE builds SET status = 'removed' WHERE project_id = ? AND status = 'uploading'").bind(projectId),
-    env.DB.prepare("INSERT INTO builds (id, project_id, status, created_by, created_at) VALUES (?, ?, 'uploading', ?, ?)").bind(id, projectId, session.userId, nowText())
+    env.DB.prepare("INSERT INTO builds (id, project_id, status, created_by, created_at, commit_sha) VALUES (?, ?, 'uploading', ?, ?, ?)").bind(id, projectId, session.userId, nowText(), commit)
   ]);
   ctx.waitUntil(Promise.all(stale.map((b) => deleteFiles(env, projectId, b.id))).catch(() => {}));
   return privateJson({ ok: true, build: id, limits: { file: MAX_FILE_BYTES, build: MAX_BUILD_BYTES, files: MAX_BUILD_FILES } }, 201);
@@ -109,24 +119,56 @@ export async function activateBuild(request, env, ctx, session, projectId, build
     .bind(buildId, projectId, session.userId).first();
   if (!b) return bad("not_found", 404);
   if (!(await env.BUILDS.head("builds/" + projectId + "/" + buildId + "/index.html"))) return bad("no_index_html", 409);
-  const { results: old } = await env.DB.prepare("SELECT id FROM builds WHERE project_id = ? AND status = 'active'").bind(projectId).all();
+  // The live version becomes the one kept for rolling back; the one kept before that is deleted.
+  const { results: drop } = await env.DB.prepare("SELECT id FROM builds WHERE project_id = ? AND status = 'previous'").bind(projectId).all();
+  const next = await env.DB.prepare("SELECT COALESCE(MAX(version), 0) + 1 AS v FROM builds WHERE project_id = ?").bind(projectId).first();
   const now = nowText();
   await env.DB.batch([
-    env.DB.prepare("UPDATE builds SET status = 'replaced' WHERE project_id = ? AND status = 'active'").bind(projectId),
-    env.DB.prepare("UPDATE builds SET status = 'active', activated_at = ? WHERE id = ?").bind(now, buildId),
+    env.DB.prepare("UPDATE builds SET status = 'replaced' WHERE project_id = ? AND status = 'previous'").bind(projectId),
+    env.DB.prepare("UPDATE builds SET status = 'previous' WHERE project_id = ? AND status = 'active'").bind(projectId),
+    env.DB.prepare("UPDATE builds SET status = 'active', activated_at = ?, version = ? WHERE id = ?").bind(now, next.v, buildId),
     env.DB.prepare("UPDATE projects SET browser = 1, updated_at = ? WHERE id = ?").bind(now, projectId)
   ]);
-  ctx.waitUntil(Promise.all(old.map((x) => deleteFiles(env, projectId, x.id))).catch(() => {}));
+  ctx.waitUntil(Promise.all(drop.map((x) => deleteFiles(env, projectId, x.id))).catch(() => {}));
   ctx.waitUntil(clearCached(request, projectId));
-  return privateJson({ ok: true, play_url: playUrl(projectId, true) });
+  return privateJson({ ok: true, play_url: playUrl(projectId, true), version: next.v });
+}
+
+// POST /api/projects/<id>/builds/rollback : swap the live version with the one kept before it
+export async function rollbackBuild(request, env, ctx, session, projectId) {
+  const m = await maintainer(request, env, session, projectId, true);
+  if (m.response) return m.response;
+  const prev = await env.DB.prepare("SELECT id, version FROM builds WHERE project_id = ? AND status = 'previous'").bind(projectId).first();
+  if (!prev) return bad("no_previous_build", 409);
+  // The version rolled away from is kept in turn, so the maintainer can switch back again.
+  await env.DB.batch([
+    env.DB.prepare("UPDATE builds SET status = 'rolling' WHERE project_id = ? AND status = 'active'").bind(projectId),
+    env.DB.prepare("UPDATE builds SET status = 'active' WHERE id = ?").bind(prev.id),
+    env.DB.prepare("UPDATE builds SET status = 'previous' WHERE project_id = ? AND status = 'rolling'").bind(projectId),
+    env.DB.prepare("UPDATE projects SET updated_at = ? WHERE id = ?").bind(nowText(), projectId)
+  ]);
+  ctx.waitUntil(clearCached(request, projectId));
+  return privateJson({ ok: true, version: prev.version });
+}
+
+// What the project page shows under the player.
+export async function buildInfo(env, projectId) {
+  const { results } = await env.DB.prepare(
+    "SELECT status, version, activated_at, commit_sha, files, bytes FROM builds WHERE project_id = ? AND status IN ('active', 'previous')"
+  ).bind(projectId).all();
+  const shape = (b) => b ? { version: b.version, uploaded_at: b.activated_at, commit: b.commit_sha, files: b.files, bytes: b.bytes } : null;
+  const live = shape(results.find((b) => b.status === "active"));
+  if (!live) return null;
+  live.previous = shape(results.find((b) => b.status === "previous"));
+  return live;
 }
 
 // POST /api/projects/<id>/builds/remove : take the live build down
 export async function removeBuild(request, env, ctx, session, projectId) {
   const m = await maintainer(request, env, session, projectId, false);
   if (m.response) return m.response;
-  const { results: old } = await env.DB.prepare("SELECT id FROM builds WHERE project_id = ? AND status IN ('active', 'uploading')").bind(projectId).all();
-  await env.DB.prepare("UPDATE builds SET status = 'removed' WHERE project_id = ? AND status IN ('active', 'uploading')").bind(projectId).run();
+  const { results: old } = await env.DB.prepare("SELECT id FROM builds WHERE project_id = ? AND status IN ('active', 'previous', 'uploading')").bind(projectId).all();
+  await env.DB.prepare("UPDATE builds SET status = 'removed' WHERE project_id = ? AND status IN ('active', 'previous', 'uploading')").bind(projectId).run();
   ctx.waitUntil(Promise.all(old.map((x) => deleteFiles(env, projectId, x.id))).catch(() => {}));
   ctx.waitUntil(clearCached(request, projectId));
   return privateJson({ ok: true });

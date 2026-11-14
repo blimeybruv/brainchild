@@ -57,23 +57,36 @@ export default {
     const type = path ? typeFor(path) : null;
     if (!path || !type) return page(404, "Not found", "That file isn't part of this game.");
 
-    const wantsRange = request.headers.has("range");
-    const cache = caches.default;
-    if (!wantsRange) {
-      let hit = null;
-      try { hit = await cache.match(request); } catch { hit = null; }
-      if (hit) return hit;
-    }
-
     // The game must still be listed (not removed by a moderator) and have a live build.
     const row = await env.DB.prepare(
       "SELECT b.id FROM builds b JOIN projects p ON p.id = b.project_id WHERE b.project_id = ? AND b.status = 'active' AND p.hidden_at IS NULL"
     ).bind(projectId).first();
     if (!row) return page(404, "Not found", "There is no game at this address.");
 
+    // Cached copies are filed under the build they belong to, so a new upload or a rollback is
+    // served at once and an old version can never be handed out by mistake.
+    const wantsRange = request.headers.has("range");
+    const cache = caches.default;
+    const cacheKey = new Request("https://" + host + "/__build/" + row.id + "/" + path, { method: "GET" });
     const key = "builds/" + projectId + "/" + row.id + "/" + path;
-    const obj = wantsRange ? await env.BUILDS.get(key, { range: request.headers }) : await env.BUILDS.get(key);
-    if (!obj) return page(404, "Not found", "That file isn't part of this game.");
+    let obj = null, cached = null;
+    if (!wantsRange) {
+      try { cached = await cache.match(cacheKey); } catch { cached = null; }
+    }
+    if (!cached) {
+      obj = wantsRange ? await env.BUILDS.get(key, { range: request.headers }) : await env.BUILDS.get(key);
+      if (!obj) return page(404, "Not found", "That file isn't part of this game.");
+    }
+    const tag = cached ? cached.headers.get("etag") : obj.httpEtag;
+    // Browsers keep a copy but ask every time whether it is still current.
+    if (!wantsRange && request.headers.get("if-none-match") === tag) {
+      return new Response(null, { status: 304, headers: { etag: tag, "cache-control": "no-cache", "content-security-policy": GAME_CSP } });
+    }
+    if (cached) {
+      const again = new Headers(cached.headers);
+      again.set("cache-control", "no-cache"); // the stored copy's own lifetime is not for browsers
+      return new Response(request.method === "HEAD" ? null : cached.body, { status: 200, headers: again });
+    }
 
     const headers = new Headers({
       "content-type": type, // decided by the file's extension from a fixed list, never by the uploader
@@ -83,8 +96,8 @@ export default {
       "cross-origin-resource-policy": "same-origin",
       "accept-ranges": "bytes",
       "etag": obj.httpEtag,
-      // Short, so a replaced or removed build disappears everywhere within five minutes.
-      "cache-control": "public, max-age=300"
+      // "no-cache" means "check before reusing", so players get a new version straight away.
+      "cache-control": "no-cache"
     });
     if (wantsRange && obj.range && typeof obj.range.offset === "number") {
       const end = obj.range.offset + (obj.range.length || obj.size - obj.range.offset) - 1;
@@ -94,7 +107,12 @@ export default {
     }
     headers.set("content-length", String(obj.size));
     const response = new Response(request.method === "HEAD" ? null : obj.body, { status: 200, headers });
-    if (request.method === "GET" && obj.size <= 5 * 1024 * 1024) ctx.waitUntil(cache.put(request, response.clone()).catch(() => {}));
+    if (request.method === "GET" && obj.size <= 5 * 1024 * 1024) {
+      // Stored for a day under the build's own key; the response the browser gets still says "no-cache".
+      const copy = new Response(response.clone().body, { status: 200, headers: new Headers(headers) });
+      copy.headers.set("cache-control", "public, max-age=86400");
+      ctx.waitUntil(cache.put(cacheKey, copy).catch(() => {}));
+    }
     return response;
   }
 };

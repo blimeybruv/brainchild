@@ -5,8 +5,12 @@
 //   - Any project that is up for adoption can be proposed, once per month, with a goal.
 //   - One vote per person per month. A vote can be changed or withdrawn until the month ends.
 //   - Vote counts are not shown while voting is open, so early votes don't steer later ones.
+//   - When the month ends, the proposal with the most votes becomes the next month's community project.
+//     A tie goes to the proposal made first. Nothing is stored: votes can't change once their month
+//     is over, so the result is worked out whenever the page asks for it.
 
 import { privateJson, isSameOrigin } from "./http.js";
+import { relayNow } from "./relay.js"; // the site's clock, which tests can set (RELAY_NOW)
 
 const MAX_PROPOSALS_PER_USER = 3;
 
@@ -26,9 +30,31 @@ export function votingMonth(now = new Date()) {
   return { month: next.toISOString().slice(0, 7), closes: last.toISOString().slice(0, 10) };
 }
 
+// The community project for the current month: the winner of the vote that closed when last month ended.
+async function currentProject(env, now) {
+  const month = now.toISOString().slice(0, 7);
+  const { results } = await env.DB.prepare(
+    `SELECT pr.id, pr.project_id, pr.goal, u.handle AS proposed_by, p.title, p.kind, p.base_game, p.tone,
+            (SELECT s.id FROM screenshots s WHERE s.project_id = p.id ORDER BY s.id LIMIT 1) AS shot,
+            (SELECT COUNT(*) FROM votes v WHERE v.proposal_id = pr.id) AS votes
+       FROM proposals pr JOIN projects p ON p.id = pr.project_id LEFT JOIN users u ON u.id = pr.user_id
+      WHERE pr.month = ? AND p.hidden_at IS NULL
+      ORDER BY votes DESC, pr.created_at ASC, pr.id ASC`
+  ).bind(month).all();
+  const voters = results.reduce((n, r) => n + r.votes, 0);
+  if (!voters) return null; // nothing proposed, or nobody voted
+  const w = results[0];
+  return {
+    month, project_id: w.project_id, title: w.title, kind: w.kind, base_game: w.base_game, tone: w.tone, shot: w.shot,
+    goal: w.goal, proposed_by: w.proposed_by, votes: w.votes, voters, proposals: results.length,
+    tied: results.length > 1 && results[1].votes === w.votes
+  };
+}
+
 // GET /api/votes
 export async function listVotes(env, session) {
-  const { month, closes } = votingMonth();
+  const now = relayNow(env);
+  const { month, closes } = votingMonth(now);
   const { results } = await env.DB.prepare(
     `SELECT pr.id, pr.project_id, pr.goal, pr.user_id, u.handle AS proposed_by, p.title, p.kind, p.base_game, p.tone,
             (SELECT s.id FROM screenshots s WHERE s.project_id = p.id ORDER BY s.id LIMIT 1) AS shot
@@ -41,7 +67,7 @@ export async function listVotes(env, session) {
     myVote = v ? v.proposal_id : null;
   }
   return privateJson({
-    month, closes, signed_in: !!session, my_vote: myVote,
+    month, closes, signed_in: !!session, my_vote: myVote, current: await currentProject(env, now),
     proposals: results.map((r) => ({
       id: r.id, project_id: r.project_id, title: r.title, kind: r.kind, base_game: r.base_game, tone: r.tone, shot: r.shot,
       goal: r.goal, proposed_by: r.proposed_by, mine: !!session && r.user_id === session.userId
@@ -55,7 +81,7 @@ export async function castVote(request, env, session) {
   if (!session) return bad("not_signed_in", 401);
   const body = await readJson(request);
   if (!body) return bad("bad_request");
-  const { month } = votingMonth();
+  const { month } = votingMonth(relayNow(env));
   if (body.proposal_id === null) {
     await env.DB.prepare("DELETE FROM votes WHERE user_id = ? AND month = ?").bind(session.userId, month).run();
     return privateJson({ ok: true, my_vote: null });
@@ -87,7 +113,7 @@ export async function propose(request, env, session) {
   const project = await env.DB.prepare("SELECT id, status FROM projects WHERE id = ? AND hidden_at IS NULL").bind(id).first();
   if (!project) return bad("not_found", 404);
   if (!["adopt", "help"].includes(project.status)) return bad("not_up_for_adoption", 409);
-  const { month } = votingMonth();
+  const { month } = votingMonth(relayNow(env));
   const mine = await env.DB.prepare("SELECT COUNT(*) AS n FROM proposals WHERE user_id = ? AND month = ?").bind(session.userId, month).first();
   if (mine.n >= MAX_PROPOSALS_PER_USER) return bad("too_many_proposals", 429);
   try {
@@ -103,7 +129,7 @@ export async function propose(request, env, session) {
 export async function withdrawProposal(request, env, session, id) {
   if (!isSameOrigin(request)) return bad("forbidden", 403);
   if (!session) return bad("not_signed_in", 401);
-  const { month } = votingMonth();
+  const { month } = votingMonth(relayNow(env));
   const r = await env.DB.prepare("DELETE FROM proposals WHERE id = ? AND user_id = ? AND month = ?").bind(id, session.userId, month).run();
   // The count includes the votes removed along with the proposal, so it can be more than one.
   if (!r.meta || r.meta.changes < 1) return bad("not_found", 404);

@@ -265,8 +265,13 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
 
 **The queue above is finished (14 Nov).** What is left, for later batches:
 
-- **To build, not blocked:** the blog vote's winner. At month end nothing picks or shows which proposal
-  won (`api/votes.js`, `site/js/blog.js`). Show last month's winner and its vote count on the blog page.
+- **Blog vote winner: done 14 Nov.** The blog page now opens with "Community project · <month>": the
+  proposal that won the vote held during the previous month, with its goal, proposer and vote count, and
+  a link to join in on the project page (`current` in `GET /api/votes`). Choices the agent made: a tie
+  goes to the proposal made first (as in Relay rounds), and with no votes at all there is no community
+  project that month. Nothing is stored: the result is worked out when the page asks, since closed votes
+  can't change. A project a moderator removes drops out of the result. The first result will appear on
+  1 Dec, from the votes cast in November.
 - **To build, not blocked:** reporting a blog vote proposal's text. The report form and the moderation
   queue cover projects and comments only.
 - **Only if a listed game needs it:** cross-origin isolation headers on the builds Worker, for engines

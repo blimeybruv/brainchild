@@ -455,3 +455,11 @@ blockquote.agree { margin: 0; padding-left: 14px; border-left: 3px solid var(--a
 .lic-list dd { margin: 0; }
 .lic-list dd .muted { display: block; font-size: 14px; margin-top: 2px; }
 @media (max-width: 600px) { .lic-list { grid-template-columns: 1fr; } .lic-list dd { margin-bottom: 8px; } }
+.current-project { padding: 24px 32px; margin-bottom: 24px; border-color: var(--accent); }
+@media (max-width: 600px) { .current-project { padding: 20px; } }
+.current-inner { display: flex; gap: 22px; align-items: flex-start; }
+.current-inner .shot { width: 200px; aspect-ratio: 16 / 10; border-radius: 8px; flex: none; overflow: hidden; }
+.current-inner .shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.current-inner .c-grow { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.current-inner h2, .current-inner p { margin: 0; }
+@media (max-width: 600px) { .current-inner { flex-direction: column; } .current-inner .shot { width: 100%; } }

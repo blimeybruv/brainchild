@@ -22,8 +22,31 @@ window.BC.load(function () {
   }
   function signIn(text) { return h("a", { href: "/api/auth/login?return_to=" + encodeURIComponent("/blog.html"), text: text }); }
 
+  // This month's community project: the winner of the vote that closed at the end of last month.
+  function renderCurrent() {
+    var box = document.getElementById("current-project"), c = votes && votes.current;
+    box.textContent = "";
+    box.hidden = !c;
+    if (!c) return;
+    var name = MONTHS[Number(c.month.slice(5, 7)) - 1] + " " + c.month.slice(0, 4);
+    var shot = c.shot ? h("img", { src: "/api/screenshots/" + c.shot, alt: "", loading: "lazy" }) : null;
+    box.appendChild(h("div", { class: "current-inner" }, [
+      h("div", { class: "shot", style: "background:" + (c.tone || "#4A4A52"), "aria-hidden": "true" }, shot ? [shot] : []),
+      h("div", { class: "c-grow" }, [
+        h("p", { class: "eyebrow", text: "Community project · " + name }),
+        h("h2", { id: "current-h" }, [h("a", { href: "project.html?id=" + encodeURIComponent(c.project_id), text: c.title })]),
+        h("p", { text: "The goal: " + c.goal }),
+        h("p", { class: "muted", text: (c.kind === "Mod" ? "Mod for " + c.base_game + " · " : "") + "Proposed by @" + (c.proposed_by || "a member") + " · " +
+          c.votes + " of " + c.voters + (c.voters === 1 ? " vote" : " votes") + " across " + c.proposals + (c.proposals === 1 ? " proposal" : " proposals") +
+          (c.tied ? " · a tie, won by the proposal made first" : "") }),
+        h("div", { class: "actions" }, [h("a", { class: "btn btn-light", href: "project.html?id=" + encodeURIComponent(c.project_id) + "#discussion", text: "Join in on the project page" })])
+      ])
+    ]));
+  }
+
   // The monthly vote, from the database. One vote per person per month; it can be changed until the month ends.
   function renderCandidates() {
+    renderCurrent();
     var wrap = document.getElementById("candidates");
     var status = document.getElementById("vote-status");
     wrap.textContent = "";

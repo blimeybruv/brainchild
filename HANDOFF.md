@@ -333,9 +333,9 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
      report, and where to ask other questions. No email address appears. Every page's footer links to it
      and to the report form; a signed-out visitor who clicks "Report this project" is pointed to the form
      with the page's address filled in.
-   - **To try:** open https://brainchild.nexus/report.html in a private window, send a test report, then
-     look for it on the Moderation page. The form was tested with Cloudflare's test keys; the real bot
-     check can only be passed by a real browser, so the agent couldn't complete it on the live site.
+   - **Confirmed 14 Nov:** the owner sent a test report from a real browser at 20:53 GMT and it was stored
+     (outside report 1, open, no reply-to), so the real Turnstile check works. Close it from the
+     Moderation page when convenient.
 7. **Analytics script: done 13 Nov.** `static.cloudflareinsights.com` is allowed in `script-src` and
    `cloudflareinsights.com` in `connect-src`.
 8. **Optional tidy-up:** in Cloudflare, **Workers & Pages → royal-firefly-b80b → Settings → Build →

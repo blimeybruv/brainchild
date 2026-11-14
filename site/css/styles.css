@@ -449,3 +449,4 @@ blockquote.agree { margin: 0; padding-left: 14px; border-left: 3px solid var(--a
 @media (max-width: 600px) { .relay-entry { flex-wrap: wrap; } }
 .relay-title .pill { min-height: 0; cursor: default; }
 .relay-entry .form-grid { margin-top: 4px; }
+.brand-mark { display: block; width: 38px; height: 38px; }

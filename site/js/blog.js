@@ -97,10 +97,10 @@ window.BC.load(function () {
     });
   }
 
-  // Proposal form: projects that want help (up for adoption, open for collaboration, needs testers).
+  // Proposal form: projects up for adoption or open for collaboration.
   var sel = document.getElementById("proj");
   sel.appendChild(h("option", { value: "", text: "Choose a project…" }));
-  D.items.filter(function (i) { return i.status === "adopt" || i.status === "help" || i.status === "test"; }).forEach(function (i) {
+  D.items.filter(function (i) { return i.status === "adopt" || i.status === "help"; }).forEach(function (i) {
     sel.appendChild(h("option", { value: i.id, text: i.kind === "Mod" ? i.title + " (mod for " + i.game + ")" : i.title }));
   });
   var note = document.getElementById("propose-note");
@@ -115,7 +115,7 @@ window.BC.load(function () {
         invalid_fields: "Choose a project and describe the goal in a sentence or two (10 to 300 characters).",
         already_proposed: "That project has already been proposed for this vote.",
         too_many_proposals: "You can propose three projects a month.",
-        not_up_for_adoption: "Only projects that are up for adoption, open for collaboration or looking for testers can be proposed."
+        not_up_for_adoption: "Only projects that are up for adoption or open for collaboration can be proposed."
       }[code] || BC.errorText(code);
     });
   });

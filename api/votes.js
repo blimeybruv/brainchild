@@ -86,7 +86,7 @@ export async function propose(request, env, session) {
   if (!/^[a-z0-9-]{1,80}$/.test(id)) return bad("invalid_fields", 400, { fields: ["project_id"] });
   const project = await env.DB.prepare("SELECT id, status FROM projects WHERE id = ? AND hidden_at IS NULL").bind(id).first();
   if (!project) return bad("not_found", 404);
-  if (!["adopt", "help", "test"].includes(project.status)) return bad("not_up_for_adoption", 409);
+  if (!["adopt", "help"].includes(project.status)) return bad("not_up_for_adoption", 409);
   const { month } = votingMonth();
   const mine = await env.DB.prepare("SELECT COUNT(*) AS n FROM proposals WHERE user_id = ? AND month = ?").bind(session.userId, month).first();
   if (mine.n >= MAX_PROPOSALS_PER_USER) return bad("too_many_proposals", 429);

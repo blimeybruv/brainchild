@@ -193,7 +193,29 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
      candidates are gone, so the page no longer depends on particular listings existing.
      Not built: choosing and announcing the winner at month end, and reporting a proposal's text (the
      report form covers projects and comments only).
-   - Relay rounds last. The rules were decided on 13 Nov; see "Relay rules" below.
+   - **Relay rounds** (rules: "Relay rules" below). Being built in three parts:
+     - **Part A, done 14 Nov:** rounds, entries and the ranked vote (`api/relay.js`, `site/relay.html`,
+       `site/js/relay.js`, linked from the main navigation).
+       - Timetable in UTC: entry on days 1 to 5, ranking on days 6 and 7, result on day 8. The rules say
+         "week 1" for both entry and vote; this split is the agent's choice and easy to change
+         (`ENTRY_LAST_DAY`, `VOTE_LAST_DAY`).
+       - Entering needs a project the person maintains with a verified, unarchived repo; GitHub is asked
+         at that moment. One project per person per round.
+       - Fewer than 4 entries by the end of day 5: the round doesn't run and its entries are carried into
+         next month's round. Rounds that ran are numbered 1, 2, 3 and so on.
+       - Only entrants rank, three projects other than their own, for 3, 2 and 1 points. Rankings can be
+         changed until voting closes and totals stay hidden until then. Ties: more first places, then the
+         earlier entry.
+       - Nothing runs on a timer: a round moves to its next stage the first time someone opens the page
+         after the stage's date has passed.
+     - **Part B, to build:** the winner's task board, "I'm working on this" claims, contributions (a pull
+       request on the winner's repo, checked through the GitHub API), junk flags and their moderator
+       review with a statement of reasons. New tables go in a new migration; `relay_rounds.status` already
+       allows `review` and `closed`.
+     - **Part C, to build:** the review week and recap, badges (Most helpful, Best wildcard, moderator
+       fallback after 7 days), badges on a user page and beside names in discussions
+       (`api/community.js` already returns an empty `badges` list), and the rule that an entrant with no
+       counting pull request can't enter the next round until they contribute to one.
    Not in this queue and not built: the Mature gate from the Project mockup. Ratings and content notes are
    stored and shown in the project page's byline; the gate itself depends on the Open decision about
    German visitors.

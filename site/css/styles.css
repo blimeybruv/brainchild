@@ -431,3 +431,19 @@ blockquote.agree { margin: 0; padding-left: 14px; border-left: 3px solid var(--a
 .build-version:empty { display: none; }
 .wizard .build-version, .wizard #p-build { padding-left: 0; padding-right: 0; }
 .bot-check { min-height: 70px; }
+
+/* ---------- Relay rounds ---------- */
+.relay-how { margin: 0 0 24px; padding-left: 22px; color: var(--text-2); max-width: 820px; display: flex; flex-direction: column; gap: 6px; }
+.relay-list { display: flex; flex-direction: column; gap: 10px; }
+.relay-entry { display: flex; gap: 14px; align-items: center; padding: 14px 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.relay-entry.winner { border-color: var(--accent); }
+.relay-entry p { margin: 0; }
+.relay-entry .c-grow { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex-grow: 1; }
+.relay-title { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-weight: 600; }
+.relay-swatch { width: 44px; height: 44px; border-radius: 8px; flex: none; }
+.relay-ranks { display: flex; gap: 6px; flex: none; }
+.relay-ranks .chip { min-width: 40px; min-height: 40px; font-size: 15px; font-weight: 700; }
+.relay-points { font-family: var(--font-mono); font-size: 13px; white-space: nowrap; color: var(--text-2); }
+.callout h2 { margin: 2px 0 6px; font-size: 26px; }
+.callout .eyebrow { margin: 0; }
+@media (max-width: 600px) { .relay-entry { flex-wrap: wrap; } }

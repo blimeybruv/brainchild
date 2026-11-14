@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relay rounds · Brainchild</title>
+<meta name="description" content="Relay rounds: each month, maintainers enter a project, rank each other's, and everyone helps the winner.">
+<link rel="icon" href="img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/styles.css?v=11">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <nav class="wrap site-nav" aria-label="Main">
+    <a class="brand" href="index.html">
+      <svg aria-hidden="true" width="30" height="20" viewBox="0 0 30 20" fill="none" stroke="#F5B83D" stroke-width="3" stroke-linecap="round"><path d="M2 10c3-8 6-8 8.7 0s5.6 8 8.6 0 5.7-8 8.7 0"/></svg>
+      <span class="brand-name">Brainchild</span>
+    </a>
+    <div class="nav-links">
+      <a href="browse.html">Browse</a>
+      <a href="blog.html">Blog</a>
+      <a href="relay.html" aria-current="page">Relay rounds</a>
+      <a href="index.html#handoff">How handoff works</a>
+    </div>
+    <div class="nav-actions">
+      <a class="btn btn-plain" href="/api/auth/login" data-auth="signin">Sign in</a>
+      <a class="btn btn-primary" href="list.html">List a project</a>
+    </div>
+  </nav>
+</header>
+
+<main id="main" class="wrap wizard-page">
+  <div class="wizard-head">
+    <div>
+      <p class="eyebrow" id="relay-eyebrow">Relay rounds · opt-in</p>
+      <h1>Help one project this month.<br>Next month it could be yours.</h1>
+    </div>
+  </div>
+  <ol class="relay-how">
+    <li>Nominate a project you maintain. If at least four are entered, everyone who entered ranks three of the others. You can't rank your own.</li>
+    <li>Everyone who entered opens a pull request on the winner's project within the month: a task from its board, or an idea of their own.</li>
+    <li>Skip that and you can't nominate a project in the next round. Contributing to that round puts you back in.</li>
+  </ol>
+  <div class="wizard-list" id="m-body"><p class="muted">Loading…</p></div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span class="brand-name">Brainchild</span>
+    <span class="grow">A free home for projects that deserve another go.</span>
+    <a href="#">About</a>
+    <a href="#">Licensing guide</a>
+    <a href="report.html">Report a problem</a>
+    <a href="contact.html">Contact</a>
+    <a href="#">Source</a>
+  </div>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/common.js?v=11"></script>
+<script src="js/relay.js?v=11"></script>
+</body>
+</html>

@@ -38,7 +38,7 @@ Previews run the same code against the test database and bucket (the `previews` 
 | Resource | Name / ID | Notes |
 |---|---|---|
 | Worker | `royal-firefly-b80b` | Static assets plus `/api/*`, custom domain `brainchild.nexus`. Bindings: `DB` (D1), `BUILDS` (R2), `ASSETS` (the `site/` files) |
-| D1 database | `brainchild-db` · `6e241536-91de-49b7-b885-35429bd01efb` | Tables: users, sessions, projects, packets, lineage, license_records, comments, comment_likes, reports, outside_reports, moderation_actions, screenshots, builds, project_changes, archive_requests, proposals, votes, posts. 19 sample projects, 1 sample packet |
+| D1 database | `brainchild-db` · `6e241536-91de-49b7-b885-35429bd01efb` | Tables: users, sessions, projects, packets, lineage, license_records, comments, comment_likes, reports, outside_reports, moderation_actions, screenshots, builds, project_changes, archive_requests, relay_rounds, relay_entries, relay_votes, proposals, votes, posts. 19 sample projects, 1 sample packet |
 | R2 bucket | `brainchild-builds` (ENAM, private) | Holds the stored license copies under `licenses/` screenshots under `screenshots/` and hosted builds under `builds/`. Lifecycle rule deletes unfinished uploads after 24 h |
 | Builds Worker | `brainchild-builds` | Serves `brainwave.nexus` and `*.brainwave.nexus`. Bindings: `DB` (read only), `BUILDS`. No workers.dev address |
 | Preview D1 database | `brainchild-db-preview` · `3b6e6ea2-8a4a-469c-9150-4dcbad16ab64` | Test copy used only by pull-request previews. Same tables and sample rows as the live database |
@@ -71,6 +71,7 @@ Previews run the same code against the test database and bucket (the `previews` 
 | `POST /api/projects/<id>/screenshots`, `POST /api/screenshots/<id>/delete` | Add or remove a screenshot (maintainer only) |
 | `GET /api/screenshots/<id>` | A screenshot image |
 | `POST /api/projects/<id>/builds`, `PUT .../builds/<build>/files?path=`, `POST .../builds/<build>/activate`, `POST /api/projects/<id>/builds/rollback`, `POST /api/projects/<id>/builds/remove` | Upload a version, make it live, roll back to the previous one, or take the hosted build down (maintainer only) |
+| `GET /api/relay`, `POST /api/relay/enter`, `/withdraw`, `/rank` | Relay rounds: the current round, entering a project, ranking the others |
 | `GET`/`POST /api/votes` | This month's community-project vote; one vote per person |
 | `POST /api/proposals`, `POST /api/proposals/<id>/delete` | Propose a project for the vote, or withdraw your proposal |
 | `GET /api/repos/<owner>/<repo>/access` | Whether the signed-in user is an admin of that GitHub repo (the rule for listing it) |

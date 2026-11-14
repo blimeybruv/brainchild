@@ -2,7 +2,7 @@
 (function () {
   var BC = window.BC, h = BC.h, D = window.BC_DATA, root = document.getElementById("m-body");
   var id = new URLSearchParams(window.location.search).get("id") || "";
-  var NOTES = ["Violence", "Blood", "Horror", "Strong language", "Drug references", "Gambling-style mechanics", "Historical symbols"];
+  var NOTES = ["Violence", "Blood", "Horror", "Strong language", "Drug references", "Gambling-style mechanics"];
   var LABELS = { title: "Title", note: "One-line description", genre: "Genre", tech: "Built with", status: "Status", rating: "Content rating",
     content_notes: "Content notes", works: "What works", broken: "What's broken", vision: "What you were going for", agent_context: "Agent context file", provenance: "Where each part came from" };
   var f = null, p = null, msg = null, busy = false;

@@ -3,7 +3,7 @@
   var BC = window.BC, h = BC.h, D = window.BC_DATA;
   var body = document.getElementById("w-body");
   var STEPS = ["Start", "Choose repo", "Ownership", "License", "Details", "Publish"];
-  var NOTES = ["Violence", "Blood", "Horror", "Strong language", "Drug references", "Gambling-style mechanics", "Historical symbols"];
+  var NOTES = ["Violence", "Blood", "Horror", "Strong language", "Drug references", "Gambling-style mechanics"];
   var LICENSE_NOTES = {
     "MIT": ["amber", "Accepted. MIT works for handing off. Apache-2.0 and GPLv3 go further and state in writing that the permission is permanent, if you'd like that certainty."],
     "Apache-2.0": ["good", "Recommended: the license states its permissions are perpetual and irrevocable. It grants no rights to the project's name, so the name question below matters."],

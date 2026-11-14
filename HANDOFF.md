@@ -493,6 +493,23 @@ column `base_game`), so there is no migration and the CHECK constraint stays as 
 - **Reports that are really submissions:** in the moderation queue, add a "Turn into a draft post"
   action. It copies the text and links back to the report.
 
+## Owner decision, 14 Nov: the Mature gate (unblocked)
+
+- **Same gate for everyone:** build the click-through gate from the Project mockup for Mature projects.
+  The notice lists the content notes, with a "Show it" button that remembers the choice for the session.
+  Browse keeps hiding Mature projects unless "Show Mature projects" is ticked. No country detection and no
+  ID checks.
+- **Age label:** add the machine-readable label for German youth-protection software. Serve
+  `/age-de.xml` labelling the site default as 0 (all ages) and Mature project pages (`/project.html?id=…`
+  for Mature listings, or a path pattern if easier) as 18. Also add the `age-de-meta-label` meta tag
+  on Mature project pages. Keep it simple; if a path-level label isn't possible for query-string pages,
+  label at page level with the meta tag.
+- **Fallback:** if a complaint ever arrives, hiding Mature listings for `CF-IPCountry: DE` is the
+  fallback. Don't build it now.
+- **"Historical symbols" is dropped (owner's decision):** it's removed from content notes in `list.js`
+  and `edit.js` and from the About page's house rules. `api/listings.js` still accepts the old value so
+  existing rows stay valid; don't show it anywhere.
+
 ## Relay rules (decided by the owner, 13 Nov; confirmed again in chat the same evening)
 
 A round lasts one calendar month. The Relay mockup shows the stages.
@@ -532,9 +549,6 @@ A round lasts one calendar month. The Relay mockup shows the stages.
 - Keep the CSP in `site/_headers` strict. Fonts are self-hosted, with no requests to Google or other font services.
 - **No sexually explicit content, including nude mods.** This keeps the site out of age-verification
   regimes (the UK Online Safety Act and others). Mature means violence or strong themes, not sex.
-- **Historical symbols in mods** (e.g. WW2 strategy mods such as Darkest Hour): allow them, but behind a
-  declared flag and the Mature or "historical symbols" notice. Germany allows them in games under the
-  social adequacy rule, but plan for a region notice.
 - A mod's license covers only the modder's own files; the game's EULA still applies. Mods require `base_game`.
 - Credit is never removed from lineage.
 
@@ -549,4 +563,3 @@ A round lasts one calendar month. The Relay mockup shows the stages.
 
 - Logo: the C cradling a B, with the B drawn as a brain or as nerd glasses. The owner has their own sketches.
 - Hero background: the Julia, smoke or contour option from `HeroFractal`.
-- How Mature listings are handled for German visitors.

@@ -88,7 +88,7 @@
         h("p", { text: "Ranking opens on " + BC.niceDate(r.entry_closes).replace(/^\d+/, String(Number(r.entry_closes.slice(8)) + 1)) + ". You'll rank three of the other projects." })])]));
       out.push(h("div", { class: "actions" }, [btn("Withdraw my entry", function () { act("/api/relay/withdraw"); }, "btn-ghost", st.busy)]));
     } else if (me.eligible === false) {
-      out.push(h("p", { class: "callout plain", text: "You entered the " + monthName(me.missed_month) + " round and have no pull request that counts for its winner, so you can't nominate a project this time. Contribute to this round's winner and you can enter the next one." }));
+      out.push(h("p", { class: "callout plain", text: "You entered the " + monthName(me.missed_month) + " round and have no pull request that counts for its winner, so you can't nominate a project this time. You don't need to enter to contribute, though: once this round's winner is chosen, a task board appears on this page. Open a pull request on the winner's project and you can enter the next round." }));
     } else if (!me.projects.length) {
       out.push(h("p", { class: "callout plain" }, ["To enter, you need a project of your own listed on Brainchild. ", h("a", { href: "list.html", text: "List a project" }), "."]));
     } else {
@@ -160,7 +160,7 @@
   // The winner's task board: tasks, who is working on what, and the wildcard.
   function boardSection() {
     var r = d.round, b = d.board, me = d.me, out = [];
-    out.push(h("h2", { text: "Task board" }));
+    out.push(h("h2", { id: "task-board", text: "Task board" }));
     out.push(h("p", { class: "muted", text: "Posted by @" + b.maintainer + ". Say what you're working on, so people don't spend their time (or AI usage) on the same thing." }));
     var cards = b.tasks.map(function (t) {
       var who = t.claimed_by.length ? t.claimed_by.map(function (x) { return "@" + x; }).join(", ") + (t.claimed_by.length === 1 ? " is" : " are") + " working on this" : "Nobody has taken this yet";
@@ -304,6 +304,11 @@
         h("p", { text: "Maintained by @" + w.owner + ". Goal for the month: " + w.pitch }),
         h("p", { class: "muted", text: "Ranked votes from " + (r.ranked_by || 0) + " of " + d.entries.length + " entrants · " +
           (r.status === "running" ? "contributions are open until the end of " + BC.niceDate(r.ends) : r.status === "review" ? "the month is over; contributions are being reviewed until " + BC.niceDate(r.review_ends) : "this round has finished") })])]));
+      if (r.status === "running" && d.board && !d.me.maintainer) {
+        out.push(h("p", { class: "callout plain" }, [
+          h("a", { class: "btn btn-primary", href: "#task-board", text: "Contribute to " + w.title }),
+          " Anyone can contribute, whether or not they entered this round. A pull request that counts also makes you eligible to enter next month's round."]));
+      }
     }
     if (d.board) {
       if (d.recap) out = out.concat(recapSection());

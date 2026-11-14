@@ -113,7 +113,7 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    - The project becomes `active` under the adopter, and the page shows the rules block to paste into
      CLAUDE.md or AGENTS.md. If two people adopt at once, exactly one succeeds.
    - Left out from the mockup because nothing in this queue covers them: notifying the maker of a transfer
-     request, verifying Codeberg or GitLab repos with a file, opening a pull request with the rules block
+     request, verifying GitLab repos with a file, opening a pull request with the rules block
      (that would need repo write access), and storing a source archive.
 7. **Hosted browser builds.** *Done 13 Nov on `brainwave.nexus`. The owner uploaded Zombie Outbreak
    Simulator the same evening and it plays on its project page.*
@@ -401,16 +401,17 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
      badges) and the `sample-*` users (`u-sample-ada` … `u-sample-finn`), added 14 Nov as a demonstration.
    - Ask the owner first, and list what will go.
 
-## Owner request, 14 Nov: Codeberg and GitLab sign-in, and linked accounts
+## Owner request, 14 Nov: GitLab sign-in, and linked accounts
+
+**Codeberg is dropped (owner's decision, 14 Nov).** Support GitHub and GitLab only. Don't build Codeberg sign-in or Codeberg verification, and refuse Codeberg repo URLs in the listing flow with a plain message.
 
 **Verifying non-GitHub repos.** This replaces the file-only plan as the main route.
-- **Sign-in:** add OAuth sign-in for **Codeberg** (Forgejo OAuth2) and **GitLab.com**. Guide the owner
-  through registering both apps (free) and adding the secrets in the dashboard, with exact click paths.
+- **Sign-in:** add OAuth sign-in for **GitLab.com**. Guide the owner
+  through registering the app (free) and adding the secrets in the dashboard, with exact click paths.
 - **Admin checks:**
-  - Codeberg: `GET /api/v1/repos/{owner}/{repo}` with the user's token must return `permissions.admin`.
   - GitLab: the project member access level must be 50 (Owner) or 40 (Maintainer).
   - Re-check on every edit, handoff and adoption, exactly like `requireRepoAdmin`.
-- **Self-hosted GitLab or Forgejo only:** keep the verification-file method (a code committed to the
+- **Self-hosted GitLab only:** keep the verification-file method (a code committed to the
   repo). Label those listings "verified: push access", and require a fresh file at handoff.
 
 **Linked accounts.**
@@ -419,7 +420,7 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
   linked_at) referencing `users`.
 - **Linking:** only from the account page, while signed in, by completing the other provider's sign-in.
   **Never link by matching email.** No emails are stored.
-- **Repo checks stay per platform:** a Codeberg project needs the Codeberg token at the time of the action.
+- **Repo checks stay per platform:** a GitLab project needs the GitLab token at the time of the action.
   Linking never bypasses a check.
 - **Second sign-in already has an account:** if it has no activity, merge it automatically. Otherwise
   refuse and show "contact a moderator", and add a manual merge tool to the moderation area.
@@ -431,7 +432,7 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
 ## Owner request, 14 Nov: vote-rigging signals and a privacy page
 
 - **Cheap signals first.** Show moderators these on votes, Relay entries and new accounts:
-  - the age of the linked GitHub, Codeberg or GitLab account, and whether it has any public activity;
+  - the age of the linked GitHub or GitLab account, and whether it has any public activity;
   - the age of the Brainchild account.
 - **Hashed network flag.** Collect it only for votes and Relay entries.
   - Store an HMAC (secret key, rotated) of the requester's network: the IPv4 /24 or IPv6 /64, from
@@ -440,7 +441,7 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
   - Moderators see flags only ("3 votes in this round came from one network"), never addresses.
   - A flag means "worth a look". Never penalise automatically.
 - **Privacy page.** Write `site/privacy.html` and link it in the footer. Plain language, covering:
-  - what is stored (GitHub, Codeberg or GitLab id and handle, no emails, the hashed network flag and why,
+  - what is stored (GitHub or GitLab id and handle, no emails, the hashed network flag and why,
     the optional private reply-to address on signed-out reports);
   - how long each is kept and the cookies used (session only);
   - that analytics is Cloudflare's cookieless analytics;

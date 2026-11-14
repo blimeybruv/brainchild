@@ -37,7 +37,7 @@ window.BC.load(function () {
   // Hosted builds aren't live yet (HANDOFF.md). Until they are, send people to the repo
   // instead of leaving a button that does nothing.
   var play = document.getElementById("p-play");
-  if (item.repo && /^https:\/\/(github\.com|gitlab\.com|codeberg\.org)\//.test(item.repo)) {
+  if (item.repo && /^https:\/\/(github\.com|gitlab\.com)\//.test(item.repo)) {
     hint.textContent = "[ hosted build coming soon ]";
     playLabel.textContent = "Get it on " + item.repo.split("/")[2].replace(/\.(com|org)$/, "").replace(/^./, function (c) { return c.toUpperCase(); });
     play.addEventListener("click", function () { window.open(item.repo, "_blank", "noopener"); });

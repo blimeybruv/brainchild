@@ -51,6 +51,7 @@
       bar.textContent = "";
       bar.appendChild(full); bar.appendChild(stop);
       bar.appendChild(h("a", { href: live, target: "_blank", rel: "noopener noreferrer", text: "Open in a new tab" }));
+      bar.appendChild(h("span", { class: "muted", text: "To mute the game, right-click this browser tab and choose Mute." }));
     }
     function wirePlayButton() {
       var old = document.getElementById("p-play");

@@ -12,6 +12,7 @@ import { privateJson, isSameOrigin } from "./http.js";
 import { isModerator } from "./auth.js";
 import { listOutside } from "./outside.js";
 import { listFlags } from "./relay-board.js";
+import { commentBadges } from "./relay-badges.js";
 
 export const REPORT_CATEGORIES = ["sexual", "rating", "malware", "license", "harass", "spam", "other"];
 const MAX_COMMENT = 2000;
@@ -59,12 +60,13 @@ export async function listComments(env, session, projectId) {
     ).bind(projectId, session.userId).all();
     for (const x of results) liked.add(x.comment_id);
   }
+  const badges = await commentBadges(env, projectId);
   const role = (userId) => {
     const owner = userId === project.owner_id, creator = made.has(userId);
     return owner && creator ? "Maker" : creator ? "Original maker" : owner ? "Maintainer" : "";
   };
   const shape = (c) => ({
-    id: c.id, user: c.handle, avatar_url: c.avatar_url, role: role(c.user_id), badges: [], // badges come with Relay rounds
+    id: c.id, user: c.handle, avatar_url: c.avatar_url, role: role(c.user_id), badges: badges.get(c.user_id) || [], // Relay badges, once their round has closed
     body: c.removed_at ? null : c.body, removed: !!c.removed_at, created_at: c.created_at,
     mine: !!session && c.user_id === session.userId
   });

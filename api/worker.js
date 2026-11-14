@@ -31,6 +31,8 @@
 //   POST /api/relay/tasks, /api/relay/tasks/<id>/remove | claim | unclaim   the winner's task board (relay-board.js)
 //   POST /api/relay/contributions, /api/relay/contributions/<id>/withdraw | flag   pull requests for the winner
 //   POST /api/mod/relay-flags/<id>/resolve                moderators only
+//   POST /api/relay/badges                                the maintainer's awards (relay-badges.js)
+//   GET  /api/users/<handle>                              a person's public page, cached for 60s
 //   GET/POST /api/votes, POST /api/proposals, POST /api/proposals/<id>/delete   monthly community vote (votes.js)
 
 import { json, privateJson, NO_STORE } from "./http.js";
@@ -42,6 +44,7 @@ import { addScreenshot, deleteScreenshot, serveScreenshot } from "./screenshots.
 import { listVotes, castVote, propose, withdrawProposal } from "./votes.js";
 import { reportForm, postOutsideReport, resolveOutside } from "./outside.js";
 import { enterRelay, withdrawRelay, rankRelay } from "./relay.js";
+import { awardBadge, userPage } from "./relay-badges.js";
 import { relayState, addTask, taskAction, addContribution, contributionAction, resolveFlag } from "./relay-board.js";
 import { startBuild, putBuildFile, activateBuild, rollbackBuild, removeBuild, buildInfo, playUrl } from "./builds.js";
 
@@ -139,6 +142,7 @@ async function handlePrivate(request, env, ctx, url, path) {
   if (path === "/api/relay/tasks") return method === "POST" ? addTask(request, env, session) : methodNotAllowed("POST");
   m = path.match(/^\/api\/relay\/tasks\/(\d{1,12})\/(remove|claim|unclaim)$/);
   if (m) return method === "POST" ? taskAction(request, env, session, Number(m[1]), m[2]) : methodNotAllowed("POST");
+  if (path === "/api/relay/badges") return method === "POST" ? awardBadge(request, env, session) : methodNotAllowed("POST");
   if (path === "/api/relay/contributions") return method === "POST" ? addContribution(request, env, session) : methodNotAllowed("POST");
   m = path.match(/^\/api\/relay\/contributions\/(\d{1,12})\/(withdraw|flag)$/);
   if (m) return method === "POST" ? contributionAction(request, env, session, Number(m[1]), m[2]) : methodNotAllowed("POST");
@@ -214,6 +218,10 @@ async function handleApi(request, env, ctx, url) {
       response = await licenseRecord(env, ctx, path.split("/")[3]);
     } else if (/^\/api\/screenshots\/\d{1,12}$/.test(path)) {
       response = await serveScreenshot(env, Number(path.split("/")[3]));
+    } else if (/^\/api\/users\/[^/]+$/.test(path)) {
+      let handle;
+      try { handle = decodeURIComponent(path.slice("/api/users/".length)); } catch { handle = ""; }
+      response = await userPage(env, handle);
     } else if (path.startsWith("/api/license-text/")) {
       response = await licenseText(env, url, path.slice("/api/license-text/".length));
     } else if (path.startsWith("/api/projects/")) {

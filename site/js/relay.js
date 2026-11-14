@@ -32,6 +32,9 @@
           pr_outside_round: "That pull request wasn't opened during this round's month, so it can't count for this round.",
           already_submitted: "That pull request has already been submitted.", too_many: "That's the most this round allows.",
           already_flagged: "This contribution has been flagged, so it can't be changed now.",
+          not_eligible: "You entered an earlier round and have no pull request that counts for its winner, so you can't nominate a project yet. Contribute to a round and you can enter the one after.",
+          awards_not_open: "Badges are awarded once the month is over.", awards_closed: "The badges for this round are final.", already_awarded: "That badge has already been awarded.",
+          own_contribution: "You can't award a badge to yourself.", not_counting: "A badge can only go to a pull request that counts.", not_a_wildcard: "Best wildcard can only go to a wildcard contribution.",
           invalid_fields: {
             pitch: "Say in a sentence or two what a month of help would get done (10 to 300 characters).",
             pr: "Paste the link to your pull request, for example https://github.com/owner/repo/pull/12.",
@@ -84,6 +87,8 @@
         h("p", null, [h("strong", { text: "You're in this round." })]),
         h("p", { text: "Ranking opens on " + BC.niceDate(r.entry_closes).replace(/^\d+/, String(Number(r.entry_closes.slice(8)) + 1)) + ". You'll rank three of the other projects." })])]));
       out.push(h("div", { class: "actions" }, [btn("Withdraw my entry", function () { act("/api/relay/withdraw"); }, "btn-ghost", st.busy)]));
+    } else if (me.eligible === false) {
+      out.push(h("p", { class: "callout plain", text: "You entered the " + monthName(me.missed_month) + " round and have no pull request that counts for its winner, so you can't nominate a project this time. Contribute to this round's winner and you can enter the next one." }));
     } else if (!me.projects.length) {
       out.push(h("p", { class: "callout plain" }, ["To enter, you need a project of your own listed on Brainchild. ", h("a", { href: "list.html", text: "List a project" }), "."]));
     } else {
@@ -221,8 +226,10 @@
   function contributionRow(c) {
     var b = d.board, me = d.me;
     var safe = /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/pull\/\d+$/.test(c.pr_url);
+    var mineBadges = (d.badges || []).filter(function (x) { return x.contribution_id === c.id; });
     var parts = [
-      h("p", { class: "relay-title" }, ["@" + c.user, h("span", { class: "pill" + (c.wildcard ? " amber" : ""), text: c.wildcard ? "Wildcard" : c.tag || "Task" }),
+      h("p", { class: "relay-title" }, [userLink(c.user), h("span", { class: "pill" + (c.wildcard ? " amber" : ""), text: c.wildcard ? "Wildcard" : c.tag || "Task" }),
+        mineBadges.length ? h("span", null, mineBadges.map(function (x) { return h("span", { class: "pill amber", text: "★ " + x.label }); })) : null,
         c.status === "under_review" ? h("span", { class: "pill", text: "Flagged · under review" }) : c.status === "not_counted" ? h("span", { class: "pill", text: "Doesn't count" }) : null,
         c.mine ? h("span", { class: "pill amber", text: "Yours" }) : null]),
       h("p", null, [safe ? h("a", { href: c.pr_url, rel: "noopener noreferrer", target: "_blank", text: "#" + c.pr_number + " " + c.pr_title }) : "#" + c.pr_number + " " + c.pr_title]),
@@ -248,9 +255,44 @@
         controls.push(btn("Cancel", function () { st.flagOpen = 0; render(); }, "btn-ghost", st.busy));
       }
     }
+    // Badges: the maintainer during review, or a moderator afterwards if the maintainer awarded none.
+    if (me.can_award && c.status === "counts" && !c.mine) {
+      [["helpful", "Most helpful"], ["wildcard", "Best wildcard"]].forEach(function (k) {
+        if (k[0] === "wildcard" && !c.wildcard) return;
+        var has = mineBadges.some(function (x) { return x.kind === k[0]; });
+        if (has && d.round.status !== "review") return;
+        controls.push(btn(has ? "Take back " + k[1] : "Award " + k[1], function () { act("/api/relay/badges", { month: d.round.month, kind: k[0], contribution_id: has ? null : c.id }, "c" + c.id); }, has ? "btn-ghost" : "btn-light", st.busy));
+      });
+    }
     if (controls.length) parts.push(h("div", { class: "actions" }, controls));
     parts.push(errAt("c" + c.id));
     return h("div", { class: "relay-entry" }, [h("div", { class: "c-grow" }, parts)]);
+  }
+
+  function userLink(handle) { return h("a", { href: "user.html?u=" + encodeURIComponent(handle), text: "@" + handle }); }
+  function names(list) { var out = []; list.forEach(function (x, i) { if (i) out.push(i === list.length - 1 ? " and " : ", "); out.push(userLink(x)); }); return out; }
+
+  // After the month: what was done, who got the badges, and who missed.
+  function recapSection() {
+    var r = d.round, c = d.recap, me = d.me, out = [];
+    out.push(h("h2", { text: "Relay round " + r.number + " recap" }));
+    out.push(h("p", { text: c.pull_requests + (c.pull_requests === 1 ? " pull request" : " pull requests") + " from " + c.contributors + (c.contributors === 1 ? " contributor" : " contributors") + " for " + d.board.project_title + "." +
+      (r.status === "review" ? " The maintainer is choosing badges until the end of " + BC.niceDate(r.review_ends) + "." : "") }));
+    if (d.badges.length) {
+      out.push(h("div", { class: "relay-list" }, d.badges.map(function (b) {
+        return h("div", { class: "relay-entry" }, [h("div", { class: "c-grow" }, [
+          h("p", { class: "relay-title" }, [h("span", { class: "pill amber", text: "★ " + b.label + " · Relay round " + r.number }), userLink(b.user)]),
+          b.by_moderator ? h("p", { class: "muted", text: "Awarded by a moderator, because the maintainer awarded none." }) : r.status === "review" ? h("p", { class: "muted", text: "Picked by the maintainer. Final when review ends." }) : null])]);
+      })));
+    } else {
+      out.push(h("p", { class: "muted", text: r.status === "review" ? "No badges picked yet." : "No badges were awarded for this round. The round still counts and contributors keep their credit." }));
+    }
+    if (me.can_award) out.push(h("p", { class: "callout plain", text: me.maintainer && r.status === "review"
+      ? "Pick one Most helpful contributor and, if there's a wildcard worth it, one Best wildcard, using the buttons under Contributions. You can change your picks until review ends."
+      : "The maintainer awarded no badges, so as a moderator you can award them using the buttons under Contributions. A moderator's award is final." }));
+    if (c.under_review) out.push(h("p", { class: "muted", text: c.under_review + (c.under_review === 1 ? " contribution is" : " contributions are") + " flagged and waiting for a moderator. Nothing is held against a contributor in the meantime." }));
+    if (c.missed.length) out.push(h("p", { class: "muted" }, [h("strong", { text: "Missed round: " })].concat(names(c.missed)).concat([(c.missed.length === 1 ? " has" : " have") + " no pull request that counts for this round, so can't nominate a project until they contribute to a later round."])));
+    return out;
   }
 
   function resultStage() {
@@ -264,6 +306,7 @@
           (r.status === "running" ? "contributions are open until the end of " + BC.niceDate(r.ends) : r.status === "review" ? "the month is over; contributions are being reviewed until " + BC.niceDate(r.review_ends) : "this round has finished") })])]));
     }
     if (d.board) {
+      if (d.recap) out = out.concat(recapSection());
       out = out.concat(boardSection()).concat(submitSection());
       out.push(h("h2", { text: "Contributions" }));
       out.push(d.contributions.length ? h("div", { class: "relay-list" }, d.contributions.map(contributionRow)) : h("p", { class: "muted", text: "No pull requests submitted yet." }));

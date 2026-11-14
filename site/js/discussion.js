@@ -54,7 +54,7 @@
   }
   function head(c) {
     return h("div", { class: "comment-head" }, [
-      h("strong", { text: "@" + c.user }),
+      h("strong", null, [h("a", { href: "user.html?u=" + encodeURIComponent(c.user), text: "@" + c.user })]),
       c.role ? h("span", { class: "pill amber", text: c.role }) : null,
       h("span", { class: "muted", text: "· " + when(c.created_at) })
     ].concat((c.badges || []).map(function (b) { return h("span", { class: "pill", title: b.title || null, text: "★ " + b.label }); })));

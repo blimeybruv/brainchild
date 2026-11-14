@@ -73,7 +73,7 @@
       err.textContent = "";
       BC.api("POST", "/api/mod/relay-flags/" + f.id + "/resolve", { decision: decision, reasons: reasons.value }).then(function (res) {
         if (res.ok) return load();
-        err.textContent = res.data.error === "invalid_fields" ? "Agreeing with a flag needs its reasons written out (at least a sentence)." : res.data.error === "own_flag" ? "You raised this flag yourself, so another moderator has to decide it. Until then the pull request still counts." : res.data.error === "already_resolved" ? "Someone already decided this flag." : BC.errorText(res.data.error);
+        err.textContent = res.data.error === "invalid_fields" ? "Agreeing with a flag needs its reasons written out (at least a sentence)." : res.data.error === "own_flag" ? "You raised this flag yourself, so another moderator has to decide it. Until then the pull request still counts." : res.data.error === "own_contribution" ? "This is your own pull request, so another moderator has to decide it. Until then it still counts." : res.data.error === "already_resolved" ? "Someone already decided this flag." : BC.errorText(res.data.error);
       });
     }
     return h("div", { class: "panel queue-item" }, [

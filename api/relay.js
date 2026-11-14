@@ -7,7 +7,7 @@
 //   day 8      Result. The highest total wins; ties go to more first places, then earlier entry.
 //   to month end   Contribute: the winner posts a task board and everyone else opens a pull
 //                  request on the winner's repo (relay-board.js).
-//   next 7 days    Review, then the round closes (recap and badges are part C).
+//   next 7 days    Review: the maintainer awards badges (relay-badges.js). Then the round closes.
 //
 // Rules encoded in this file:
 //   - A round needs at least 4 entries. With fewer it doesn't run, and the entries are carried
@@ -15,6 +15,8 @@
 //   - An entry must be a project the person maintains, listed here with a verified repo that
 //     isn't archived (so it can take pull requests). GitHub is asked at the moment of entry.
 //   - Only entrants vote, never for their own project, and votes stay private until voting closes.
+//   - An entrant who didn't open a counting pull request for the winner can't enter again until
+//     they have contributed to a later round (the winner is exempt).
 //   - There is no timer running anywhere: the round moves to its next stage the first time
 //     someone looks at it after the stage's date has passed.
 
@@ -125,6 +127,24 @@ async function settle(env, round, stamp, day = 99) {
   }
 }
 
+// "No counting PR: can't enter the next round. Contributing to it restores eligibility for the
+// round after." Looks for the latest round this person entered, didn't win and didn't contribute
+// to, and then for a counting contribution in any round since.
+export async function eligibility(env, userId, round) {
+  const counts = "(c.flag_outcome IS NULL OR c.flag_outcome <> 'upheld')";
+  const missed = await env.DB.prepare(
+    `SELECT r.id, r.month FROM relay_rounds r JOIN relay_entries e ON e.round_id = r.id
+      WHERE r.id < ? AND r.status IN ('running', 'review', 'closed') AND e.user_id = ? AND e.id <> r.winner_entry_id
+        AND NOT EXISTS (SELECT 1 FROM relay_contributions c WHERE c.round_id = r.id AND c.user_id = e.user_id AND ${counts})
+      ORDER BY r.id DESC LIMIT 1`
+  ).bind(round.id, userId).first();
+  if (!missed) return { eligible: true };
+  const since = await env.DB.prepare(
+    `SELECT 1 AS x FROM relay_contributions c WHERE c.user_id = ? AND c.round_id > ? AND c.round_id < ? AND ${counts} LIMIT 1`
+  ).bind(userId, missed.id, round.id).first();
+  return since ? { eligible: true } : { eligible: false, missed_month: missed.month };
+}
+
 // The rounds that actually ran are numbered 1, 2, 3 ... in order.
 async function roundNumber(env, round) {
   const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM relay_rounds WHERE id <= ? AND (status <> 'not_run' OR id = ?)").bind(round.id, round.id).first();
@@ -174,6 +194,11 @@ export async function roundView(env, session, month) {
     out.me.projects = projects;
     const { results: ranks } = await env.DB.prepare("SELECT entry_id, rank FROM relay_votes WHERE round_id = ? AND voter_id = ?").bind(round.id, session.userId).all();
     for (const r of ranks) out.me.ranks[r.entry_id] = r.rank;
+    if (round.status === "entry" && !mine) {
+      const el = await eligibility(env, session.userId, round);
+      out.me.eligible = el.eligible;
+      if (!el.eligible) out.me.missed_month = el.missed_month;
+    }
   }
   out.round.current = round.month === monthOf(relayNow(env));
   // Rounds that ran, newest first, so earlier ones can be opened.
@@ -201,6 +226,8 @@ export async function enterRelay(request, env, session) {
   if (!p) return bad("not_found", 404);
   if (p.owner_id !== session.userId) return bad("not_maintainer", 403);
   if (!p.repo_full_name) return bad("listing_not_verified", 409);
+  const el = await eligibility(env, session.userId, round);
+  if (!el.eligible) return bad("not_eligible", 409, { missed_month: el.missed_month });
   // GitHub is asked now: the entrant must still control the repo, and it must be able to take pull requests.
   const [owner, name] = p.repo_full_name.split("/");
   const own = await requireRepoAdmin(env, session, owner, name);

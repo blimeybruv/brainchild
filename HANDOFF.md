@@ -193,7 +193,7 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
      candidates are gone, so the page no longer depends on particular listings existing.
      Not built: choosing and announcing the winner at month end, and reporting a proposal's text (the
      report form covers projects and comments only).
-   - **Relay rounds** (rules: "Relay rules" below). Being built in three parts:
+   - **Relay rounds: done 14 Nov** (rules: "Relay rules" below). Built in three parts:
      - **Part A, done 14 Nov:** rounds, entries and the ranked vote (`api/relay.js`, `site/relay.html`,
        `site/js/relay.js`, linked from the main navigation).
        - Timetable in UTC: entry on days 1 to 5, ranking on days 6 and 7, result on day 8. The rules say
@@ -236,10 +236,29 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
        - **Stages after the month.** A round moves to `review` when its month ends and to `closed` after
          the 7th of the next month, again the first time someone opens the page. Earlier rounds are
          reachable at `relay.html?month=2026-12` and linked under "Other rounds".
-     - **Part C, to build:** the recap, badges (Most helpful, Best wildcard, moderator
-       fallback after 7 days), badges on a user page and beside names in discussions
-       (`api/community.js` already returns an empty `badges` list), and the rule that an entrant with no
-       counting pull request can't enter the next round until they contribute to one.
+     - **Part C, done 14 Nov:** the end of a round (`api/relay-badges.js`, migration `0013`,
+       `site/user.html`).
+       - **Recap.** Once the month is over the round's page shows a recap: how many pull requests from
+         how many contributors, the badges, how many flags are still waiting, and (once the round has
+         closed) the entrants with no pull request that counts.
+       - **Badges.** During the review week the winning maintainer picks Most helpful contributor and,
+         optionally, Best wildcard, with buttons under each contribution. They can change or take back a
+         pick until review ends; after that the picks are final. A badge only goes to a pull request
+         that counts, Best wildcard only to a wildcard, and never to the person awarding it. If a flag on
+         a badged pull request is later upheld, the badge goes with it.
+       - **Moderator fallback.** If the maintainer awarded none by the time the round closes, a
+         moderator may award them from the same page. A moderator's award is final and is shown as such.
+       - **Where badges show.** On the round's page at once. On the member's page
+         (`user.html?u=<handle>`, public, from `GET /api/users/<handle>`) and beside their name in
+         discussions only once the round has closed. Names in discussions and on the Relay page link to
+         the member's page, which lists badges, Relay contributions and the projects they maintain.
+       - **No counting pull request.** An entrant other than the winner with no pull request that counts
+         for a round can't enter a later round until they have a counting contribution in some round
+         after it. A flag that is still waiting doesn't count against them. The entry form explains this
+         instead of offering the form.
+       - A moderator can't decide a flag on their own pull request, the same as with a flag they raised.
+       - Not built: an announcement or blog post for the recap, and any notification to entrants. The
+         site sends no email, so people have to look at the page.
    Not in this queue and not built: the Mature gate from the Project mockup. Ratings and content notes are
    stored and shown in the project page's byline; the gate itself depends on the Open decision about
    German visitors.
@@ -296,10 +315,17 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    Variables and secrets**, delete `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. Those two are unused;
    the working copies are under **Variables and Secrets** higher up the same page. Leave those alone.
 9. **Relay junk flags with one moderator (no action needed yet).** A moderator can't decide a flag they
-   raised themself. While the owner is the only moderator, a flag the owner raises on a contribution to
-   their own winning project can't be reviewed by anyone, so that pull request keeps counting. Adding a
+   raised themself, or a flag on their own pull request. While the owner is the only moderator, a flag
+   the owner raises on a contribution to their own winning project, or a flag someone raises on the
+   owner's pull request, can't be reviewed by anyone, so that pull request keeps counting. Adding a
    second moderator fixes it: give the agent their GitHub username and it adds their id to
    `MODERATOR_GITHUB_IDS` in `api/auth.js`.
+10. **Relay rounds are finished and live; the first real round opens on 1 Dec.** Nothing in them has been
+    used by real people yet. The pull request check has only run against a stand-in for GitHub, so the
+    first real contribution is the real test: if GitHub refuses the lookup, the person sees "GitHub
+    didn't answer" and nothing is stored. Three timetable choices were the agent's and are easy to change
+    if you'd like them different: entry on days 1 to 5, ranking on days 6 and 7, and "opened during the
+    round" meaning during the calendar month (UTC).
 
 ## Updating hosted builds (owner request 13 Nov; done 14 Nov)
 

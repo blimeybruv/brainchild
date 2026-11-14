@@ -11,12 +11,13 @@
 //   - The maintainer can flag a contribution as junk, with a reason. A flag does nothing by itself:
 //     a moderator reviews it, and only an upheld flag stops the PR counting. An upheld flag is
 //     recorded with a statement of reasons the contributor can read and ask to have reviewed once.
-//   - A moderator never decides a flag they raised themself.
+//   - A moderator never decides a flag they raised themself, or one on their own pull request.
 
 import { privateJson, isSameOrigin } from "./http.js";
 import { githubGet } from "./github.js";
 import { isModerator } from "./auth.js";
 import { bad, readJson, text, relayNow, calendar, roundFor, roundView } from "./relay.js";
+import { roundBadges, canAward } from "./relay-badges.js";
 
 const MAX_TASKS = 20;
 const MAX_CONTRIBUTIONS_EACH = 5;
@@ -93,6 +94,18 @@ export async function relayState(env, session, url) {
   out.me.maintainer = maintainer;
   out.me.moderator = moderator;
   out.me.contributed = !!me && counting.has(me);
+  // Badges and, once the month is over, the recap.
+  out.badges = await roundBadges(env, round.id);
+  out.me.can_award = await canAward(env, session, round, w.user_id);
+  if (round.status === "review" || round.status === "closed") {
+    const good = rows.filter((c) => statusOf(c) !== "not_counted");
+    out.recap = {
+      pull_requests: good.length, contributors: new Set(good.map((c) => c.user_id)).size,
+      under_review: rows.filter((c) => statusOf(c) === "under_review").length,
+      // Entrants who owed a pull request and didn't open one. Listed only when the round is final.
+      missed: round.status === "closed" ? out.entries.filter((e) => e.contributed === false).map((e) => e.owner) : []
+    };
+  }
   return privateJson(out);
 }
 
@@ -283,7 +296,9 @@ export async function resolveFlag(request, env, session, id) {
   ).bind(id).first();
   if (!c || !c.flagged_at) return bad("not_found", 404);
   if (c.flag_outcome) return bad("already_resolved", 409);
+  // Nobody decides a case they are part of: not the one who flagged, not the one whose pull request it is.
   if (c.flagged_by === session.userId) return bad("own_flag", 409);
+  if (c.user_id === session.userId) return bad("own_contribution", 409);
   const now = text(new Date());
   const claim = await env.DB.prepare(
     "UPDATE relay_contributions SET flag_outcome = ?, flag_reasons = ?, flag_decided_by = ?, flag_decided_at = ? WHERE id = ? AND flag_outcome IS NULL"
@@ -295,7 +310,10 @@ export async function resolveFlag(request, env, session, id) {
       `INSERT INTO moderation_actions (target_type, project_id, comment_id, affected_user_id, action, ground, category, reasons, automated, moderator_id, report_id, created_at)
        VALUES ('relay_pr', ?, NULL, ?, 'remove', 'terms', ?, ?, 0, ?, NULL, ?)`
     ).bind(c.project_id, c.user_id, c.flag_reason, reasons, session.userId, now).run();
-    await env.DB.prepare("UPDATE relay_contributions SET action_id = ? WHERE id = ?").bind(a.meta.last_row_id, id).run();
+    await env.DB.batch([
+      env.DB.prepare("UPDATE relay_contributions SET action_id = ? WHERE id = ?").bind(a.meta.last_row_id, id),
+      env.DB.prepare("DELETE FROM relay_badges WHERE contribution_id = ?").bind(id) // a badge can't rest on a pull request that doesn't count
+    ]);
   }
   return privateJson({ ok: true, outcome: decision === "uphold" ? "upheld" : "cleared" });
 }

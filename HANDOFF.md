@@ -471,6 +471,28 @@ column `base_game`), so there is no migration and the CHECK constraint stays as 
 - **Check everything:** grep for "Mod", "mod for", "base game" and "game's own terms" across `site/` and
   `api/` error messages.
 
+## Owner request, 14 Nov: moderator blog posts, and "Pitch a post"
+
+- **Post editor (moderators only):** a page in the moderation area to create, edit, publish, unpublish
+  and delete blog posts.
+  - **Fields:** topic (the four existing topics), title, excerpt and body.
+  - **Body formatting:** a small safe subset (paragraphs, headings, lists, links, `code`), rendered by
+    building DOM nodes. **Never innerHTML.** Allow http(s) links only, and add `rel="nofollow noopener"`.
+- **Author field:** any existing user, chosen by handle, or "Brainchild" for site posts. Moderators can
+  change the author on an existing post.
+  - **Audit:** privately log who actually created or edited the post and when, visible in the
+    moderation area, not on the post.
+  - **Consent:** only attribute a post to someone who submitted it or agreed to it. The editor shows a
+    reminder of that, and stores a "submitted by" link to the pitch or report it came from.
+- **"Pitch a post"** (currently a dead link on blog.html): a signed-in form (topic, title, the draft
+  text) that creates a draft in the moderation queue, so guides don't have to come in through the report
+  system.
+  - From the draft, a moderator can edit it and publish it, with the pitcher as the author.
+  - The pitcher sees what happened on their notices page, like reports.
+  - The text goes in as-is; the moderator edits it before publishing.
+- **Reports that are really submissions:** in the moderation queue, add a "Turn into a draft post"
+  action. It copies the text and links back to the report.
+
 ## Relay rules (decided by the owner, 13 Nov; confirmed again in chat the same evening)
 
 A round lasts one calendar month. The Relay mockup shows the stages.

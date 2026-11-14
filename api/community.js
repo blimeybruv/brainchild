@@ -165,8 +165,16 @@ export async function postReport(request, env, session) {
   const details = clean(body.details === undefined || body.details === null ? "" : body.details, 1000);
   if (!category) return bad("invalid_fields", 400, { fields: ["category"] });
   if (details === null || (category === "other" && !details)) return bad("invalid_fields", 400, { fields: ["details"] });
-  let projectId = null, commentId = null;
-  if (body.comment_id !== undefined && body.comment_id !== null) {
+  let projectId = null, commentId = null, proposalId = null;
+  if (body.proposal_id !== undefined && body.proposal_id !== null) {
+    // A blog vote proposal: its goal text is what's reported.
+    if (!Number.isSafeInteger(body.proposal_id)) return bad("invalid_fields", 400, { fields: ["proposal_id"] });
+    const pr = await env.DB.prepare(
+      "SELECT pr.id, pr.project_id FROM proposals pr JOIN projects p ON p.id = pr.project_id WHERE pr.id = ? AND pr.removed_at IS NULL AND p.hidden_at IS NULL"
+    ).bind(body.proposal_id).first();
+    if (!pr) return bad("not_found", 404);
+    proposalId = pr.id; projectId = pr.project_id;
+  } else if (body.comment_id !== undefined && body.comment_id !== null) {
     if (!Number.isSafeInteger(body.comment_id)) return bad("invalid_fields", 400, { fields: ["comment_id"] });
     const c = await ownComment(env, body.comment_id);
     if (!c || c.removed_at) return bad("not_found", 404);
@@ -178,16 +186,16 @@ export async function postReport(request, env, session) {
   }
   // Reporting the same thing twice doesn't create a second report.
   const dupe = await env.DB.prepare(
-    "SELECT id FROM reports WHERE reporter_id = ? AND project_id = ? AND comment_id IS ? AND status = 'open'"
-  ).bind(session.userId, projectId, commentId).first();
+    "SELECT id FROM reports WHERE reporter_id = ? AND project_id = ? AND comment_id IS ? AND proposal_id IS ? AND status = 'open'"
+  ).bind(session.userId, projectId, commentId, proposalId).first();
   if (dupe) return privateJson({ ok: true, id: dupe.id });
   const today = await env.DB.prepare(
     "SELECT COUNT(*) AS n FROM reports WHERE reporter_id = ? AND created_at > datetime('now', '-1 day')"
   ).bind(session.userId).first();
   if (today && today.n >= 20) return bad("slow_down", 429);
   const r = await env.DB.prepare(
-    "INSERT INTO reports (target_type, project_id, comment_id, category, details, reporter_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
-  ).bind(commentId ? "comment" : "project", projectId, commentId, category, details || null, session.userId, nowText()).run();
+    "INSERT INTO reports (target_type, project_id, comment_id, proposal_id, category, details, reporter_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+  ).bind(proposalId ? "proposal" : commentId ? "comment" : "project", projectId, commentId, proposalId, category, details || null, session.userId, nowText()).run();
   return privateJson({ ok: true, id: r.meta.last_row_id }, 201);
 }
 
@@ -207,24 +215,28 @@ export async function modQueue(request, env, session, url) {
   const { results: reports } = await env.DB.prepare(
     `SELECT r.id, r.target_type, r.project_id, r.comment_id, r.category, r.details, r.status, r.created_at, r.resolved_at, r.resolution_note,
             ru.handle AS reporter, p.title AS project_title, p.hidden_at AS project_hidden, po.handle AS project_owner,
-            c.body AS comment_body, c.removed_at AS comment_removed, cu.handle AS comment_author
+            c.body AS comment_body, c.removed_at AS comment_removed, cu.handle AS comment_author,
+            r.proposal_id, pr.goal AS proposal_goal, pr.month AS proposal_month, pr.removed_at AS proposal_removed, pu.handle AS proposal_author
        FROM reports r
        JOIN users ru ON ru.id = r.reporter_id
        JOIN projects p ON p.id = r.project_id
        LEFT JOIN users po ON po.id = p.owner_id
        LEFT JOIN comments c ON c.id = r.comment_id
        LEFT JOIN users cu ON cu.id = c.user_id
+       LEFT JOIN proposals pr ON pr.id = r.proposal_id
+       LEFT JOIN users pu ON pu.id = pr.user_id
       WHERE r.status ${closed ? "<> 'open'" : "= 'open'"}
       ORDER BY r.created_at ${closed ? "DESC" : "ASC"} LIMIT 200`
   ).all();
   const { results: appeals } = await env.DB.prepare(
     `SELECT a.id, a.target_type, a.project_id, a.comment_id, a.category, a.ground, a.reasons, a.created_at, a.appeal_text, a.appeal_at,
-            u.handle AS affected, p.title AS project_title, c.body AS comment_body, rc.pr_url, rc.pr_number
+            u.handle AS affected, p.title AS project_title, c.body AS comment_body, rc.pr_url, rc.pr_number, pr.goal AS proposal_goal
        FROM moderation_actions a
        LEFT JOIN users u ON u.id = a.affected_user_id
        LEFT JOIN projects p ON p.id = a.project_id
        LEFT JOIN comments c ON c.id = a.comment_id
        LEFT JOIN relay_contributions rc ON rc.action_id = a.id
+       LEFT JOIN proposals pr ON pr.id = a.proposal_id
       WHERE a.action = 'remove' AND a.appeal_at IS NOT NULL AND a.appeal_outcome IS NULL
       ORDER BY a.appeal_at LIMIT 200`
   ).all();
@@ -246,8 +258,9 @@ export async function modResolve(request, env, session, id) {
   const body = await readJson(request);
   if (!body) return bad("bad_request");
   const report = await env.DB.prepare(
-    `SELECT r.*, c.user_id AS comment_author, p.owner_id AS project_owner
-       FROM reports r JOIN projects p ON p.id = r.project_id LEFT JOIN comments c ON c.id = r.comment_id WHERE r.id = ?`
+    `SELECT r.*, c.user_id AS comment_author, p.owner_id AS project_owner, pr.user_id AS proposal_author
+       FROM reports r JOIN projects p ON p.id = r.project_id LEFT JOIN comments c ON c.id = r.comment_id
+       LEFT JOIN proposals pr ON pr.id = r.proposal_id WHERE r.id = ?`
   ).bind(id).first();
   if (!report) return bad("not_found", 404);
   if (report.status !== "open") return bad("already_resolved", 409);
@@ -265,23 +278,26 @@ export async function modResolve(request, env, session, id) {
   const ground = body.ground === "illegal" ? "illegal" : body.ground === "terms" ? "terms" : null;
   if (!ground) return bad("invalid_fields", 400, { fields: ["ground"] });
   if (reasons.length < 10) return bad("invalid_fields", 400, { fields: ["reasons"] });
-  const isComment = report.target_type === "comment";
+  const isComment = report.target_type === "comment", isProposal = report.target_type === "proposal";
+  const affected = isComment ? report.comment_author : isProposal ? report.proposal_author : report.project_owner;
   const action = await env.DB.prepare(
-    `INSERT INTO moderation_actions (target_type, project_id, comment_id, affected_user_id, action, ground, category, reasons, automated, moderator_id, report_id, created_at)
-     VALUES (?, ?, ?, ?, 'remove', ?, ?, ?, 0, ?, ?, ?)`
-  ).bind(report.target_type, report.project_id, report.comment_id, isComment ? report.comment_author : report.project_owner,
+    `INSERT INTO moderation_actions (target_type, project_id, comment_id, proposal_id, affected_user_id, action, ground, category, reasons, automated, moderator_id, report_id, created_at)
+     VALUES (?, ?, ?, ?, ?, 'remove', ?, ?, ?, 0, ?, ?, ?)`
+  ).bind(report.target_type, report.project_id, report.comment_id, report.proposal_id, affected,
     ground, report.category, reasons, session.userId, id, now).run();
   const actionId = action.meta.last_row_id;
   await env.DB.batch([
     isComment
       ? env.DB.prepare("UPDATE comments SET removed_at = COALESCE(removed_at, ?), removed_by = 'moderator', pinned = 0 WHERE id = ?").bind(now, report.comment_id)
-      : env.DB.prepare("UPDATE projects SET hidden_at = COALESCE(hidden_at, ?) WHERE id = ?").bind(now, report.project_id),
+      : isProposal
+        ? env.DB.prepare("UPDATE proposals SET removed_at = COALESCE(removed_at, ?) WHERE id = ?").bind(now, report.proposal_id) // the project itself stays listed
+        : env.DB.prepare("UPDATE projects SET hidden_at = COALESCE(hidden_at, ?) WHERE id = ?").bind(now, report.project_id),
     // Every open report about the same thing is closed by this one decision.
     env.DB.prepare(
-      "UPDATE reports SET status = 'actioned', resolved_at = ?, resolved_by = ?, action_id = ? WHERE status = 'open' AND project_id = ? AND comment_id IS ?"
-    ).bind(now, session.userId, actionId, report.project_id, report.comment_id)
+      "UPDATE reports SET status = 'actioned', resolved_at = ?, resolved_by = ?, action_id = ? WHERE status = 'open' AND project_id = ? AND comment_id IS ? AND proposal_id IS ?"
+    ).bind(now, session.userId, actionId, report.project_id, report.comment_id, report.proposal_id)
   ]);
-  if (!isComment) {
+  if (!isComment && !isProposal) {
     const origin = new URL(request.url).origin;
     await Promise.all(["/api/projects", "/api/projects/" + report.project_id, "/api/projects/" + report.project_id + "/license"]
       .map((p) => caches.default.delete(origin + p).catch(() => false)));
@@ -306,6 +322,8 @@ export async function modAppeal(request, env, session, id) {
   if (decision === "restore") {
     steps.push(a.target_type === "comment"
       ? env.DB.prepare("UPDATE comments SET removed_at = NULL, removed_by = NULL WHERE id = ? AND removed_by = 'moderator'").bind(a.comment_id)
+      : a.target_type === "proposal"
+        ? env.DB.prepare("UPDATE proposals SET removed_at = NULL WHERE id = ?").bind(a.proposal_id)
       : a.target_type === "relay_pr"
         ? env.DB.prepare("UPDATE relay_contributions SET flag_outcome = 'cleared' WHERE action_id = ?").bind(a.id) // the pull request counts again
         : env.DB.prepare("UPDATE projects SET hidden_at = NULL WHERE id = ?").bind(a.project_id));
@@ -324,9 +342,10 @@ export async function myNotices(env, session) {
   if (!session) return bad("not_signed_in", 401);
   const { results: decisions } = await env.DB.prepare(
     `SELECT a.id, a.target_type, a.project_id, a.category, a.ground, a.reasons, a.automated, a.created_at,
-            a.appeal_text, a.appeal_at, a.appeal_outcome, a.appeal_note, p.title AS project_title, c.body AS comment_body, rc.pr_url, rc.pr_number
+            a.appeal_text, a.appeal_at, a.appeal_outcome, a.appeal_note, p.title AS project_title, c.body AS comment_body, rc.pr_url, rc.pr_number,
+            pr.goal AS proposal_goal
        FROM moderation_actions a LEFT JOIN projects p ON p.id = a.project_id LEFT JOIN comments c ON c.id = a.comment_id
-       LEFT JOIN relay_contributions rc ON rc.action_id = a.id
+       LEFT JOIN relay_contributions rc ON rc.action_id = a.id LEFT JOIN proposals pr ON pr.id = a.proposal_id
       WHERE a.affected_user_id = ? AND a.action = 'remove' ORDER BY a.created_at DESC LIMIT 100`
   ).bind(session.userId).all();
   const { results: reports } = await env.DB.prepare(

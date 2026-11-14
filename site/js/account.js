@@ -18,11 +18,11 @@
   function decision(d) {
     var relay = d.target_type === "relay_pr";
     var out = relay ? relayDecision(d) : [
-      h("h3", { text: (d.target_type === "project" ? "Your project \"" + (d.project_title || d.project_id) + "\" was removed" : "Your comment on \"" + (d.project_title || d.project_id) + "\" was removed") + " · " + BC.niceDate(d.created_at) }),
-      d.comment_body ? h("blockquote", { class: "quote", text: d.comment_body }) : null,
+      h("h3", { text: (d.target_type === "project" ? "Your project \"" + (d.project_title || d.project_id) + "\" was removed" : d.target_type === "proposal" ? "Your blog proposal for \"" + (d.project_title || d.project_id) + "\" was removed" : "Your comment on \"" + (d.project_title || d.project_id) + "\" was removed") + " · " + BC.niceDate(d.created_at) }),
+      d.comment_body ? h("blockquote", { class: "quote", text: d.comment_body }) : d.proposal_goal ? h("blockquote", { class: "quote", text: d.proposal_goal }) : null,
       h("p", null, [h("strong", { text: "Why: " }), d.reasons]),
       h("p", { class: "muted", text: "Ground: " + (d.ground === "illegal" ? "illegal content" : "it breaks Brainchild's house rules") + " (" + (CAT[d.category] || d.category) + "). " +
-        "A moderator made this decision after a report; no automated tool was involved. " + (d.target_type === "project" ? "The project's page is hidden; its lineage and license record are kept." : "The comment is no longer shown.") })
+        "A moderator made this decision after a report; no automated tool was involved. " + (d.target_type === "project" ? "The project's page is hidden; its lineage and license record are kept." : d.target_type === "proposal" ? "The proposal has left the vote and its votes no longer count. The project itself is still listed." : "The comment is no longer shown.") })
     ];
     if (d.appeal_outcome) {
       out.push(h("p", null, [h("strong", { text: d.appeal_outcome === "restored" ? (relay ? "Reviewed: it counts after all. " : "Reviewed: it has been put back. ") : (relay ? "Reviewed: the decision stands. " : "Reviewed: the removal stands. ") }), d.appeal_note || ""]));
@@ -54,7 +54,7 @@
       root.appendChild(h("h2", { text: "Your reports" }));
       root.appendChild(d.reports.length ? h("div", { class: "queue" }, d.reports.map(function (r) {
         return h("div", { class: "panel queue-item" }, [
-          h("h3", { text: (CAT[r.category] || r.category) + " · " + (r.target_type === "comment" ? "a comment on " : "") + "\"" + (r.project_title || r.project_id) + "\"" }),
+          h("h3", { text: (CAT[r.category] || r.category) + " · " + (r.target_type === "comment" ? "a comment on " : r.target_type === "proposal" ? "a blog proposal for " : "") + "\"" + (r.project_title || r.project_id) + "\"" }),
           h("p", { class: "muted", text: "Sent " + BC.niceDate(r.created_at) + " · " + (S[r.status] || r.status) + (r.resolved_at ? " on " + BC.niceDate(r.resolved_at) : "") })
         ]);
       })) : h("p", { class: "muted", text: "You haven't reported anything." }));

@@ -12,6 +12,8 @@
   }
   function target(r) {
     var link = h("a", { href: "project.html?id=" + encodeURIComponent(r.project_id), text: r.project_title || r.project_id });
+    if (r.target_type === "proposal") return [h("p", null, ["Blog proposal by @" + (r.proposal_author || r.affected || "someone") + " for ", link, r.proposal_month ? " (vote for " + r.proposal_month + ")" : "", r.proposal_removed ? " (already removed)" : ""]),
+      h("blockquote", { class: "quote", text: r.proposal_goal || "[ no longer available ]" })];
     if (r.target_type === "relay_pr") return [h("p", null, ["Relay pull request by @" + (r.affected || "someone") + " for ", link, ": ", prLink(r.pr_url, r.pr_number), " (marked as junk: " + (FLAGS[r.category] || r.category) + ")"])];
     return r.target_type === "comment"
       ? [h("p", null, ["Comment by @" + (r.comment_author || r.affected || "someone") + " on ", link, r.comment_removed ? " (already removed)" : ""]), h("blockquote", { class: "quote", text: r.comment_body || "[ no longer available ]" })]

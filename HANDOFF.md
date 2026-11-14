@@ -272,8 +272,15 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
   project that month. Nothing is stored: the result is worked out when the page asks, since closed votes
   can't change. A project a moderator removes drops out of the result. The first result will appear on
   1 Dec, from the votes cast in November.
-- **To build, not blocked:** reporting a blog vote proposal's text. The report form and the moderation
-  queue cover projects and comments only.
+- **Reporting a blog proposal: done 14 Nov.** Each proposal on the blog page has a Report control
+  (signed out, it opens the report form). A report has `target_type = 'proposal'` and a `proposal_id`
+  (migration `0014`, which rebuilt the `reports` table to allow the new type; the two existing reports
+  were copied over unchanged). On the Moderation page the proposal's text is shown; "Remove it" sets
+  `proposals.removed_at`, so the proposal leaves the vote and its votes stop counting, while the project
+  itself stays listed. The proposer gets the statement of reasons on their account page and can ask once
+  for a review; restoring puts the proposal back. A removed proposal can't be withdrawn by its proposer,
+  so the record stays. The Report control offers four categories that fit a proposal's text
+  (harassment, spam, sexual content, something else).
 - **Only if a listed game needs it:** cross-origin isolation headers on the builds Worker, for engines
   that use threads (some Godot and Unity web exports). No listed game needs them today.
 - **Blocked on an Open decision:** the Mature gate.

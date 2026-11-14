@@ -131,7 +131,7 @@ CREATE TABLE IF NOT EXISTS comment_likes (
 
 CREATE TABLE IF NOT EXISTS reports (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
-  target_type     TEXT NOT NULL CHECK (target_type IN ('project','comment')),
+  target_type     TEXT NOT NULL CHECK (target_type IN ('project','comment','proposal')),
   project_id      TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   comment_id      INTEGER REFERENCES comments(id) ON DELETE CASCADE,
   category        TEXT NOT NULL,                    -- sexual | rating | malware | license | harass | spam | other
@@ -142,7 +142,8 @@ CREATE TABLE IF NOT EXISTS reports (
   resolved_at     TEXT,
   resolved_by     TEXT REFERENCES users(id),
   resolution_note TEXT,
-  action_id       INTEGER
+  action_id       INTEGER,
+  proposal_id     INTEGER REFERENCES proposals(id) ON DELETE CASCADE   -- target_type 'proposal': a blog vote proposal
 );
 CREATE INDEX IF NOT EXISTS idx_reports_status ON reports (status, created_at);
 CREATE INDEX IF NOT EXISTS idx_reports_reporter ON reports (reporter_id, created_at);
@@ -166,7 +167,8 @@ CREATE TABLE IF NOT EXISTS moderation_actions (
   appeal_at          TEXT,
   appeal_outcome     TEXT,                          -- restored | upheld
   appeal_note        TEXT,
-  appeal_resolved_at TEXT
+  appeal_resolved_at TEXT,
+  proposal_id        INTEGER                        -- target_type 'proposal'
 );
 CREATE INDEX IF NOT EXISTS idx_actions_user ON moderation_actions (affected_user_id, created_at);
 
@@ -285,7 +287,8 @@ CREATE TABLE IF NOT EXISTS proposals (
   user_id     TEXT REFERENCES users(id),
   goal        TEXT NOT NULL,
   month       TEXT NOT NULL,                    -- e.g. 2026-12
-  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  removed_at  TEXT                              -- set when a moderator removes it; its votes stop counting
 );
 CREATE INDEX IF NOT EXISTS idx_proposals_month ON proposals (month);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_proposals_project_month ON proposals (project_id, month);  -- once per project per month

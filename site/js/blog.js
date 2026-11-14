@@ -14,7 +14,37 @@ window.BC.load(function () {
   var topic = "All";
   var BC = window.BC;
   var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  var votes = null, voteError = "";
+  var votes = null, voteError = "", reporting = 0, reported = {};
+  // The categories that make sense for a proposal's text (the full list is on project pages).
+  var REPORT_CATS = [["harass", "Harassment or hate"], ["spam", "Spam or junk"], ["sexual", "Sexual content"], ["other", "Something else"]];
+
+  // Reporting a proposal's goal text. Signed out, the report form takes it, with this page's address.
+  function reportBox(c) {
+    if (reported[c.id]) return h("p", { class: "muted", role: "status", style: "margin:0;font-size:14px", text: "Thanks, your report is in. A moderator reviews every report." });
+    if (!votes.signed_in) return h("a", { class: "chip", href: "report.html?url=" + encodeURIComponent(window.location.origin + "/blog.html"), text: "Report" });
+    if (reporting !== c.id) {
+      var open = h("button", { type: "button", class: "chip", text: "Report" });
+      open.addEventListener("click", function () { reporting = c.id; renderCandidates(); });
+      return open;
+    }
+    var cat = h("select", { class: "select", "aria-label": "What's wrong with this proposal?" }, [h("option", { value: "", text: "What's wrong?" })].concat(REPORT_CATS.map(function (x) { return h("option", { value: x[0], text: x[1] }); })));
+    var details = h("textarea", { class: "textarea", rows: "2", maxlength: "1000", "aria-label": "Details (optional)", placeholder: "Details (optional)" });
+    var err = h("p", { class: "form-error", role: "alert" });
+    var send = h("button", { type: "button", class: "btn btn-primary", text: "Send report" });
+    var cancel = h("button", { type: "button", class: "btn btn-ghost", text: "Cancel" });
+    cancel.addEventListener("click", function () { reporting = 0; renderCandidates(); });
+    send.addEventListener("click", function () {
+      if (!cat.value) { err.textContent = "Choose what's wrong."; return; }
+      send.disabled = true;
+      BC.api("POST", "/api/reports", { proposal_id: c.id, category: cat.value, details: details.value }).then(function (res) {
+        send.disabled = false;
+        if (res.ok) { reported[c.id] = true; reporting = 0; renderCandidates(); return; }
+        var e = res.data && res.data.error;
+        err.textContent = e === "invalid_fields" ? "Please add some details." : e === "slow_down" ? "You've sent a lot of reports today. Try again tomorrow." : BC.errorText(e);
+      });
+    });
+    return h("div", { class: "report-inline" }, [cat, details, err, h("div", { class: "actions" }, [send, cancel])]);
+  }
 
   function loadVotes() {
     if (window.location.protocol === "file:") return renderCandidates();
@@ -87,7 +117,7 @@ window.BC.load(function () {
         h("h3", null, [h("a", { href: "project.html?id=" + encodeURIComponent(c.project_id), text: c.title })]),
         h("p", { class: "muted", style: "margin:0;font-size:14px", text: c.proposed_by ? "Proposed by @" + c.proposed_by : "Proposed by a member" }),
         h("p", { class: "goal", text: c.goal }),
-        action, withdraw
+        action, withdraw, c.mine ? null : reportBox(c)
       ]));
     });
     status.textContent = voteError || (votes.my_vote ? "Thanks, your vote is in. You can change it until voting closes." : "");

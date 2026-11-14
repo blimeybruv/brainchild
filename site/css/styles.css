@@ -463,3 +463,5 @@ blockquote.agree { margin: 0; padding-left: 14px; border-left: 3px solid var(--a
 .current-inner .c-grow { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .current-inner h2, .current-inner p { margin: 0; }
 @media (max-width: 600px) { .current-inner { flex-direction: column; } .current-inner .shot { width: 100%; } }
+.report-inline { display: flex; flex-direction: column; gap: 8px; }
+.report-inline .form-error:empty { display: none; }

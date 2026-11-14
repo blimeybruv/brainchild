@@ -4,6 +4,7 @@
 //   - During each calendar month (UTC), people propose and vote on next month's project.
 //   - Any project that is up for adoption can be proposed, once per month, with a goal.
 //   - One vote per person per month. A vote can be changed or withdrawn until the month ends.
+//   - A proposal a moderator removes leaves the vote, and its votes stop counting.
 //   - Vote counts are not shown while voting is open, so early votes don't steer later ones.
 //   - When the month ends, the proposal with the most votes becomes the next month's community project.
 //     A tie goes to the proposal made first. Nothing is stored: votes can't change once their month
@@ -38,7 +39,7 @@ async function currentProject(env, now) {
             (SELECT s.id FROM screenshots s WHERE s.project_id = p.id ORDER BY s.id LIMIT 1) AS shot,
             (SELECT COUNT(*) FROM votes v WHERE v.proposal_id = pr.id) AS votes
        FROM proposals pr JOIN projects p ON p.id = pr.project_id LEFT JOIN users u ON u.id = pr.user_id
-      WHERE pr.month = ? AND p.hidden_at IS NULL
+      WHERE pr.month = ? AND p.hidden_at IS NULL AND pr.removed_at IS NULL
       ORDER BY votes DESC, pr.created_at ASC, pr.id ASC`
   ).bind(month).all();
   const voters = results.reduce((n, r) => n + r.votes, 0);
@@ -59,7 +60,7 @@ export async function listVotes(env, session) {
     `SELECT pr.id, pr.project_id, pr.goal, pr.user_id, u.handle AS proposed_by, p.title, p.kind, p.base_game, p.tone,
             (SELECT s.id FROM screenshots s WHERE s.project_id = p.id ORDER BY s.id LIMIT 1) AS shot
        FROM proposals pr JOIN projects p ON p.id = pr.project_id LEFT JOIN users u ON u.id = pr.user_id
-      WHERE pr.month = ? AND p.hidden_at IS NULL ORDER BY pr.created_at, pr.id LIMIT 100`
+      WHERE pr.month = ? AND p.hidden_at IS NULL AND pr.removed_at IS NULL ORDER BY pr.created_at, pr.id LIMIT 100`
   ).bind(month).all();
   let myVote = null;
   if (session) {
@@ -89,7 +90,7 @@ export async function castVote(request, env, session) {
   if (!Number.isSafeInteger(body.proposal_id)) return bad("invalid_fields", 400, { fields: ["proposal_id"] });
   // Only this month's proposals can be voted for.
   const p = await env.DB.prepare(
-    "SELECT pr.id FROM proposals pr JOIN projects p ON p.id = pr.project_id WHERE pr.id = ? AND pr.month = ? AND p.hidden_at IS NULL"
+    "SELECT pr.id FROM proposals pr JOIN projects p ON p.id = pr.project_id WHERE pr.id = ? AND pr.month = ? AND p.hidden_at IS NULL AND pr.removed_at IS NULL"
   ).bind(body.proposal_id, month).first();
   if (!p) return bad("not_found", 404);
   // The table's key is (person, month), so a second vote replaces the first.
@@ -130,7 +131,7 @@ export async function withdrawProposal(request, env, session, id) {
   if (!isSameOrigin(request)) return bad("forbidden", 403);
   if (!session) return bad("not_signed_in", 401);
   const { month } = votingMonth(relayNow(env));
-  const r = await env.DB.prepare("DELETE FROM proposals WHERE id = ? AND user_id = ? AND month = ?").bind(id, session.userId, month).run();
+  const r = await env.DB.prepare("DELETE FROM proposals WHERE id = ? AND user_id = ? AND month = ? AND removed_at IS NULL").bind(id, session.userId, month).run();
   // The count includes the votes removed along with the proposal, so it can be more than one.
   if (!r.meta || r.meta.changes < 1) return bad("not_found", 404);
   return privateJson({ ok: true });

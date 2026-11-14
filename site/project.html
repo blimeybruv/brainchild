@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Project · Brainchild</title>
 <link rel="icon" href="img/favicon-32.png" sizes="32x32" type="image/png"><link rel="icon" href="img/favicon-512.png" sizes="512x512" type="image/png"><link rel="apple-touch-icon" href="img/favicon-180.png">
-<link rel="stylesheet" href="css/styles.css?v=12">
+<link rel="stylesheet" href="css/styles.css?v=13">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -33,8 +33,8 @@
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:12px">
       <a class="btn btn-ghost" href="#" id="p-edit" hidden>Edit page</a>
-      <a class="btn btn-ghost" href="#" id="p-fork">Just fork it</a>
-      <a class="btn btn-primary" href="#" id="p-cta"></a>
+      <a class="btn btn-ghost" href="#discussion" id="p-fork" hidden>Just fork it</a>
+      <a class="btn btn-primary" href="#discussion" id="p-cta"></a>
     </div>
   </div>
 
@@ -58,7 +58,7 @@
       <section aria-labelledby="packet-h">
         <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:16px">
           <h2 id="packet-h" style="margin:0;font-size:28px">Handoff packet <span class="muted packet-date" id="p-packet-date"></span></h2>
-          <a href="#" style="font-size:15px">Download packet (.zip)</a>
+          <a href="#packet-h" style="font-size:15px" id="p-packet-dl" hidden>Download packet (.md)</a>
         </div>
         <div class="tabs" role="tablist" aria-label="Handoff packet sections" id="tabs"></div>
         <div class="panel tabpanel" role="tabpanel" id="tabpanel" tabindex="0"></div>
@@ -111,9 +111,9 @@
   <div class="wrap">
     <span class="brand-name">Brainchild</span>
     <span class="grow">A free home for projects that deserve another go.</span>
-    <a href="#">About</a>
-    <a href="#">Licensing guide</a>
-    <a href="#" data-report-project>Report this project</a>
+    <a href="about.html">About</a>
+    <a href="licenses.html">Licensing guide</a>
+    <a href="report.html" data-report-project>Report this project</a>
     <a href="contact.html">Contact</a>
     <a href="https://github.com/blimeybruv/brainchild" rel="noopener">Source</a>
   </div>
@@ -123,7 +123,7 @@
 <script src="js/common.js?v=11"></script>
 <dialog id="report-dialog" class="report-dialog" aria-labelledby="report-h"></dialog>
 
-<script src="js/project.js?v=8"></script>
+<script src="js/project.js?v=13"></script>
 <script src="js/discussion.js?v=13"></script>
 <script src="js/play.js?v=9"></script>
 </body>

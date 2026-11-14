@@ -413,7 +413,7 @@ export async function createListing(request, env, ctx, session) {
     console.error("listing: insert failed:", err && err.message);
     return bad("already_listed", 409);
   }
-  ctx.waitUntil(forgetCached(request, ["/api/projects", "/api/projects/" + id, "/api/projects/" + id + "/license"]));
+  ctx.waitUntil(forgetCached(request, ["/api/projects", "/api/projects/" + id, "/api/projects/" + id + "/license", "/api/projects/" + id + "/packet.md"]));
   ctx.waitUntil(refreshArchives(env, id, true).catch(() => {}));
   return privateJson({ ok: true, id, url: "/project.html?id=" + encodeURIComponent(id), summary, rules }, 201);
 }
@@ -556,7 +556,7 @@ export async function editProject(request, env, ctx, session, id) {
       snapshot.license.path, session.userId, now, id));
   }
   await env.DB.batch(statements);
-  ctx.waitUntil(forgetCached(request, ["/api/projects", "/api/projects/" + id, "/api/projects/" + id + "/license"]));
+  ctx.waitUntil(forgetCached(request, ["/api/projects", "/api/projects/" + id, "/api/projects/" + id + "/license", "/api/projects/" + id + "/packet.md"]));
   return privateJson({ ok: true, changed: all });
 }
 
@@ -716,6 +716,6 @@ export async function adoptProject(request, env, ctx, session, id) {
   if (!result[0].meta || result[0].meta.changes !== 1) return bad("not_up_for_adoption", 409);
   // The adopter's repo is archived too (queued only if the license record above was written).
   ctx.waitUntil(queueArchive(env, id, version, r.full_name, now).run().then(() => refreshArchives(env, id, true)).catch(() => {}));
-  ctx.waitUntil(forgetCached(request, ["/api/projects", "/api/projects/" + id, "/api/projects/" + id + "/license"]));
+  ctx.waitUntil(forgetCached(request, ["/api/projects", "/api/projects/" + id, "/api/projects/" + id + "/license", "/api/projects/" + id + "/packet.md"]));
   return privateJson({ ok: true, id, url: "/project.html?id=" + encodeURIComponent(id), summary, rules });
 }

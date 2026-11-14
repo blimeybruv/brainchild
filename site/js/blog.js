@@ -92,7 +92,7 @@ window.BC.load(function () {
         ]),
         h("h3", { text: p.title }),
         h("p", { text: p.excerpt }),
-        h("a", { href: "#", style: "align-self:flex-start;font-size:15px;font-weight:500", text: "Read the post" })
+        h("span", { class: "muted", style: "font-size:14px", text: "Sample post: real posts come at launch." }) // no post pages yet; these samples go before launch
       ]));
     });
   }

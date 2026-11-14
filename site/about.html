@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>About · Brainchild</title>
+<meta name="description" content="What Brainchild is, how handing off and adopting projects work, and the house rules.">
+<link rel="icon" href="img/favicon-32.png" sizes="32x32" type="image/png"><link rel="icon" href="img/favicon-512.png" sizes="512x512" type="image/png"><link rel="apple-touch-icon" href="img/favicon-180.png">
+<link rel="stylesheet" href="css/styles.css?v=13">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <nav class="wrap site-nav" aria-label="Main">
+    <a class="brand" href="index.html">
+      <img class="brand-mark" src="/img/favicon-180.png" width="38" height="38" alt="">
+      <span class="brand-name">Brainchild</span>
+    </a>
+    <div class="nav-links">
+      <a href="browse.html">Browse</a>
+      <a href="blog.html">Blog</a>
+      <a href="relay.html">Relay rounds</a>
+      <a href="index.html#handoff">How handoff works</a>
+    </div>
+    <div class="nav-actions">
+      <a class="btn btn-plain" href="/api/auth/login" data-auth="signin">Sign in</a>
+      <a class="btn btn-primary" href="list.html">List a project</a>
+    </div>
+  </nav>
+</header>
+
+<main id="main" class="wrap wizard-page">
+  <div class="wizard-head">
+    <div>
+      <p class="eyebrow">About</p>
+      <h1>About Brainchild</h1>
+      <p class="sub">A free home for AI-assisted games, mods and apps that deserve another go.</p>
+    </div>
+  </div>
+  <div class="wizard-list">
+    <section class="panel wizard">
+      <h2>What it is</h2>
+      <p>Lots of good projects stop halfway: the maker runs out of time, or moves on. Brainchild is a directory where you can list one, say what state it's in, and hand it to someone who wants to carry on.</p>
+      <p>Everything here is free to play and use. Each listing points to a public GitHub repository, and many games play right in the browser.</p>
+    </section>
+    <section class="panel wizard">
+      <h2>Handing off a project</h2>
+      <ul>
+        <li><strong>List it.</strong> Sign in with GitHub and choose one of your public repositories. Brainchild checks that you own it and reads its license.</li>
+        <li><strong>Fill in the handoff packet:</strong> what works, what's broken, what you were going for, your <code>CLAUDE.md</code> or <code>AGENTS.md</code>, and how the art and code were made. It lets the next person, and their AI tools, start where you stopped.</li>
+        <li><strong>Choose a status:</strong> up for adoption, open for collaboration, needs testers, active or archived. You can change it later on the Edit page.</li>
+      </ul>
+    </section>
+    <section class="panel wizard">
+      <h2>Adopting a project</h2>
+      <ul>
+        <li>Fork the repository on GitHub, then press <strong>Adopt</strong> on the project's page and pick your fork. Brainchild checks that it really is a fork of the original.</li>
+        <li>You become the maintainer. The people before you stay on the project's lineage: credit is never removed.</li>
+        <li>Each handoff and adoption records the license at that exact commit. See the <a href="licenses.html">Licensing guide</a> for what that means.</li>
+      </ul>
+    </section>
+    <section class="panel wizard">
+      <h2>House rules</h2>
+      <ul>
+        <li>Free to play and use, always. No paywalls, no loot boxes.</li>
+        <li>An open license for the code, and for the art and sound, before a project can be put up for adoption.</li>
+        <li>Mods name their base game and ship as source with install notes.</li>
+        <li>Rate your project honestly (Everyone, Teen or Mature) and add content notes. Historical symbols, for example in WW2 strategy mods, must be declared.</li>
+        <li>Sexually explicit content isn't allowed at any rating, including mods.</li>
+        <li>Be kind in discussions. No harassment or hate.</li>
+      </ul>
+    </section>
+    <section class="panel wizard">
+      <h2>Contact</h2>
+      <p>To report something, or to ask about the site, see <a href="contact.html">Contact and reporting</a>. Brainchild's code is <a href="https://github.com/blimeybruv/brainchild" rel="noopener">on GitHub</a>.</p>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span class="brand-name">Brainchild</span>
+    <span class="grow">A free home for projects that deserve another go.</span>
+    <a href="about.html">About</a>
+    <a href="licenses.html">Licensing guide</a>
+    <a href="report.html">Report a problem</a>
+    <a href="contact.html">Contact</a>
+    <a href="https://github.com/blimeybruv/brainchild" rel="noopener">Source</a>
+  </div>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/common.js?v=11"></script>
+</body>
+</html>

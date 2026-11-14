@@ -84,10 +84,20 @@ window.BC.load(function () {
       if (u && u.handle === p.owner && p.owner_verified) { edit.setAttribute("href", "edit.html?id=" + pid); edit.hidden = false; }
     });
     document.dispatchEvent(new CustomEvent("bc:project", { detail: p })); // discussion.js adds screenshots
+    // Where the main button goes: adopting has its own page; everything else happens on GitHub,
+    // or in the discussion when there is no repository to point to.
     var cta = document.getElementById("p-cta");
+    var repo = p.repo_url && /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/?$/.test(p.repo_url) ? p.repo_url.replace(/\/$/, "") : null;
     if (p.status === "adopt") cta.setAttribute("href", "adopt.html?id=" + pid);
+    else if (p.status === "test" && p.play_url) cta.setAttribute("href", "#p-stage");
+    else if (repo && p.status === "archived") { cta.setAttribute("href", repo + "/fork"); cta.setAttribute("rel", "noopener"); }
+    else if (repo && p.status !== "active") { cta.setAttribute("href", repo + "/issues"); cta.setAttribute("rel", "noopener"); }
+    else if (repo) { cta.setAttribute("href", repo); cta.setAttribute("rel", "noopener"); }
     var fork = document.getElementById("p-fork");
-    if (fork && p.repo_url && /^https:\/\/github\.com\//.test(p.repo_url)) { fork.setAttribute("href", p.repo_url + "/fork"); fork.setAttribute("rel", "noopener"); }
+    if (fork && repo) { fork.setAttribute("href", repo + "/fork"); fork.setAttribute("rel", "noopener"); fork.hidden = false; }
+    // The packet as one Markdown file, when the maker has written one.
+    var dl = document.getElementById("p-packet-dl");
+    if (dl && packet) { dl.setAttribute("href", "/api/projects/" + pid + "/packet.md"); dl.setAttribute("download", p.id + "-handoff-packet.md"); dl.hidden = false; }
     var by = document.getElementById("p-byline");
     if (by && p.owner) {
       by.textContent = (p.handed_off_at ? "Handed off " + window.BC.niceDate(p.handed_off_at) : "Listed " + window.BC.niceDate(p.created_at)) +

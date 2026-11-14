@@ -356,7 +356,16 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
 
 ## Owner requests, 14 Nov: dead links and launch clean-up
 
-1. **Dead links.** Many links still point to `href="#"` and jump to the top of the page. Find them all with
+1. **Dead links.** *Done 14 Nov.* No visible link points to `#` any more: About (`site/about.html`) and
+   the Licensing guide (`site/licenses.html`) are written and in every footer; "List a project" in the
+   headers goes to `list.html`; "Pitch a post" goes to a new "Writing for the blog" section on the
+   contact page (pitches come in through the report form as "Something else", since there is no other
+   route to the operator); "Submit a mod" already worked. On the project page the main button now goes to
+   the adoption page, the game, or the repo's issues or fork page, "Just fork it" is hidden when there is
+   no GitHub repo, and "Download packet" serves the maker's packet as a Markdown file
+   (`GET /api/projects/<id>/packet.md`; there is no zip). The sample blog posts' "Read the post" links,
+   which had nowhere to go, became a "Sample post" note. The original request read:
+   Many links still point to `href="#"` and jump to the top of the page. Find them all with
    `grep -n 'href="#"' site/*.html`. "Source" now points to the GitHub repo.
    - **About:** write `site/about.html`, covering what Brainchild is, how handing off and adopting work,
      the house rules and the contact page. Keep it short and in the site's plain tone.

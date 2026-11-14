@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Licensing guide · Brainchild</title>
+<meta name="description" content="A plain guide to the licenses used on Brainchild, and how licenses are recorded when projects change hands.">
+<link rel="icon" href="img/favicon-32.png" sizes="32x32" type="image/png"><link rel="icon" href="img/favicon-512.png" sizes="512x512" type="image/png"><link rel="apple-touch-icon" href="img/favicon-180.png">
+<link rel="stylesheet" href="css/styles.css?v=13">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <nav class="wrap site-nav" aria-label="Main">
+    <a class="brand" href="index.html">
+      <img class="brand-mark" src="/img/favicon-180.png" width="38" height="38" alt="">
+      <span class="brand-name">Brainchild</span>
+    </a>
+    <div class="nav-links">
+      <a href="browse.html">Browse</a>
+      <a href="blog.html">Blog</a>
+      <a href="relay.html">Relay rounds</a>
+      <a href="index.html#handoff">How handoff works</a>
+    </div>
+    <div class="nav-actions">
+      <a class="btn btn-plain" href="/api/auth/login" data-auth="signin">Sign in</a>
+      <a class="btn btn-primary" href="list.html">List a project</a>
+    </div>
+  </nav>
+</header>
+
+<main id="main" class="wrap wizard-page">
+  <div class="wizard-head">
+    <div>
+      <p class="eyebrow">Licensing guide</p>
+      <h1>Licenses, in plain words</h1>
+      <p class="sub">Every project on Brainchild needs a license. Without one, nobody can legally continue it. This page explains the common ones and how Brainchild records them.</p>
+    </div>
+  </div>
+  <div class="wizard-list">
+    <section class="panel wizard">
+      <h2>Code licenses</h2>
+      <p>Brainchild reads the license file in your repository. Any license file is accepted; one GitHub doesn't recognise is shown as "Custom license". These are the common ones.</p>
+      <dl class="lic-list">
+        <dt>MIT</dt>
+        <dd>Do almost anything with the code, including selling it or taking it closed-source. Just keep the copyright notice and license with it. <span class="muted">Credit required · No patent grant · Doesn't state it's irrevocable</span></dd>
+        <dt>Apache-2.0</dt>
+        <dd>Like MIT, plus a patent grant from the people who contributed. Changed files must say they were changed, and any NOTICE file is kept. It gives no right to use the project's name or trademarks. <span class="muted">Credit required · Patent grant · States it's irrevocable</span></dd>
+        <dt>GPL-3.0 and GPL-2.0</dt>
+        <dd>Anyone may use, change and share the code, but a copy they share, changed or not, must stay under the same license with its source available. <span class="muted">Credit required · Copies stay GPL</span></dd>
+        <dt>LGPL-2.1 and LGPL-3.0</dt>
+        <dd>Like the GPL for the library itself, but other programs may use the library without becoming GPL. <span class="muted">Changes to the library stay LGPL</span></dd>
+        <dt>AGPL-3.0</dt>
+        <dd>Like the GPL, and it also applies when people use the program over a network: whoever runs a changed copy as a service must offer its source. <span class="muted">Copies stay AGPL</span></dd>
+      </dl>
+    </section>
+    <section class="panel wizard">
+      <h2>Art, music and other assets</h2>
+      <p>Code licenses are written for code. For art, music and sound, the listing form offers Creative Commons licenses, or "same as the code".</p>
+      <dl class="lic-list">
+        <dt>CC BY 4.0</dt>
+        <dd>Use, change and share the assets for any purpose, as long as you credit the creator. This is the one we recommend. <span class="muted">Credit required · Commercial use allowed · States it's irrevocable</span></dd>
+        <dt>CC BY-SA 4.0</dt>
+        <dd>Like CC BY, but changed versions must be shared under CC BY-SA too. <span class="muted">Credit required · Changes stay CC BY-SA</span></dd>
+        <dt>CC0</dt>
+        <dd>The creator gives up their rights as far as the law allows: anyone can use the assets for anything, with no credit needed.</dd>
+      </dl>
+    </section>
+    <section class="panel wizard">
+      <h2>How Brainchild records a license</h2>
+      <ul>
+        <li><strong>Each listing, handoff and adoption records the license</strong> at that exact commit, with a fingerprint of the license text and a stored copy. You can see the record from a project's page.</li>
+        <li><strong>Earlier releases can't be withdrawn.</strong> If a maker changes the license later, copies made under the earlier license keep the rights it gave. Records are only ever added, never changed.</li>
+        <li><strong>Permissive code can be relicensed.</strong> Someone who adopts MIT or Apache-2.0 code may put their copy under another license, as long as they keep the original notices. Brainchild records it as a new version.</li>
+        <li><strong>GPL stays GPL.</strong> A project under a GPL-family license (GPL, LGPL or AGPL) keeps it when it changes hands. Brainchild refuses an adoption whose copy has a different license.</li>
+        <li><strong>The project's name is separate from its code.</strong> Apache-2.0 says outright that it gives no right to a name or trademark, and the other licenses don't give one either. When you hand a project off, the listing asks whether the next maintainer may keep the name, call theirs a continuation, or should rename it.</li>
+      </ul>
+    </section>
+    <section class="panel wizard">
+      <h2>Mods</h2>
+      <p>A mod's license covers only the modder's own files. It gives no rights to the base game, which keeps its own license and terms. Every mod on Brainchild names its base game, so people can check what they need.</p>
+    </section>
+    <section class="panel wizard">
+      <h2>AI-generated parts</h2>
+      <p>Brainchild asks makers to list which parts were generated, with which tool, in the handoff packet and in <code>CREDITS.md</code>. Whether and how AI-generated material can be protected differs from country to country, so say plainly what was made by hand.</p>
+    </section>
+    <p class="muted">This guide is a plain summary to help you choose. It isn't legal advice. The license text in each repository is what counts; if something matters, read it or ask a lawyer.</p>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span class="brand-name">Brainchild</span>
+    <span class="grow">A free home for projects that deserve another go.</span>
+    <a href="about.html">About</a>
+    <a href="licenses.html">Licensing guide</a>
+    <a href="report.html">Report a problem</a>
+    <a href="contact.html">Contact</a>
+    <a href="https://github.com/blimeybruv/brainchild" rel="noopener">Source</a>
+  </div>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/common.js?v=11"></script>
+</body>
+</html>

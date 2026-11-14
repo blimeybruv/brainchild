@@ -76,6 +76,7 @@ Previews run the same code against the test database and bucket (the `previews` 
 | `POST /api/relay/contributions`, `/api/relay/contributions/<id>/withdraw`, `/flag` | Pull requests for the winner (checked on GitHub), and the maintainer's junk flag |
 | `POST /api/mod/relay-flags/<id>/resolve` | A moderator agrees with or clears a junk flag |
 | `POST /api/relay/badges` | The winning maintainer's badges (or a moderator's, if the maintainer awarded none) |
+| `GET /api/projects/<id>/packet.md` | The handoff packet as a Markdown download |
 | `GET /api/users/<handle>` | A member's public page: projects, Relay contributions, badges |
 | `GET`/`POST /api/votes` | This month's community-project vote; one vote per person |
 | `POST /api/proposals`, `POST /api/proposals/<id>/delete` | Propose a project for the vote, or withdraw your proposal |

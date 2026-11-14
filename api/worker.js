@@ -15,6 +15,7 @@
 //   POST /api/projects/<id>/edit                          the maintainer edits the page
 //   POST /api/projects/<id>/adopt                         take a project on
 //   GET  /api/projects/<id>/license                       public license record, cached for 60s
+//   GET  /api/projects/<id>/packet.md                     the handoff packet as a Markdown download, cached for 60s
 //   GET  /api/license-text/<fingerprint>                  the stored copy of a license file
 //   GET/POST /api/projects/<id>/comments                  discussion (community.js)
 //   POST /api/comments/<id>/like | pin | delete
@@ -35,7 +36,7 @@
 //   GET  /api/users/<handle>                              a person's public page, cached for 60s
 //   GET/POST /api/votes, POST /api/proposals, POST /api/proposals/<id>/delete   monthly community vote (votes.js)
 
-import { json, privateJson, NO_STORE } from "./http.js";
+import { json, privateJson, NO_STORE, siteOrigin } from "./http.js";
 import { login, callback, logout, me, getSession } from "./auth.js";
 import { repoAccessRoute } from "./github.js";
 import { myRepos, listingInfo, createListing, editProject, adoptProject, licenseRecord, licenseText } from "./listings.js";
@@ -62,6 +63,40 @@ function shape(row) {
   row.play_url = playUrl(row.id, !!row.has_build); // where the hosted build runs, if there is one
   delete row.has_build;
   return row;
+}
+
+// GET /api/projects/<id>/packet.md : the handoff packet as one Markdown file to download.
+async function packetFile(env, id) {
+  if (!/^[a-z0-9-]{1,80}$/.test(id)) return notFound();
+  const p = await env.DB.prepare(
+    "SELECT p.id, p.title, p.kind, p.base_game, p.license, p.repo_url, p.rating, u.handle AS owner FROM projects p LEFT JOIN users u ON u.id = p.owner_id WHERE p.hidden_at IS NULL AND p.id = ?"
+  ).bind(id).first();
+  if (!p) return notFound();
+  const k = await env.DB.prepare("SELECT works, broken, vision, agent_context, provenance, handoff_rules, updated_at FROM packets WHERE project_id = ?").bind(id).first();
+  if (!k) return notFound();
+  const one = (v) => String(v || "").replace(/\r\n?/g, "\n").trim();
+  let prov = [];
+  try { prov = JSON.parse(k.provenance || "[]"); } catch { prov = []; }
+  const out = [
+    "# " + one(p.title) + " · handoff packet", "",
+    "From Brainchild: " + siteOrigin(env) + "/project.html?id=" + p.id,
+    p.repo_url ? "Repository: " + one(p.repo_url) : null,
+    "Maintainer: " + (p.owner ? "@" + p.owner : "unknown") + " · License: " + one(p.license) + (p.kind === "Mod" ? " · Mod for " + one(p.base_game) : ""),
+    "Packet updated: " + k.updated_at, "",
+    "## What works", "", one(k.works) || "(not filled in)", "",
+    "## What's broken", "", one(k.broken) || "(not filled in)", "",
+    "## What I was going for", "", one(k.vision) || "(not filled in)", "",
+    "## Asset provenance", "",
+    ...(Array.isArray(prov) && prov.length ? prov.map((x) => "- " + one(x && x.part) + ": " + one(x && x.how)) : ["(not filled in)"]), "",
+    "## Agent context", "", "````", one(k.agent_context) || "(not filled in)", "````", "",
+    k.handoff_rules ? one(k.handoff_rules) : null, ""
+  ].filter((x) => x !== null).join("\n");
+  return new Response(out, { headers: {
+    "content-type": "text/markdown; charset=utf-8",
+    "content-disposition": 'attachment; filename="' + p.id + '-handoff-packet.md"',
+    "x-content-type-options": "nosniff",
+    "cache-control": "public, max-age=0, s-maxage=60"
+  } });
 }
 
 function notFound() {
@@ -214,6 +249,8 @@ async function handleApi(request, env, ctx, url) {
       response = json({ ok: true }, 200, NO_STORE);
     } else if (path === "/api/projects") {
       response = await listProjects(env);
+    } else if (/^\/api\/projects\/[a-z0-9-]{1,80}\/packet\.md$/.test(path)) {
+      response = await packetFile(env, path.split("/")[3]);
     } else if (/^\/api\/projects\/[^/]+\/license$/.test(path)) {
       response = await licenseRecord(env, ctx, path.split("/")[3]);
     } else if (/^\/api\/screenshots\/\d{1,12}$/.test(path)) {

@@ -154,7 +154,11 @@
     dialog.appendChild(h("div", { class: "rules-head" }, [h("div", null, [h("h2", { id: "report-h", text: title }), h("p", { class: "muted", text: context })]), x]));
     dialog.appendChild(body);
     if (st.user) form();
-    else { body.appendChild(h("p", null, [signInLink("Sign in with GitHub"), " to send a report."])); }
+    else {
+      // No account needed: the report form takes it from here, with this page's address filled in.
+      body.appendChild(h("p", null, [signInLink("Sign in with GitHub"), " to report from here, or use the ",
+        h("a", { href: "report.html?url=" + encodeURIComponent(window.location.href), text: "report form" }), ", which needs no account."]));
+    }
     dialog.showModal();
   }
   var reportLinks = document.querySelectorAll("[data-report-project]");

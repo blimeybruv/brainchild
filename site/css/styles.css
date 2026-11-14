@@ -430,3 +430,4 @@ blockquote.agree { margin: 0; padding-left: 14px; border-left: 3px solid var(--a
 .build-version { margin: 0; padding: 10px 18px 0; font-size: 14px; }
 .build-version:empty { display: none; }
 .wizard .build-version, .wizard #p-build { padding-left: 0; padding-right: 0; }
+.bot-check { min-height: 70px; }

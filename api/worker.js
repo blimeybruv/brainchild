@@ -25,6 +25,8 @@
 //   GET  /api/screenshots/<id>                            public image
 //   POST /api/projects/<id>/builds, PUT .../builds/<build>/files?path=, POST .../builds/<build>/activate,
 //   POST /api/projects/<id>/builds/rollback | remove      hosted browser build, maintainer only (builds.js)
+//   GET  /api/report-form, POST /api/outside-reports      reports from people who aren't signed in (outside.js)
+//   POST /api/mod/outside/<id>/resolve                    moderators only
 //   GET/POST /api/votes, POST /api/proposals, POST /api/proposals/<id>/delete   monthly community vote (votes.js)
 
 import { json, privateJson, NO_STORE } from "./http.js";
@@ -34,6 +36,7 @@ import { myRepos, listingInfo, createListing, editProject, adoptProject, license
 import { listComments, postComment, commentAction, postReport, modQueue, modResolve, modAppeal, myNotices, appealNotice } from "./community.js";
 import { addScreenshot, deleteScreenshot, serveScreenshot } from "./screenshots.js";
 import { listVotes, castVote, propose, withdrawProposal } from "./votes.js";
+import { reportForm, postOutsideReport, resolveOutside } from "./outside.js";
 import { startBuild, putBuildFile, activateBuild, rollbackBuild, removeBuild, buildInfo, playUrl } from "./builds.js";
 
 const PROJECT_FIELDS =
@@ -126,6 +129,10 @@ async function handlePrivate(request, env, ctx, url, path) {
   m = path.match(/^\/api\/comments\/(\d{1,12})\/(like|pin|delete)$/);
   if (m) return method === "POST" ? commentAction(request, env, session, Number(m[1]), m[2]) : methodNotAllowed("POST");
   if (path === "/api/reports") return method === "POST" ? postReport(request, env, session) : methodNotAllowed("POST");
+  if (path === "/api/report-form") return method === "GET" ? reportForm(env, url) : methodNotAllowed("GET");
+  if (path === "/api/outside-reports") return method === "POST" ? postOutsideReport(request, env, url) : methodNotAllowed("POST");
+  m = path.match(/^\/api\/mod\/outside\/(\d{1,12})\/resolve$/);
+  if (m) return method === "POST" ? resolveOutside(request, env, session, Number(m[1])) : methodNotAllowed("POST");
   if (path === "/api/mod/reports") return method === "GET" ? modQueue(request, env, session, url) : methodNotAllowed("GET");
   m = path.match(/^\/api\/mod\/reports\/(\d{1,12})\/resolve$/);
   if (m) return method === "POST" ? modResolve(request, env, session, Number(m[1])) : methodNotAllowed("POST");
@@ -160,7 +167,7 @@ async function handleApi(request, env, ctx, url) {
 
   if (path.startsWith("/api/auth/") || path === "/api/me" || path.startsWith("/api/repos/") || path.startsWith("/api/my/") ||
       (path === "/api/projects" && request.method === "POST") || /^\/api\/projects\/[^/]+\/(adopt|edit|comments|screenshots|builds)(\/.*)?$/.test(path) ||
-      path.startsWith("/api/comments/") || path === "/api/reports" || path === "/api/votes" || path.startsWith("/api/proposals") || path.startsWith("/api/mod/") || /^\/api\/screenshots\/\d+\/delete$/.test(path)) {
+      path.startsWith("/api/comments/") || path === "/api/reports" || path === "/api/report-form" || path === "/api/outside-reports" || path === "/api/votes" || path.startsWith("/api/proposals") || path.startsWith("/api/mod/") || /^\/api\/screenshots\/\d+\/delete$/.test(path)) {
     try {
       return (await handlePrivate(request, env, ctx, url, path)) || notFound();
     } catch (err) {

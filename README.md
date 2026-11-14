@@ -38,7 +38,7 @@ Previews run the same code against the test database and bucket (the `previews` 
 | Resource | Name / ID | Notes |
 |---|---|---|
 | Worker | `royal-firefly-b80b` | Static assets plus `/api/*`, custom domain `brainchild.nexus`. Bindings: `DB` (D1), `BUILDS` (R2), `ASSETS` (the `site/` files) |
-| D1 database | `brainchild-db` · `6e241536-91de-49b7-b885-35429bd01efb` | Tables: users, sessions, projects, packets, lineage, license_records, comments, comment_likes, reports, moderation_actions, screenshots, builds, project_changes, archive_requests, proposals, votes, posts. 19 sample projects, 1 sample packet |
+| D1 database | `brainchild-db` · `6e241536-91de-49b7-b885-35429bd01efb` | Tables: users, sessions, projects, packets, lineage, license_records, comments, comment_likes, reports, outside_reports, moderation_actions, screenshots, builds, project_changes, archive_requests, proposals, votes, posts. 19 sample projects, 1 sample packet |
 | R2 bucket | `brainchild-builds` (ENAM, private) | Holds the stored license copies under `licenses/` screenshots under `screenshots/` and hosted builds under `builds/`. Lifecycle rule deletes unfinished uploads after 24 h |
 | Builds Worker | `brainchild-builds` | Serves `brainwave.nexus` and `*.brainwave.nexus`. Bindings: `DB` (read only), `BUILDS`. No workers.dev address |
 | Preview D1 database | `brainchild-db-preview` · `3b6e6ea2-8a4a-469c-9150-4dcbad16ab64` | Test copy used only by pull-request previews. Same tables and sample rows as the live database |
@@ -63,7 +63,9 @@ Previews run the same code against the test database and bucket (the `previews` 
 | `GET /api/license-text/<fingerprint>` | The stored copy of a license file |
 | `GET`/`POST /api/projects/<id>/comments` | The project's discussion; posting needs sign-in |
 | `POST /api/comments/<id>/like`, `/pin`, `/delete` | Mark helpful (anyone signed in), pin (maintainer), delete (author) |
-| `POST /api/reports` | Report a project or a comment |
+| `POST /api/reports` | Report a project or a comment (signed in) |
+| `GET /api/report-form`, `POST /api/outside-reports` | The report form for people without an account, behind Cloudflare's bot check |
+| `POST /api/mod/outside/<id>/resolve` | A moderator closes a report that came through the form |
 | `GET /api/mod/reports`, `POST /api/mod/reports/<id>/resolve`, `POST /api/mod/actions/<id>/appeal` | Moderation queue (moderators only) |
 | `GET /api/my/notices`, `POST /api/my/notices/<id>/appeal` | Decisions about your own posts, and your reports |
 | `POST /api/projects/<id>/screenshots`, `POST /api/screenshots/<id>/delete` | Add or remove a screenshot (maintainer only) |
@@ -76,6 +78,8 @@ Previews run the same code against the test database and bucket (the `previews` 
 ## What's still sample / placeholder
 
 - The 19 listings, blog posts and community candidates are sample content.
+- Anyone can report a problem without an account at `/report.html`; `/contact.html` explains how reports
+  are handled. A reply-to address left with a report is private and deleted when the report is closed.
 - When a project is listed, handed off or adopted, Brainchild asks Software Heritage, a public archive,
   to keep a copy of the repo. Only the repo's public address is sent.
 - Hosted builds play from `https://<project>.brainwave.nexus/`, a separate domain, so a game's code can't

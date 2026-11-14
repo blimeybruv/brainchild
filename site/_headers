@@ -14,3 +14,12 @@
   Cache-Control: public, max-age=86400
 /js/*
   Cache-Control: public, max-age=86400
+
+# The report form alone may load Cloudflare's bot check (Turnstile). "!" drops the site-wide
+# policy for these paths so the one below replaces it instead of adding to it.
+/report
+  ! Content-Security-Policy
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://avatars.githubusercontent.com; connect-src 'self' https://cloudflareinsights.com; frame-src https://challenges.cloudflare.com; base-uri 'self'; form-action 'self'
+/report.html
+  ! Content-Security-Policy
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://avatars.githubusercontent.com; connect-src 'self' https://cloudflareinsights.com; frame-src https://challenges.cloudflare.com; base-uri 'self'; form-action 'self'

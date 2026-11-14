@@ -31,6 +31,34 @@
       err
     ]));
   }
+  function outsideItem(r) {
+    var reasons = h("textarea", { class: "textarea", rows: "3", maxlength: "2000", "aria-label": "Reasons", placeholder: "For a removal: what it is, and which rule or law it breaks. Otherwise a short note on what you did." });
+    var ground = h("select", { class: "select", "aria-label": "Ground" }, [h("option", { value: "terms", text: "Breaks Brainchild's house rules" }), h("option", { value: "illegal", text: "Illegal content" })]);
+    var err = h("p", { class: "form-error", role: "alert" });
+    function send(decision) {
+      err.textContent = "";
+      BC.api("POST", "/api/mod/outside/" + r.id + "/resolve", { decision: decision, ground: ground.value, reasons: reasons.value }).then(function (res) {
+        if (res.ok) return load();
+        err.textContent = res.data.error === "invalid_fields" ? "A removal needs its reasons written out (at least a sentence)." : res.data.error === "no_project_to_remove" ? "This address isn't a project page, so there is nothing to remove from here." : BC.errorText(res.data.error);
+      });
+    }
+    var safe = /^https:\/\/([a-z0-9-]+\.)?(brainchild|brainwave)\.nexus(\/|$)/.test(r.url);
+    var canRemove = r.project_id && !r.project_hidden;
+    return h("div", { class: "panel queue-item" }, [
+      h("h3", { text: (CAT[r.category] || r.category) + " · no account · " + BC.niceDate(r.created_at) }),
+      h("p", null, ["Page: ", safe ? h("a", { href: r.url, rel: "noopener noreferrer", target: "_blank", text: r.url }) : r.url]),
+      r.project_title ? h("p", { text: "Project: " + r.project_title + (r.project_owner ? " by @" + r.project_owner : "") + (r.project_hidden ? " (already removed)" : "") }) : null,
+      h("blockquote", { class: "quote", text: r.details }),
+      r.reply_to ? h("p", null, [h("strong", { text: "Reply-to (private, deleted when you close this): " }), r.reply_to]) : null,
+      view === "open" ? h("div", { class: "form-grid" }, [h("div", { class: "field wide" }, [reasons]), canRemove ? h("div", { class: "field" }, [ground]) : null]) : null,
+      view === "open" ? h("div", { class: "actions" }, [
+        canRemove ? btn("Remove the project", "btn-primary", function () { send("remove"); }) : null,
+        btn("Dealt with another way", "btn-ghost", function () { send("handled"); }),
+        btn("Dismiss the report", "btn-ghost", function () { send("dismiss"); })
+      ]) : h("p", { class: "muted", text: "Outcome: " + r.status + (r.resolved_at ? " on " + BC.niceDate(r.resolved_at) : "") + (r.resolution_note ? " · " + r.resolution_note : "") }),
+      err
+    ]);
+  }
   function appealItem(a) {
     var note = h("textarea", { class: "textarea", rows: "2", maxlength: "2000", "aria-label": "Note to the person", placeholder: "A short note to the person (optional)" });
     function send(decision) { BC.api("POST", "/api/mod/actions/" + a.id + "/appeal", { decision: decision, note: note.value }).then(load); }
@@ -61,6 +89,10 @@
             h("p", { text: "From " + c.rating_old + notes(c.notes_old) + " to " + c.rating_new + notes(c.notes_new) })
           ]);
         })));
+      }
+      if (d.outside && d.outside.length) {
+        root.appendChild(h("h2", { text: view === "open" ? "Reports from people who aren't signed in" : "Closed reports from people who weren't signed in" }));
+        root.appendChild(h("div", { class: "queue" }, d.outside.map(outsideItem)));
       }
       root.appendChild(h("h2", { text: view === "open" ? "Open reports" : "Closed reports" }));
       root.appendChild(d.reports.length ? h("div", { class: "queue" }, d.reports.map(reportItem)) : h("p", { class: "muted", text: view === "open" ? "Nothing waiting. Every report has been dealt with." : "No closed reports yet." }));

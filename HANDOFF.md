@@ -222,16 +222,28 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    queued for the Zombie Outbreak Simulator record that existed before this was built.
 5. **Hosted builds: done and confirmed 13 Nov.** The owner's upload of Zombie Outbreak Simulator is live
    at `zombie-outbreak-simulator.brainwave.nexus` and plays from its project page.
-6. **Moderation and outside reports: answered 13 Nov.**
+6. **Moderation and outside reports: done 14 Nov. Please try the form once** (see the last point).
    - **Moderators:** only the owner, for now.
-   - **Reporting without GitHub:** build a signed-out report form behind Cloudflare Turnstile, the free bot
-     check. Create the widget through the API, and allow `challenges.cloudflare.com` in `script-src` and
-     `frame-src` for the report form only, where the CSP can be scoped.
-   - **What signed-out reports contain:** category, URL, reasons, and an optional reply-to address. The
-     address is stored privately, never shown, and deleted when the case closes.
-   - **Where they go:** into the same moderation queue, with a statement of reasons on any decision.
-   - **Contact page:** add one saying how to report and that reports are reviewed by the operator. The
-     owner's email must not appear anywhere.
+   - **Report form** (`site/report.html`, `api/outside.js`): anyone can report a page on brainchild.nexus
+     or a game on brainwave.nexus without an account. It asks for a category, the page's address, reasons
+     and an optional reply-to address, behind Cloudflare Turnstile. The Turnstile widget "Brainchild
+     report form" was created through the API; its secret is the Worker secret `TURNSTILE_SECRET` and its
+     public key is in `api/outside.js`. Only `/report` may load `challenges.cloudflare.com` (a scoped rule
+     in `site/_headers`). No IP address is stored. At most 40 outside reports an hour are accepted.
+   - **Reply-to address:** stored in `outside_reports.reply_to`, shown only to moderators on the queue
+     while the case is open, and set to NULL the moment the case is closed, whatever the decision.
+     Brainchild sends no email itself; the operator replies by hand if they choose to.
+   - **Queue:** outside reports appear on `site/mod.html` above the others. If the address points at a
+     project, the moderator can remove it, which needs a ground and written reasons and records the same
+     statement of reasons as any other removal. Otherwise they close it as "dealt with another way" or
+     dismiss it, with a note.
+   - **Contact page** (`site/contact.html`): how to report with and without an account, what happens to a
+     report, and where to ask other questions. No email address appears. Every page's footer links to it
+     and to the report form; a signed-out visitor who clicks "Report this project" is pointed to the form
+     with the page's address filled in.
+   - **To try:** open https://brainchild.nexus/report.html in a private window, send a test report, then
+     look for it on the Moderation page. The form was tested with Cloudflare's test keys; the real bot
+     check can only be passed by a real browser, so the agent couldn't complete it on the live site.
 7. **Analytics script: done 13 Nov.** `static.cloudflareinsights.com` is allowed in `script-src` and
    `cloudflareinsights.com` in `connect-src`.
 8. **Optional tidy-up:** in Cloudflare, **Workers & Pages → royal-firefly-b80b → Settings → Build →

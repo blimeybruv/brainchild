@@ -10,6 +10,7 @@
 
 import { privateJson, isSameOrigin } from "./http.js";
 import { isModerator } from "./auth.js";
+import { listOutside } from "./outside.js";
 
 export const REPORT_CATEGORIES = ["sexual", "rating", "malware", "license", "harass", "spam", "other"];
 const MAX_COMMENT = 2000;
@@ -229,7 +230,8 @@ export async function modQueue(request, env, session, url) {
        FROM project_changes c JOIN projects p ON p.id = c.project_id LEFT JOIN users u ON u.id = c.user_id
       WHERE c.rating_new IS NOT NULL ORDER BY c.id DESC LIMIT 50`
   ).all();
-  return privateJson({ reports, appeals: closed ? [] : appeals, rating_changes: closed ? [] : ratings });
+  // Reports from people who aren't signed in arrive in the same queue.
+  return privateJson({ reports, outside: await listOutside(env, closed), appeals: closed ? [] : appeals, rating_changes: closed ? [] : ratings });
 }
 
 // POST /api/mod/reports/<id>/resolve  { decision: "remove" | "dismiss", ground, reasons }

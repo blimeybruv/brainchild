@@ -452,6 +452,25 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
   - that analytics is Cloudflare's cookieless analytics;
   - how to ask for deletion. Contact goes through the contact page; never show the owner's email.
 
+## Owner decision, 14 Nov: "Mod / plugin" and "Made for"
+
+Widen the Mod type to cover plugins and extensions for any software (browser extensions, editor plugins
+and so on), not only game mods. **Change only the wording; keep the stored values** (`kind = 'Mod'`,
+column `base_game`), so there is no migration and the CHECK constraint stays as it is.
+- **Type label:** "Mod" becomes **"Mod / plugin"**: the listing type picker, filters, cards, badges and
+  the Edit page.
+- **Field label:** "Base game" becomes **"Made for"**, with hint text such as "The game or program it
+  runs in, e.g. Darkest Hour, Firefox, VS Code". The rule about the game's own terms becomes "Your
+  license covers only your own files; the terms of what it's made for still apply."
+- **Other wording:**
+  - "Mod for X" becomes "Made for X".
+  - Browse's "Mods by game" becomes **"By what it's made for"**.
+  - "Submit a mod" becomes "Submit a mod or plugin".
+  - The mod page (`mod.html`) gets the same wording.
+- **Licensing guide and About:** say mods and plugins follow the same rule.
+- **Check everything:** grep for "Mod", "mod for", "base game" and "game's own terms" across `site/` and
+  `api/` error messages.
+
 ## Relay rules (decided by the owner, 13 Nov; confirmed again in chat the same evening)
 
 A round lasts one calendar month. The Relay mockup shows the stages.

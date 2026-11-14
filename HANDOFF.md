@@ -354,6 +354,27 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
   build on every request, files its edge copies under that build's id, and tells browsers to check before
   reusing a file (`cache-control: no-cache` with an ETag, answering 304 when unchanged).
 
+## Owner requests, 14 Nov: dead links and launch clean-up
+
+1. **Dead links.** Many links still point to `href="#"` and jump to the top of the page. Find them all with
+   `grep -n 'href="#"' site/*.html`. "Source" now points to the GitHub repo.
+   - **About:** write `site/about.html`, covering what Brainchild is, how handing off and adopting work,
+     the house rules and the contact page. Keep it short and in the site's plain tone.
+   - **Licensing guide:** write `site/licenses.html`, a plain guide to the licenses the site accepts
+     (reuse the license badge tooltip text). Cover what each one allows, that earlier releases can't be
+     withdrawn, relicensing (permissive code yes, GPL stays GPL), Apache-2.0 and the project name, assets
+     under CC licenses, and that a mod's license covers only the modder's own files. End with "not legal
+     advice".
+   - Also fix "List a project" on adopt.html, "Pitch a post" on blog.html and "Submit a mod" on
+     browse.html, and update the footer on every page.
+2. **Before launch (do it when the owner says the site is ready):**
+   - Delist every sample project: everything in D1 except real listings, currently only
+     `zombie-outbreak-simulator`. Delete or hide the rows, together with their packets and lineage.
+   - Empty or remove the sample fallback in `site/js/data.js`, so an API failure shows "No projects yet"
+     instead of fake ones.
+   - Remove the sample blog posts and proposals.
+   - Ask the owner first, and list what will go.
+
 ## Relay rules (decided by the owner, 13 Nov; confirmed again in chat the same evening)
 
 A round lasts one calendar month. The Relay mockup shows the stages.

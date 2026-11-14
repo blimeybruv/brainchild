@@ -281,6 +281,9 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
   for a review; restoring puts the proposal back. A removed proposal can't be withdrawn by its proposer,
   so the record stays. The Report control offers four categories that fit a proposal's text
   (harassment, spam, sexual content, something else).
+- **Waiting on the owner:** the launch clean-up in "Owner requests, 14 Nov" (step 2: delisting sample
+  projects, emptying the sample fallback, removing sample posts and proposals). The agent asks first and
+  lists what will go.
 - **Only if a listed game needs it:** cross-origin isolation headers on the builds Worker, for engines
   that use threads (some Godot and Unity web exports). No listed game needs them today.
 - **Blocked on an Open decision:** the Mature gate.

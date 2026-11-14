@@ -308,8 +308,8 @@
     var leaving = st.intent === "leave", p = st.preview, s = p.summary;
     var statusOpts = leaving
       ? [{ value: "adopt", label: "Up for adoption", desc: "You're stepping away; someone can take over." }]
-      : [{ value: "help", label: "Open for collaboration", desc: "You're staying, and want people to join in." },
-         { value: "test", label: "Needs testers", desc: "It works; you need people to play it and report back." }];
+      : [{ value: "help", label: "Open for collaboration", desc: "You're staying, and want people to join in. It can also be proposed as a community project on the Blog." },
+         { value: "test", label: "Needs testers", desc: "It works; you need people to play it and report back. Projects that only need testers aren't offered as community projects on the Blog." }];
     var out = [h("h2", { text: leaving ? "Hand it off" : "How can people help?" }),
       BC.choices("Status", statusOpts, st.status, function (v) { st.status = v; render(); })];
     if (leaving) {

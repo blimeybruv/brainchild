@@ -13,7 +13,7 @@
 import { privateJson, isSameOrigin } from "./http.js";
 import { relayNow } from "./relay.js"; // the site's clock, which tests can set (RELAY_NOW)
 
-const MAX_PROPOSALS_PER_USER = 3;
+const MAX_PROPOSALS_PER_USER = 1;
 
 function bad(error, status = 400, extra = {}) { return privateJson({ error, ...extra }, status); }
 async function readJson(request) {

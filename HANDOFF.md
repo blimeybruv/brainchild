@@ -426,6 +426,24 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
 - **Privacy:** the profile shows linked accounts only if the user opts in. By default it shows just the
   platform of each listed project.
 
+## Owner request, 14 Nov: vote-rigging signals and a privacy page
+
+- **Cheap signals first.** Show moderators these on votes, Relay entries and new accounts:
+  - the age of the linked GitHub, Codeberg or GitLab account, and whether it has any public activity;
+  - the age of the Brainchild account.
+- **Hashed network flag.** Collect it only for votes and Relay entries.
+  - Store an HMAC (secret key, rotated) of the requester's network: the IPv4 /24 or IPv6 /64, from
+    `CF-Connecting-IP`. **Never store the raw IP.**
+  - Delete these 30 days after the round or vote closes.
+  - Moderators see flags only ("3 votes in this round came from one network"), never addresses.
+  - A flag means "worth a look". Never penalise automatically.
+- **Privacy page.** Write `site/privacy.html` and link it in the footer. Plain language, covering:
+  - what is stored (GitHub, Codeberg or GitLab id and handle, no emails, the hashed network flag and why,
+    the optional private reply-to address on signed-out reports);
+  - how long each is kept and the cookies used (session only);
+  - that analytics is Cloudflare's cookieless analytics;
+  - how to ask for deletion. Contact goes through the contact page; never show the owner's email.
+
 ## Relay rules (decided by the owner, 13 Nov; confirmed again in chat the same evening)
 
 A round lasts one calendar month. The Relay mockup shows the stages.

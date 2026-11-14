@@ -399,6 +399,33 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    - Remove the sample blog posts and proposals.
    - Ask the owner first, and list what will go.
 
+## Owner request, 14 Nov: Codeberg and GitLab sign-in, and linked accounts
+
+**Verifying non-GitHub repos.** This replaces the file-only plan as the main route.
+- **Sign-in:** add OAuth sign-in for **Codeberg** (Forgejo OAuth2) and **GitLab.com**. Guide the owner
+  through registering both apps (free) and adding the secrets in the dashboard, with exact click paths.
+- **Admin checks:**
+  - Codeberg: `GET /api/v1/repos/{owner}/{repo}` with the user's token must return `permissions.admin`.
+  - GitLab: the project member access level must be 50 (Owner) or 40 (Maintainer).
+  - Re-check on every edit, handoff and adoption, exactly like `requireRepoAdmin`.
+- **Self-hosted GitLab or Forgejo only:** keep the verification-file method (a code committed to the
+  repo). Label those listings "verified: push access", and require a fresh file at handoff.
+
+**Linked accounts.**
+- **Accounts:** one Brainchild account per person (handle, badges, comments, lineage, votes), with any
+  number of linked sign-ins. Add an `identities` table (provider, provider_user_id, handle,
+  linked_at) referencing `users`.
+- **Linking:** only from the account page, while signed in, by completing the other provider's sign-in.
+  **Never link by matching email.** No emails are stored.
+- **Repo checks stay per platform:** a Codeberg project needs the Codeberg token at the time of the action.
+  Linking never bypasses a check.
+- **Second sign-in already has an account:** if it has no activity, merge it automatically. Otherwise
+  refuse and show "contact a moderator", and add a manual merge tool to the moderation area.
+- **Unlinking:** allowed, except for the last remaining sign-in. Lineage and credit belong to the
+  person and never change.
+- **Privacy:** the profile shows linked accounts only if the user opts in. By default it shows just the
+  platform of each listed project.
+
 ## Relay rules (decided by the owner, 13 Nov; confirmed again in chat the same evening)
 
 A round lasts one calendar month. The Relay mockup shows the stages.

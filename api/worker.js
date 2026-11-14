@@ -27,7 +27,10 @@
 //   POST /api/projects/<id>/builds/rollback | remove      hosted browser build, maintainer only (builds.js)
 //   GET  /api/report-form, POST /api/outside-reports      reports from people who aren't signed in (outside.js)
 //   POST /api/mod/outside/<id>/resolve                    moderators only
-//   GET  /api/relay, POST /api/relay/enter | withdraw | rank   Relay rounds (relay.js)
+//   GET  /api/relay[?month=], POST /api/relay/enter | withdraw | rank   Relay rounds (relay.js)
+//   POST /api/relay/tasks, /api/relay/tasks/<id>/remove | claim | unclaim   the winner's task board (relay-board.js)
+//   POST /api/relay/contributions, /api/relay/contributions/<id>/withdraw | flag   pull requests for the winner
+//   POST /api/mod/relay-flags/<id>/resolve                moderators only
 //   GET/POST /api/votes, POST /api/proposals, POST /api/proposals/<id>/delete   monthly community vote (votes.js)
 
 import { json, privateJson, NO_STORE } from "./http.js";
@@ -38,7 +41,8 @@ import { listComments, postComment, commentAction, postReport, modQueue, modReso
 import { addScreenshot, deleteScreenshot, serveScreenshot } from "./screenshots.js";
 import { listVotes, castVote, propose, withdrawProposal } from "./votes.js";
 import { reportForm, postOutsideReport, resolveOutside } from "./outside.js";
-import { relayState, enterRelay, withdrawRelay, rankRelay } from "./relay.js";
+import { enterRelay, withdrawRelay, rankRelay } from "./relay.js";
+import { relayState, addTask, taskAction, addContribution, contributionAction, resolveFlag } from "./relay-board.js";
 import { startBuild, putBuildFile, activateBuild, rollbackBuild, removeBuild, buildInfo, playUrl } from "./builds.js";
 
 const PROJECT_FIELDS =
@@ -131,7 +135,15 @@ async function handlePrivate(request, env, ctx, url, path) {
   m = path.match(/^\/api\/comments\/(\d{1,12})\/(like|pin|delete)$/);
   if (m) return method === "POST" ? commentAction(request, env, session, Number(m[1]), m[2]) : methodNotAllowed("POST");
   if (path === "/api/reports") return method === "POST" ? postReport(request, env, session) : methodNotAllowed("POST");
-  if (path === "/api/relay") return method === "GET" ? relayState(env, session) : methodNotAllowed("GET");
+  if (path === "/api/relay") return method === "GET" ? relayState(env, session, url) : methodNotAllowed("GET");
+  if (path === "/api/relay/tasks") return method === "POST" ? addTask(request, env, session) : methodNotAllowed("POST");
+  m = path.match(/^\/api\/relay\/tasks\/(\d{1,12})\/(remove|claim|unclaim)$/);
+  if (m) return method === "POST" ? taskAction(request, env, session, Number(m[1]), m[2]) : methodNotAllowed("POST");
+  if (path === "/api/relay/contributions") return method === "POST" ? addContribution(request, env, session) : methodNotAllowed("POST");
+  m = path.match(/^\/api\/relay\/contributions\/(\d{1,12})\/(withdraw|flag)$/);
+  if (m) return method === "POST" ? contributionAction(request, env, session, Number(m[1]), m[2]) : methodNotAllowed("POST");
+  m = path.match(/^\/api\/mod\/relay-flags\/(\d{1,12})\/resolve$/);
+  if (m) return method === "POST" ? resolveFlag(request, env, session, Number(m[1])) : methodNotAllowed("POST");
   if (path === "/api/relay/enter") return method === "POST" ? enterRelay(request, env, session) : methodNotAllowed("POST");
   if (path === "/api/relay/withdraw") return method === "POST" ? withdrawRelay(request, env, session) : methodNotAllowed("POST");
   if (path === "/api/relay/rank") return method === "POST" ? rankRelay(request, env, session) : methodNotAllowed("POST");

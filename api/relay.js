@@ -5,7 +5,9 @@
 //   days 1-5   Entry. Each person nominates one project they maintain.
 //   days 6-7   Vote. Each entrant ranks three other projects (3, 2 and 1 points).
 //   day 8      Result. The highest total wins; ties go to more first places, then earlier entry.
-//   to month end   Contribute (part B). Then a week of review and the recap (part C).
+//   to month end   Contribute: the winner posts a task board and everyone else opens a pull
+//                  request on the winner's repo (relay-board.js).
+//   next 7 days    Review, then the round closes (recap and badges are part C).
 //
 // Rules encoded in this file:
 //   - A round needs at least 4 entries. With fewer it doesn't run, and the entries are carried
@@ -23,8 +25,8 @@ export const MIN_ENTRIES = 4;
 const ENTRY_LAST_DAY = 5;
 const VOTE_LAST_DAY = 7;
 
-function bad(error, status = 400, extra = {}) { return privateJson({ error, ...extra }, status); }
-async function readJson(request) {
+export function bad(error, status = 400, extra = {}) { return privateJson({ error, ...extra }, status); }
+export async function readJson(request) {
   if (!(request.headers.get("content-type") || "").toLowerCase().startsWith("application/json")) return null;
   const raw = await request.text();
   if (raw.length > 10000) return null;
@@ -36,7 +38,7 @@ export function relayNow(env) {
   const t = typeof env.RELAY_NOW === "string" && env.RELAY_NOW ? new Date(env.RELAY_NOW) : new Date();
   return Number.isNaN(t.getTime()) ? new Date() : t;
 }
-function text(d) { return d.toISOString().replace("T", " ").slice(0, 19); }
+export function text(d) { return d.toISOString().replace("T", " ").slice(0, 19); }
 function monthOf(d) { return d.toISOString().slice(0, 7); }
 
 // The dates of a round, from its month ("2026-12").
@@ -64,6 +66,24 @@ export async function tally(env, roundId) {
 // Move the round on if a stage's date has passed. Each step only happens once, whoever looks first.
 export async function advance(env) {
   const now = relayNow(env), month = monthOf(now), day = now.getUTCDate(), stamp = text(now);
+  // Rounds from earlier months: contributions end with the month, and review ends a week later.
+  // This comes first so that a round nobody looked at is settled before its entries are carried on.
+  const { results: older } = await env.DB.prepare("SELECT id, month, status FROM relay_rounds WHERE month < ? AND status IN ('entry', 'voting', 'running', 'review')").bind(month).all();
+  for (const o of older) {
+    if (o.status === "entry" || o.status === "voting") {
+      // Nobody opened the page while it could still be decided; treat it as it would have gone.
+      await settle(env, o, stamp);
+      const again = await env.DB.prepare("SELECT status FROM relay_rounds WHERE id = ?").bind(o.id).first();
+      o.status = again.status;
+    }
+    if (o.status === "running") {
+      await env.DB.prepare("UPDATE relay_rounds SET status = 'review' WHERE id = ? AND status = 'running'").bind(o.id).run();
+      o.status = "review";
+    }
+    if (o.status === "review" && now.toISOString().slice(0, 10) > calendar(o.month).review_ends) {
+      await env.DB.prepare("UPDATE relay_rounds SET status = 'closed', closed_at = ? WHERE id = ? AND status = 'review'").bind(stamp, o.id).run();
+    }
+  }
   let round = await env.DB.prepare("SELECT * FROM relay_rounds WHERE month = ?").bind(month).first();
   if (!round) {
     // A new month: open its round, and bring in the entries of a round that didn't run.
@@ -82,19 +102,27 @@ export async function advance(env) {
       }
     }
   }
-  if (round.status === "entry" && day > ENTRY_LAST_DAY) {
-    const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM relay_entries WHERE round_id = ?").bind(round.id).first();
-    const next = n.n >= MIN_ENTRIES ? "voting" : "not_run";
-    await env.DB.prepare("UPDATE relay_rounds SET status = ? WHERE id = ? AND status = 'entry'").bind(next, round.id).run();
-    round = await env.DB.prepare("SELECT * FROM relay_rounds WHERE id = ?").bind(round.id).first();
-  }
-  if (round.status === "voting" && day > VOTE_LAST_DAY) {
-    const ranking = await tally(env, round.id);
-    await env.DB.prepare("UPDATE relay_rounds SET status = 'running', winner_entry_id = ?, decided_at = ? WHERE id = ? AND status = 'voting'")
-      .bind(ranking[0].id, stamp, round.id).run();
+  if ((round.status === "entry" && day > ENTRY_LAST_DAY) || (round.status === "voting" && day > VOTE_LAST_DAY)) {
+    await settle(env, round, stamp, day);
     round = await env.DB.prepare("SELECT * FROM relay_rounds WHERE id = ?").bind(round.id).first();
   }
   return round;
+}
+
+// Close entry and then voting for a round. `day` is today's day for the current month's round;
+// without it the round's month is over and both stages have passed.
+async function settle(env, round, stamp, day = 99) {
+  let status = round.status;
+  if (status === "entry" && day > ENTRY_LAST_DAY) {
+    const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM relay_entries WHERE round_id = ?").bind(round.id).first();
+    status = n.n >= MIN_ENTRIES ? "voting" : "not_run";
+    await env.DB.prepare("UPDATE relay_rounds SET status = ? WHERE id = ? AND status = 'entry'").bind(status, round.id).run();
+  }
+  if (status === "voting" && day > VOTE_LAST_DAY) {
+    const ranking = await tally(env, round.id);
+    await env.DB.prepare("UPDATE relay_rounds SET status = 'running', winner_entry_id = ?, decided_at = ? WHERE id = ? AND status = 'voting'")
+      .bind(ranking[0].id, stamp, round.id).run();
+  }
 }
 
 // The rounds that actually ran are numbered 1, 2, 3 ... in order.
@@ -103,9 +131,19 @@ async function roundNumber(env, round) {
   return n.n;
 }
 
-// GET /api/relay : the current round as this visitor sees it
-export async function relayState(env, session) {
-  const round = await advance(env);
+// The round for a month ("2026-12"), or the current one. Null when there is no such round.
+export async function roundFor(env, month) {
+  const current = await advance(env);
+  if (!month || month === current.month) return current;
+  if (!/^\d{4}-\d{2}$/.test(month)) return null;
+  return env.DB.prepare("SELECT * FROM relay_rounds WHERE month = ?").bind(month).first();
+}
+
+// A round as this visitor sees it: { round (the database row), out (what the page gets) }.
+// relay-board.js adds the task board and contributions and serves GET /api/relay.
+export async function roundView(env, session, month) {
+  const round = await roundFor(env, month);
+  if (!round) return null;
   const { results: entries } = await env.DB.prepare(
     `SELECT e.id, e.project_id, e.user_id, e.pitch, e.created_at, e.carried_from, p.title, p.kind, p.genre, p.base_game, p.tone, u.handle AS owner,
             (SELECT s.id FROM screenshots s WHERE s.project_id = p.id ORDER BY s.id LIMIT 1) AS shot
@@ -137,7 +175,14 @@ export async function relayState(env, session) {
     const { results: ranks } = await env.DB.prepare("SELECT entry_id, rank FROM relay_votes WHERE round_id = ? AND voter_id = ?").bind(round.id, session.userId).all();
     for (const r of ranks) out.me.ranks[r.entry_id] = r.rank;
   }
-  return privateJson(out);
+  out.round.current = round.month === monthOf(relayNow(env));
+  // Rounds that ran, newest first, so earlier ones can be opened.
+  const { results: recent } = await env.DB.prepare(
+    `SELECT r.month, r.status, (SELECT COUNT(*) FROM relay_rounds x WHERE x.id <= r.id AND x.status <> 'not_run') AS number
+       FROM relay_rounds r WHERE r.status IN ('running', 'review', 'closed') ORDER BY r.id DESC LIMIT 6`
+  ).all();
+  out.recent = recent;
+  return { round, out };
 }
 
 // POST /api/relay/enter  { project_id, pitch }

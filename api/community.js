@@ -11,6 +11,7 @@
 import { privateJson, isSameOrigin } from "./http.js";
 import { isModerator } from "./auth.js";
 import { listOutside } from "./outside.js";
+import { listFlags } from "./relay-board.js";
 
 export const REPORT_CATEGORIES = ["sexual", "rating", "malware", "license", "harass", "spam", "other"];
 const MAX_COMMENT = 2000;
@@ -216,11 +217,12 @@ export async function modQueue(request, env, session, url) {
   ).all();
   const { results: appeals } = await env.DB.prepare(
     `SELECT a.id, a.target_type, a.project_id, a.comment_id, a.category, a.ground, a.reasons, a.created_at, a.appeal_text, a.appeal_at,
-            u.handle AS affected, p.title AS project_title, c.body AS comment_body
+            u.handle AS affected, p.title AS project_title, c.body AS comment_body, rc.pr_url, rc.pr_number
        FROM moderation_actions a
        LEFT JOIN users u ON u.id = a.affected_user_id
        LEFT JOIN projects p ON p.id = a.project_id
        LEFT JOIN comments c ON c.id = a.comment_id
+       LEFT JOIN relay_contributions rc ON rc.action_id = a.id
       WHERE a.action = 'remove' AND a.appeal_at IS NOT NULL AND a.appeal_outcome IS NULL
       ORDER BY a.appeal_at LIMIT 200`
   ).all();
@@ -231,7 +233,8 @@ export async function modQueue(request, env, session, url) {
       WHERE c.rating_new IS NOT NULL ORDER BY c.id DESC LIMIT 50`
   ).all();
   // Reports from people who aren't signed in arrive in the same queue.
-  return privateJson({ reports, outside: await listOutside(env, closed), appeals: closed ? [] : appeals, rating_changes: closed ? [] : ratings });
+  // Relay pull requests a maintainer flagged as junk are reviewed here too.
+  return privateJson({ reports, outside: await listOutside(env, closed), relay_flags: await listFlags(env, closed), appeals: closed ? [] : appeals, rating_changes: closed ? [] : ratings });
 }
 
 // POST /api/mod/reports/<id>/resolve  { decision: "remove" | "dismiss", ground, reasons }
@@ -301,7 +304,9 @@ export async function modAppeal(request, env, session, id) {
   if (decision === "restore") {
     steps.push(a.target_type === "comment"
       ? env.DB.prepare("UPDATE comments SET removed_at = NULL, removed_by = NULL WHERE id = ? AND removed_by = 'moderator'").bind(a.comment_id)
-      : env.DB.prepare("UPDATE projects SET hidden_at = NULL WHERE id = ?").bind(a.project_id));
+      : a.target_type === "relay_pr"
+        ? env.DB.prepare("UPDATE relay_contributions SET flag_outcome = 'cleared' WHERE action_id = ?").bind(a.id) // the pull request counts again
+        : env.DB.prepare("UPDATE projects SET hidden_at = NULL WHERE id = ?").bind(a.project_id));
   }
   await env.DB.batch(steps);
   if (decision === "restore" && a.target_type === "project") {
@@ -317,8 +322,9 @@ export async function myNotices(env, session) {
   if (!session) return bad("not_signed_in", 401);
   const { results: decisions } = await env.DB.prepare(
     `SELECT a.id, a.target_type, a.project_id, a.category, a.ground, a.reasons, a.automated, a.created_at,
-            a.appeal_text, a.appeal_at, a.appeal_outcome, a.appeal_note, p.title AS project_title, c.body AS comment_body
+            a.appeal_text, a.appeal_at, a.appeal_outcome, a.appeal_note, p.title AS project_title, c.body AS comment_body, rc.pr_url, rc.pr_number
        FROM moderation_actions a LEFT JOIN projects p ON p.id = a.project_id LEFT JOIN comments c ON c.id = a.comment_id
+       LEFT JOIN relay_contributions rc ON rc.action_id = a.id
       WHERE a.affected_user_id = ? AND a.action = 'remove' ORDER BY a.created_at DESC LIMIT 100`
   ).bind(session.userId).all();
   const { results: reports } = await env.DB.prepare(

@@ -208,11 +208,35 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
          earlier entry.
        - Nothing runs on a timer: a round moves to its next stage the first time someone opens the page
          after the stage's date has passed.
-     - **Part B, to build:** the winner's task board, "I'm working on this" claims, contributions (a pull
-       request on the winner's repo, checked through the GitHub API), junk flags and their moderator
-       review with a statement of reasons. New tables go in a new migration; `relay_rounds.status` already
-       allows `review` and `closed`.
-     - **Part C, to build:** the review week and recap, badges (Most helpful, Best wildcard, moderator
+     - **Part B, done 14 Nov:** the month of work (`api/relay-board.js`, migration `0012`).
+       - **Task board.** Only the person who entered the winning project posts and removes tasks (up to
+         20, each with a short label). Anyone else signed in can say "I'm working on this". The board is
+         open until the month ends. The "within 3 days" date is shown but not enforced, because the rules
+         don't say what happens if it's missed.
+       - **Contributions.** Anyone signed in except the winner submits a pull request link (or just its
+         number), a task or "wildcard", and a sentence on what they tried. GitHub is asked at that
+         moment: the PR's author must be the signed-in GitHub account, its base must be the winner's repo
+         (matched by repo id, so a renamed repo still works), and it must have been opened during the
+         round's calendar month (UTC). Merged or not doesn't matter. Up to 5 each; each PR once.
+         A PR opened in the month can still be submitted during the review week.
+       - **Junk flags.** The winning maintainer flags a contribution with one of four reasons (no real
+         change, spam, auto-generated with no effort, ignored the instructions) and an optional note.
+         A flag does nothing by itself. It appears in the moderation queue (`mod.html`), where a
+         moderator agrees (reasons required) or clears it. An upheld flag writes a `moderation_actions`
+         row (`target_type = 'relay_pr'`), so the contributor reads the statement of reasons on
+         `account.html` and can ask once for a review; "restore" there makes the PR count again.
+       - The public page shows that a contribution is flagged or doesn't count, but the reason is shown
+         only to the contributor, the maintainer and moderators.
+       - A flag still waiting for a moderator does **not** stop the PR counting. Only an upheld one does.
+       - A moderator can't decide a flag they raised themself. With one moderator (the owner), a flag the
+         owner raises on their own winning project stays open, so that PR keeps counting. See "Waiting on
+         the owner".
+       - The mockup's "Accept" button was left out: under the rules a PR counts unless a flag is upheld,
+         so accepting would change nothing.
+       - **Stages after the month.** A round moves to `review` when its month ends and to `closed` after
+         the 7th of the next month, again the first time someone opens the page. Earlier rounds are
+         reachable at `relay.html?month=2026-12` and linked under "Other rounds".
+     - **Part C, to build:** the recap, badges (Most helpful, Best wildcard, moderator
        fallback after 7 days), badges on a user page and beside names in discussions
        (`api/community.js` already returns an empty `badges` list), and the rule that an entrant with no
        counting pull request can't enter the next round until they contribute to one.
@@ -271,6 +295,11 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
 8. **Optional tidy-up:** in Cloudflare, **Workers & Pages → royal-firefly-b80b → Settings → Build →
    Variables and secrets**, delete `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`. Those two are unused;
    the working copies are under **Variables and Secrets** higher up the same page. Leave those alone.
+9. **Relay junk flags with one moderator (no action needed yet).** A moderator can't decide a flag they
+   raised themself. While the owner is the only moderator, a flag the owner raises on a contribution to
+   their own winning project can't be reviewed by anyone, so that pull request keeps counting. Adding a
+   second moderator fixes it: give the agent their GitHub username and it adds their id to
+   `MODERATOR_GITHUB_IDS` in `api/auth.js`.
 
 ## Updating hosted builds (owner request 13 Nov; done 14 Nov)
 

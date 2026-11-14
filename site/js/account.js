@@ -3,8 +3,21 @@
   var BC = window.BC, h = BC.h, root = document.getElementById("m-body");
   var CAT = { sexual: "Sexual content", rating: "Wrong rating", malware: "Malware or suspicious download", license: "License or copyright problem", harass: "Harassment or hate", spam: "Spam or junk", other: "Something else" };
   function message(parts) { root.textContent = ""; root.appendChild(h("p", { class: "muted" }, parts)); }
+  var FLAGS = { no_change: "no real change", spam: "spam", no_effort: "auto-generated with no effort", ignored: "ignored the instructions" };
+  // A Relay pull request that a moderator agreed was junk.
+  function relayDecision(d) {
+    var safe = /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/pull\/\d+$/.test(d.pr_url || "");
+    return [
+      h("h3", { text: "Your pull request for \"" + (d.project_title || d.project_id) + "\" doesn't count towards its Relay round · " + BC.niceDate(d.created_at) }),
+      d.pr_number ? h("p", null, [safe ? h("a", { href: d.pr_url, rel: "noopener noreferrer", target: "_blank", text: "Pull request #" + d.pr_number }) : "Pull request #" + d.pr_number]) : null,
+      h("p", null, [h("strong", { text: "Why: " }), d.reasons]),
+      h("p", { class: "muted", text: "The project's maintainer flagged it (" + (FLAGS[d.category] || d.category) + ") and a moderator agreed after looking at it; no automated tool was involved. " +
+        "Nothing was removed: the pull request stays on GitHub. Another pull request in the same round can still count." })
+    ];
+  }
   function decision(d) {
-    var out = [
+    var relay = d.target_type === "relay_pr";
+    var out = relay ? relayDecision(d) : [
       h("h3", { text: (d.target_type === "project" ? "Your project \"" + (d.project_title || d.project_id) + "\" was removed" : "Your comment on \"" + (d.project_title || d.project_id) + "\" was removed") + " · " + BC.niceDate(d.created_at) }),
       d.comment_body ? h("blockquote", { class: "quote", text: d.comment_body }) : null,
       h("p", null, [h("strong", { text: "Why: " }), d.reasons]),
@@ -12,7 +25,7 @@
         "A moderator made this decision after a report; no automated tool was involved. " + (d.target_type === "project" ? "The project's page is hidden; its lineage and license record are kept." : "The comment is no longer shown.") })
     ];
     if (d.appeal_outcome) {
-      out.push(h("p", null, [h("strong", { text: d.appeal_outcome === "restored" ? "Reviewed: it has been put back. " : "Reviewed: the removal stands. " }), d.appeal_note || ""]));
+      out.push(h("p", null, [h("strong", { text: d.appeal_outcome === "restored" ? (relay ? "Reviewed: it counts after all. " : "Reviewed: it has been put back. ") : (relay ? "Reviewed: the decision stands. " : "Reviewed: the removal stands. ") }), d.appeal_note || ""]));
     } else if (d.appeal_at) {
       out.push(h("p", { class: "muted", text: "You asked for a review on " + BC.niceDate(d.appeal_at) + ". A moderator will look at it again." }));
     } else {
@@ -26,7 +39,7 @@
         });
       });
       out.push(text, h("div", { class: "actions" }, [ask]), err,
-        h("p", { class: "muted", style: "font-size:14px", text: "You can ask once for each removal. You also keep any right you have to take the matter to a dispute body or a court." }));
+        h("p", { class: "muted", style: "font-size:14px", text: "You can ask once for each decision. You also keep any right you have to take the matter to a dispute body or a court." }));
     }
     return h("div", { class: "panel queue-item" }, out);
   }
@@ -37,7 +50,7 @@
       var d = res.data, S = { open: "Waiting for a moderator", actioned: "Looked at: it was removed", dismissed: "Looked at: no action was taken" };
       root.textContent = "";
       root.appendChild(h("h2", { text: "Decisions about things you posted" }));
-      root.appendChild(d.decisions.length ? h("div", { class: "queue" }, d.decisions.map(decision)) : h("p", { class: "muted", text: "Nothing of yours has been removed." }));
+      root.appendChild(d.decisions.length ? h("div", { class: "queue" }, d.decisions.map(decision)) : h("p", { class: "muted", text: "No decisions have been made about anything of yours." }));
       root.appendChild(h("h2", { text: "Your reports" }));
       root.appendChild(d.reports.length ? h("div", { class: "queue" }, d.reports.map(function (r) {
         return h("div", { class: "panel queue-item" }, [

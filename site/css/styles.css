@@ -447,3 +447,5 @@ blockquote.agree { margin: 0; padding-left: 14px; border-left: 3px solid var(--a
 .callout h2 { margin: 2px 0 6px; font-size: 26px; }
 .callout .eyebrow { margin: 0; }
 @media (max-width: 600px) { .relay-entry { flex-wrap: wrap; } }
+.relay-title .pill { min-height: 0; cursor: default; }
+.relay-entry .form-grid { margin-top: 4px; }

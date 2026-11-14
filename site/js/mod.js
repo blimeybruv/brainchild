@@ -5,8 +5,14 @@
   var view = "open";
   function message(text) { root.textContent = ""; root.appendChild(h("p", { class: "muted", text: text })); }
   function btn(label, cls, onClick) { var b = h("button", { class: "btn " + cls, type: "button", text: label }); b.addEventListener("click", onClick); return b; }
+  var FLAGS = { no_change: "No real change", spam: "Spam", no_effort: "Auto-generated with no effort", ignored: "Ignored the instructions" };
+  function prLink(url, number, title) {
+    var label = "#" + number + (title ? " " + title : "");
+    return /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/pull\/\d+$/.test(url || "") ? h("a", { href: url, rel: "noopener noreferrer", target: "_blank", text: label }) : label;
+  }
   function target(r) {
     var link = h("a", { href: "project.html?id=" + encodeURIComponent(r.project_id), text: r.project_title || r.project_id });
+    if (r.target_type === "relay_pr") return [h("p", null, ["Relay pull request by @" + (r.affected || "someone") + " for ", link, ": ", prLink(r.pr_url, r.pr_number), " (marked as junk: " + (FLAGS[r.category] || r.category) + ")"])];
     return r.target_type === "comment"
       ? [h("p", null, ["Comment by @" + (r.comment_author || r.affected || "someone") + " on ", link, r.comment_removed ? " (already removed)" : ""]), h("blockquote", { class: "quote", text: r.comment_body || "[ no longer available ]" })]
       : [h("p", null, ["Project: ", link, r.project_owner ? " by @" + r.project_owner : "", r.project_hidden ? " (already removed)" : ""])];
@@ -59,16 +65,40 @@
       err
     ]);
   }
+  // A Relay pull request the winning maintainer flagged as junk.
+  function flagItem(f) {
+    var reasons = h("textarea", { class: "textarea", rows: "3", maxlength: "2000", "aria-label": "Reasons", placeholder: "To agree with the flag: what is wrong with the pull request. The contributor will read this." });
+    var err = h("p", { class: "form-error", role: "alert" });
+    function send(decision) {
+      err.textContent = "";
+      BC.api("POST", "/api/mod/relay-flags/" + f.id + "/resolve", { decision: decision, reasons: reasons.value }).then(function (res) {
+        if (res.ok) return load();
+        err.textContent = res.data.error === "invalid_fields" ? "Agreeing with a flag needs its reasons written out (at least a sentence)." : res.data.error === "own_flag" ? "You raised this flag yourself, so another moderator has to decide it. Until then the pull request still counts." : res.data.error === "already_resolved" ? "Someone already decided this flag." : BC.errorText(res.data.error);
+      });
+    }
+    return h("div", { class: "panel queue-item" }, [
+      h("h3", { text: (FLAGS[f.flag_reason] || f.flag_reason) + " · flagged by @" + (f.flagged_by || "the maintainer") + " · " + BC.niceDate(f.flagged_at) }),
+      h("p", null, ["Pull request by @" + f.contributor + " for ", h("a", { href: "relay.html?month=" + encodeURIComponent(f.month), text: f.project_title + " (Relay, " + f.month + ")" }), ": ", prLink(f.pr_url, f.pr_number, f.pr_title)]),
+      h("blockquote", { class: "quote", text: f.note }),
+      f.flag_note ? h("p", null, [h("strong", { text: "Maintainer's note: " }), f.flag_note]) : null,
+      view === "open" ? h("div", { class: "form-grid" }, [h("div", { class: "field wide" }, [reasons])]) : null,
+      view === "open" ? h("div", { class: "actions" }, [btn("Agree: it doesn't count", "btn-primary", function () { send("uphold"); }), btn("Clear the flag: it counts", "btn-ghost", function () { send("clear"); })])
+        : h("p", { class: "muted", text: "Outcome: " + f.flag_outcome + (f.flag_decided_at ? " on " + BC.niceDate(f.flag_decided_at) : "") + (f.flag_reasons ? " · " + f.flag_reasons : "") }),
+      err
+    ]);
+  }
   function appealItem(a) {
     var note = h("textarea", { class: "textarea", rows: "2", maxlength: "2000", "aria-label": "Note to the person", placeholder: "A short note to the person (optional)" });
     function send(decision) { BC.api("POST", "/api/mod/actions/" + a.id + "/appeal", { decision: decision, note: note.value }).then(load); }
     return h("div", { class: "panel queue-item" }, [
       h("h3", { text: "Review requested by @" + (a.affected || "someone") + " · " + BC.niceDate(a.appeal_at) })
     ].concat(target(a)).concat([
-      h("p", null, [h("strong", { text: "Why it was removed: " }), a.reasons]),
+      h("p", null, [h("strong", { text: a.target_type === "relay_pr" ? "Why it doesn't count: " : "Why it was removed: " }), a.reasons]),
       h("p", null, [h("strong", { text: "Their request: " }), a.appeal_text]),
       note,
-      h("div", { class: "actions" }, [btn("Put it back", "btn-primary", function () { send("restore"); }), btn("Keep it removed", "btn-ghost", function () { send("uphold"); })])
+      h("div", { class: "actions" }, a.target_type === "relay_pr"
+        ? [btn("Let it count after all", "btn-primary", function () { send("restore"); }), btn("Keep the decision", "btn-ghost", function () { send("uphold"); })]
+        : [btn("Put it back", "btn-primary", function () { send("restore"); }), btn("Keep it removed", "btn-ghost", function () { send("uphold"); })])
     ]));
   }
   function load() {
@@ -89,6 +119,10 @@
             h("p", { text: "From " + c.rating_old + notes(c.notes_old) + " to " + c.rating_new + notes(c.notes_new) })
           ]);
         })));
+      }
+      if (d.relay_flags && d.relay_flags.length) {
+        root.appendChild(h("h2", { text: view === "open" ? "Relay pull requests flagged as junk" : "Relay flags already decided" }));
+        root.appendChild(h("div", { class: "queue" }, d.relay_flags.map(flagItem)));
       }
       if (d.outside && d.outside.length) {
         root.appendChild(h("h2", { text: view === "open" ? "Reports from people who aren't signed in" : "Closed reports from people who weren't signed in" }));

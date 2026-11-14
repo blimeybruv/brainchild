@@ -167,7 +167,7 @@ window.BC.load(function () {
       note.textContent = {
         invalid_fields: "Choose a project and describe the goal in a sentence or two (10 to 300 characters).",
         already_proposed: "That project has already been proposed for this vote.",
-        too_many_proposals: "You can propose one project a month. Withdraw your proposal if you want to propose a different one.",
+        too_many_proposals: "You can propose three projects a month.",
         not_up_for_adoption: "Only projects that are up for adoption or open for collaboration can be proposed."
       }[code] || BC.errorText(code);
     });

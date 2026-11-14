@@ -465,3 +465,5 @@ blockquote.agree { margin: 0; padding-left: 14px; border-left: 3px solid var(--a
 @media (max-width: 600px) { .current-inner { flex-direction: column; } .current-inner .shot { width: 100%; } }
 .report-inline { display: flex; flex-direction: column; gap: 8px; }
 .report-inline .form-error:empty { display: none; }
+.stage-full { position: absolute; top: 10px; right: 10px; z-index: 2; width: 36px; height: 36px; display: grid; place-items: center; padding: 0; border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; background: rgba(0,0,0,0.45); color: #fff; cursor: pointer; opacity: 0.55; transition: opacity 0.15s; }
+.stage-full:hover, .stage-full:focus-visible { opacity: 1; }

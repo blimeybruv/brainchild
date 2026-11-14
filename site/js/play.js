@@ -34,6 +34,15 @@
       stage.appendChild(frame);
       // Bring the whole play area into the window, so the game's lower controls aren't below the fold.
       try { stage.scrollIntoView({ block: "start", behavior: "smooth" }); } catch (e) { stage.scrollIntoView(true); }
+      // A full-screen icon over the top-right corner of the game, as well as the button below it.
+      var corner = h("button", { class: "stage-full", type: "button", "aria-label": "Full screen", title: "Full screen" });
+      var NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg"), path = document.createElementNS(NS, "path");
+      svg.setAttribute("viewBox", "0 0 20 20"); svg.setAttribute("width", "20"); svg.setAttribute("height", "20"); svg.setAttribute("aria-hidden", "true");
+      path.setAttribute("d", "M2 7V2h5M13 2h5v5M18 13v5h-5M7 18H2v-5");
+      path.setAttribute("fill", "none"); path.setAttribute("stroke", "currentColor"); path.setAttribute("stroke-width", "2"); path.setAttribute("stroke-linecap", "round"); path.setAttribute("stroke-linejoin", "round");
+      svg.appendChild(path); corner.appendChild(svg);
+      corner.addEventListener("click", function () { if (frame.requestFullscreen) frame.requestFullscreen(); });
+      stage.appendChild(corner);
       var full = h("button", { class: "chip", type: "button", text: "Full screen" });
       full.addEventListener("click", function () { if (frame.requestFullscreen) frame.requestFullscreen(); });
       var stop = h("button", { class: "chip", type: "button", text: "Stop" });

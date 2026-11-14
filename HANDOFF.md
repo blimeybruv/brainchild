@@ -403,7 +403,7 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
      instead of fake ones.
    - Remove the sample blog posts and proposals.
    - Remove the sample Relay round for `2026-10` (id 2, with its entries, votes, tasks, contributions and
-     badges) and the `sample-*` users (`u-sample-ada` … `u-sample-finn`), added 14 Nov as a demonstration.
+     badges), the sample Blog proposals and votes for month `2026-11` (proposal ids 6–8), and the `sample-*` users (`u-sample-ada` … `u-sample-finn`), added 14 Nov as a demonstration.
    - Ask the owner first, and list what will go.
 
 ## Owner request, 14 Nov: GitLab sign-in, and linked accounts

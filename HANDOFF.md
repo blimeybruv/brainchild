@@ -384,6 +384,11 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    `grep -n 'href="#"' site/*.html`. "Source" now points to the GitHub repo.
    - **About:** write `site/about.html`, covering what Brainchild is, how handing off and adopting work,
      the house rules and the contact page. Keep it short and in the site's plain tone.
+     - **Include the reason the site exists:** too much AI-assisted software is made once, shared, and
+       never looked at again. Brainchild is for the opposite: handing projects on, adopting them,
+       improving them together (Relay rounds), and packets that let the next person or agent pick up
+       where the last one stopped.
+     - Put it in the site's own words. Don't quote or name other platforms.
    - **Licensing guide:** write `site/licenses.html`, a plain guide to the licenses the site accepts
      (reuse the license badge tooltip text). Cover what each one allows, that earlier releases can't be
      withdrawn, relicensing (permissive code yes, GPL stays GPL), Apache-2.0 and the project name, assets

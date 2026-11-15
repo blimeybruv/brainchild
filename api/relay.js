@@ -189,7 +189,7 @@ export async function roundView(env, session, month) {
   if (session) {
     // The projects this person could nominate: ones they maintain, with a verified repo.
     const { results: projects } = await env.DB.prepare(
-      "SELECT id, title FROM projects WHERE owner_id = ? AND repo_full_name IS NOT NULL AND COALESCE(repo_host, 'github') = 'github' AND hidden_at IS NULL ORDER BY title"
+      "SELECT id, title FROM projects WHERE owner_id = ? AND repo_full_name IS NOT NULL AND COALESCE(repo_host, 'github') IN ('github', 'gitlab') AND hidden_at IS NULL ORDER BY title"
     ).bind(session.userId).all();
     out.me.projects = projects;
     const { results: ranks } = await env.DB.prepare("SELECT entry_id, rank FROM relay_votes WHERE round_id = ? AND voter_id = ?").bind(round.id, session.userId).all();
@@ -229,8 +229,9 @@ export async function enterRelay(request, env, session) {
   const el = await eligibility(env, session.userId, round);
   if (!el.eligible) return bad("not_eligible", 409, { missed_month: el.missed_month });
   // GitHub is asked now: the entrant must still control the repo, and it must be able to take pull requests.
-  // Contributions are checked as GitHub pull requests, so for now only GitHub projects can enter.
-  if ((p.repo_host || "github") !== "github") return bad("relay_github_only", 409);
+  // Contributions are checked as GitHub pull requests or GitLab.com merge requests. A self-hosted GitLab
+  // can't tell Brainchild who opened a merge request, so those projects can't enter.
+  if (!["github", "gitlab"].includes(p.repo_host || "github")) return bad("relay_github_only", 409);
   const own = await requireProjectAdmin(env, session, p);
   if (own.response) return own.response;
   if (own.repo.archived) return bad("repo_archived", 409);

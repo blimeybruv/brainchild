@@ -3,9 +3,10 @@
 //
 // Rules encoded in this file (HANDOFF.md, "Relay rules"):
 //   - Only the winning maintainer (the person who entered the winning project) posts tasks.
-//   - A contribution is a pull request on the winner's repo. GitHub is asked when it is submitted:
-//     the PR's author must be the signed-in person's GitHub account, its base must be the winner's
-//     repo, and it must have been opened during the round's month. It doesn't have to be merged.
+//   - A contribution is a pull request on the winner's repo (a merge request when the winner is on
+//     GitLab.com). The host is asked when it is submitted: the author must be the signed-in person's
+//     own GitHub or GitLab account, the target must be the winner's repo, and it must have been opened
+//     during the round's month. It doesn't have to be merged.
 //   - Anyone signed in may contribute except the winner. A contribution is for a task or is a
 //     "wildcard" (the contributor's own idea).
 //   - The maintainer can flag a contribution as junk, with a reason. A flag does nothing by itself:
@@ -15,6 +16,8 @@
 
 import { privateJson, isSameOrigin } from "./http.js";
 import { githubGet } from "./github.js";
+import { gitlabGet } from "./gitlab.js";
+import { repoUrl } from "./forge.js";
 import { isModerator } from "./auth.js";
 import { bad, readJson, text, relayNow, calendar, roundFor, roundView } from "./relay.js";
 import { roundBadges, canAward } from "./relay-badges.js";
@@ -39,7 +42,7 @@ const decided = (round) => round.status === "running" || round.status === "revie
 async function winnerOf(env, round) {
   if (!round.winner_entry_id) return null;
   return env.DB.prepare(
-    `SELECT e.id, e.user_id, e.project_id, u.handle AS maintainer, p.title, p.repo_full_name, p.repo_id
+    `SELECT e.id, e.user_id, e.project_id, u.handle AS maintainer, p.title, p.repo_full_name, p.repo_id, COALESCE(p.repo_host, 'github') AS repo_host
        FROM relay_entries e JOIN projects p ON p.id = e.project_id JOIN users u ON u.id = e.user_id WHERE e.id = ?`
   ).bind(round.winner_entry_id).first();
 }
@@ -67,7 +70,7 @@ export async function relayState(env, session, url) {
   ).bind(round.id).all();
   out.board = {
     project_id: w.project_id, project_title: w.title, maintainer: w.maintainer,
-    repo: w.repo_full_name, repo_url: w.repo_full_name ? "https://github.com/" + w.repo_full_name : null,
+    repo: w.repo_full_name, repo_url: w.repo_full_name ? repoUrl(w.repo_host, w.repo_full_name) : null, repo_host: w.repo_host,
     open: round.status === "running",                                   // tasks can be posted and claimed
     accepting: round.status === "running" || round.status === "review", // contributions can be submitted and flagged
     tasks: tasks.map((t) => ({
@@ -167,6 +170,9 @@ export async function taskAction(request, env, session, id, action) {
 }
 
 const PR = /^(?:https:\/\/github\.com\/([A-Za-z0-9_.-]{1,100})\/([A-Za-z0-9_.-]{1,100})\/pull\/)?#?(\d{1,9})(?:[/?#][^\s]*)?$/;
+// GitLab: https://gitlab.com/group/sub/project/-/merge_requests/12, !12 or 12. Only the number is used:
+// it is always looked up on the winner's own project.
+const MR = /^(?:https:\/\/gitlab\.com\/[A-Za-z0-9_.\/-]{3,400}\/-\/merge_requests\/|!)?(\d{1,9})(?:[/?#][^\s]*)?$/;
 
 // POST /api/relay/contributions  { pr, task_id (or null for a wildcard), note, month }
 export async function addContribution(request, env, session) {
@@ -175,10 +181,10 @@ export async function addContribution(request, env, session) {
   const body = await readJson(request);
   if (!body) return bad("bad_request");
   const note = clean(body.note, 300);
-  const pr = typeof body.pr === "string" ? body.pr.trim().match(PR) : null;
+  const raw = typeof body.pr === "string" ? body.pr.trim() : "";
   const taskId = body.task_id === null || body.task_id === undefined ? null : Number.isSafeInteger(body.task_id) ? body.task_id : NaN;
   const fields = [];
-  if (!pr) fields.push("pr");
+  if (!raw.match(PR) && !raw.match(MR)) fields.push("pr");
   if (!note || note.length < 10) fields.push("note");
   if (Number.isNaN(taskId)) fields.push("task_id");
   if (fields.length) return bad("invalid_fields", 400, { fields });
@@ -194,6 +200,10 @@ export async function addContribution(request, env, session) {
   }
   const mine = await env.DB.prepare("SELECT COUNT(*) AS n FROM relay_contributions WHERE round_id = ? AND user_id = ?").bind(round.id, session.userId).first();
   if (mine.n >= MAX_CONTRIBUTIONS_EACH) return bad("too_many", 409);
+  if (w.repo_host === "gitlab") return gitlabContribution(env, session, round, w, raw, taskId, note);
+  if (w.repo_host !== "github") return bad("contributions_closed", 409);
+  const pr = raw.match(PR);
+  if (!pr) return bad("invalid_fields", 400, { fields: ["pr"] });
 
   // Ask GitHub about the pull request, as the person submitting it. A full link is looked up where
   // it points (so a renamed repo still works) and then checked against the winner's repo id.
@@ -225,6 +235,38 @@ export async function addContribution(request, env, session) {
     return privateJson({ ok: true, contribution_id: r.meta.last_row_id }, 201);
   } catch {
     return bad("already_submitted", 409); // each pull request is entered once
+  }
+}
+
+// A merge request on a GitLab.com winner, checked as the person submitting it with their linked GitLab account.
+async function gitlabContribution(env, session, round, w, raw, taskId, note) {
+  const mr = raw.match(MR);
+  if (!mr) return bad("invalid_fields", 400, { fields: ["pr"] });
+  if (!session.gitlabId) return bad("gitlab_sign_in_again", 401);
+  const iid = Number(mr[1]);
+  const g = await gitlabGet(env, session, "/projects/" + w.repo_id + "/merge_requests/" + iid);
+  if (g.reauth) return bad("gitlab_sign_in_again", 401);
+  if (g.status === 404) return bad("pr_not_found", 404);
+  const d = g.data;
+  if (g.status !== 200 || !d || d.iid !== iid || !d.author || !Number.isSafeInteger(d.author.id) || !Number.isSafeInteger(d.target_project_id) || typeof d.created_at !== "string") {
+    console.error("relay: merge request lookup failed, status", g.status);
+    return bad("gitlab_error", 502);
+  }
+  if (d.target_project_id !== w.repo_id) return bad("pr_wrong_repo", 409);
+  if (d.author.id !== session.gitlabId) return bad("pr_not_yours", 409);
+  const opened = new Date(d.created_at), cal = calendar(round.month);
+  if (Number.isNaN(opened.getTime())) return bad("gitlab_error", 502);
+  const day = opened.toISOString().slice(0, 10);
+  if (day < cal.starts || day > cal.ends) return bad("pr_outside_round", 409);
+  const title = clean(typeof d.title === "string" ? d.title.slice(0, 200) : "", 200) || "Merge request !" + iid;
+  try {
+    const r = await env.DB.prepare(
+      `INSERT INTO relay_contributions (round_id, user_id, task_id, pr_number, pr_url, pr_title, pr_opened_at, note, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(round.id, session.userId, taskId, iid, repoUrl("gitlab", w.repo_full_name) + "/-/merge_requests/" + iid, title, text(opened), note, text(relayNow(env))).run();
+    return privateJson({ ok: true, contribution_id: r.meta.last_row_id }, 201);
+  } catch {
+    return bad("already_submitted", 409);
   }
 }
 

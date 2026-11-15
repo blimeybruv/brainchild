@@ -131,7 +131,7 @@
     verify_file_missing: "Brainchild couldn't find your code in brainchild-verify.txt at the top of the default branch. Commit the file, then check again.",
     verify_code_not_yours: "The code in brainchild-verify.txt wasn't issued to you for this project. Get a new code and commit that.",
     verify_code_stale: "The code in brainchild-verify.txt has already been used or is more than a week old. Get a new code and commit that.",
-    relay_github_only: "For now only projects on GitHub can enter Relay rounds, because contributions are checked as GitHub pull requests.",
+    relay_github_only: "Projects on a self-hosted GitLab can't enter Relay rounds, because Brainchild can't check who opened a merge request there.",
     forbidden: "That request wasn't allowed. Reload the page and try again.",
     repo_not_found: "GitHub can't find that repository. Check the address; private repositories can't be listed.",
     repo_not_public: "That repository is private. Only public repositories can be listed.",

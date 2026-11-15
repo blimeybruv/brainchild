@@ -8,7 +8,7 @@
   var FLAGS = { no_change: "No real change", spam: "Spam", no_effort: "Auto-generated with no effort", ignored: "Ignored the instructions" };
   function prLink(url, number, title) {
     var label = "#" + number + (title ? " " + title : "");
-    return /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/pull\/\d+$/.test(url || "") ? h("a", { href: url, rel: "noopener noreferrer", target: "_blank", text: label }) : label;
+    return /^https:\/\/(github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/pull|gitlab\.com\/[A-Za-z0-9_.-]+(\/[A-Za-z0-9_.-]+){1,5}\/-\/merge_requests)\/\d+$/.test(url || "") ? h("a", { href: url, rel: "noopener noreferrer", target: "_blank", text: label }) : label;
   }
   function target(r) {
     var link = h("a", { href: "project.html?id=" + encodeURIComponent(r.project_id), text: r.project_title || r.project_id });

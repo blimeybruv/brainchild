@@ -354,6 +354,8 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
     - Sign out, then sign in again choosing **Continue with GitLab**: you should land on the same account.
     - Optional: if you have a public GitLab project, try **List a project**, choose **GitLab.com**, and
       check that it appears with a "Maintainer" label.
+    - Self-hosted GitLab and the moderators' "Merge two accounts" tool (foot of the Moderation page) are
+      also live; only the stand-in has tested them.
 10. **Relay rounds are finished and live; the first real round opens on 1 Dec.** Nothing in them has been
     used by real people yet. The pull request check has only run against a stand-in for GitHub, so the
     first real contribution is the real test: if GitHub refuses the lookup, the person sees "GitHub
@@ -471,7 +473,7 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
     `forked_from_project`; transfers keep the project id.
   - Codeberg addresses get "Codeberg isn't supported"; other self-hosted addresses get "Only projects on
     GitLab.com can be listed for now".
-  - Relay rounds stay GitHub-only for now: GitLab projects aren't offered for entry ("relay_github_only").
+  - Relay rounds: see below (GitLab.com projects can enter since 15 Nov; self-hosted ones can't).
 - **Done 15 Nov: the manual merge tool** (`api/merge.js`, migration `0017`, "Merge two accounts" at the
   foot of the Moderation page).
   - The moderator types the account to fold in and the account to keep, previews both (sign-ins and a
@@ -500,9 +502,15 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
     ports, no user names in the address, no `localhost`, `.internal`, `.local` and similar names, and it
     doesn't follow redirects. Answers are size-capped. Links come from Brainchild, never from the
     instance's own `web_url`.
-  - Self-hosted projects can't enter Relay rounds (Relay is GitHub-only for now).
-- **Still to build (next batches):**
-  1. Relay contributions on a GitLab winner (merge requests, matched to the contributor's GitLab sign-in).
+  - Self-hosted projects can't enter Relay rounds: Brainchild can't check who opened a merge request there.
+- **Done 15 Nov: Relay rounds for GitLab.com projects.** They can be entered (checked on GitLab like
+  any other change). For a GitLab winner, a contribution is a merge request: a link, `!12` or just the
+  number, always looked up on the winner's own project. Its author must be the contributor's linked
+  GitLab account, and it must have been opened during the round's month. A contributor without a linked
+  GitLab account is asked to connect one. Self-hosted GitLab projects still can't enter, because
+  Brainchild can't check who opened a merge request there.
+- **The GitLab request is complete.** What's left is for the owner to try it on the live site (see
+  "Waiting on the owner").
 
 **Linked accounts.**
 - **Accounts:** one Brainchild account per person (handle, badges, comments, lineage, votes), with any

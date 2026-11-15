@@ -6,7 +6,7 @@
   var FLAGS = { no_change: "no real change", spam: "spam", no_effort: "auto-generated with no effort", ignored: "ignored the instructions" };
   // A Relay pull request that a moderator agreed was junk.
   function relayDecision(d) {
-    var safe = /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/pull\/\d+$/.test(d.pr_url || "");
+    var safe = /^https:\/\/(github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/pull|gitlab\.com\/[A-Za-z0-9_.-]+(\/[A-Za-z0-9_.-]+){1,5}\/-\/merge_requests)\/\d+$/.test(d.pr_url || "");
     return [
       h("h3", { text: "Your pull request for \"" + (d.project_title || d.project_id) + "\" doesn't count towards its Relay round · " + BC.niceDate(d.created_at) }),
       d.pr_number ? h("p", null, [safe ? h("a", { href: d.pr_url, rel: "noopener noreferrer", target: "_blank", text: "Pull request #" + d.pr_number }) : "Pull request #" + d.pr_number]) : null,

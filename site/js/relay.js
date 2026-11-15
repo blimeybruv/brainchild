@@ -23,12 +23,12 @@
         st.error = {
           entry_closed: "Entry for this round has closed.", voting_closed: "Voting isn't open right now.", already_entered: "You've already entered this round, or that project is already in it.",
           not_an_entrant: "Only people who entered a project in this round can rank.", own_project: "You can't rank your own project.",
-          repo_archived: "That repository is archived on GitHub, so it can't take pull requests. Unarchive it first.",
+          repo_archived: "That repository is archived, so it can't take pull requests. Unarchive it first.",
           listing_not_verified: "List that project again through List a project first, so its repository is verified.",
           not_maintainer: "You can only enter a project you maintain.",
           board_closed: "The task board is only open during the round's month.", contributions_closed: "This round is no longer taking contributions.",
-          pr_not_found: "GitHub couldn't find that pull request. Check the link.", pr_wrong_repo: "That pull request isn't on the winning project's repository.",
-          pr_not_yours: "That pull request was opened by a different GitHub account from the one you're signed in with.",
+          pr_not_found: "That pull request (or merge request) couldn't be found on the winning project. Check the link or number.", pr_wrong_repo: "That pull request isn't on the winning project's repository.",
+          pr_not_yours: "That pull request was opened by a different account from the GitHub or GitLab account linked to your Brainchild account.",
           pr_outside_round: "That pull request wasn't opened during this round's month, so it can't count for this round.",
           already_submitted: "That pull request has already been submitted.", too_many: "That's the most this round allows.",
           already_flagged: "This contribution has been flagged, so it can't be changed now.",
@@ -37,7 +37,7 @@
           own_contribution: "You can't award a badge to yourself.", not_counting: "A badge can only go to a pull request that counts.", not_a_wildcard: "Best wildcard can only go to a wildcard contribution.",
           invalid_fields: {
             pitch: "Say in a sentence or two what a month of help would get done (10 to 300 characters).",
-            pr: "Paste the link to your pull request, for example https://github.com/owner/repo/pull/12.",
+            pr: d && d.board && d.board.repo_host === "gitlab" ? "Paste the link to your merge request, for example https://gitlab.com/group/project/-/merge_requests/12, or just its number." : "Paste the link to your pull request, for example https://github.com/owner/repo/pull/12.",
             note: where === "sub" ? "Say in a sentence or two what you tried and why (10 to 300 characters)." : "Keep the note under 500 characters.",
             title: "Give the task a title (5 to 120 characters).", tag: "Keep the label to 20 characters.", detail: "Keep the details under 500 characters.",
             task_id: "That task is no longer on the board. Choose another, or submit as a wildcard.", reason: "Choose a reason for the flag."
@@ -205,13 +205,14 @@
     var sel = h("select", { class: "select", id: "sub-task" }, b.tasks.map(function (t) { return h("option", { value: String(t.id), text: t.tag + ": " + t.title }); }).concat([h("option", { value: "", text: "Wildcard: my own idea" })]));
     sel.value = st.sub.task; if (sel.value !== st.sub.task) { sel.value = ""; st.sub.task = ""; }
     sel.addEventListener("change", function () { st.sub.task = sel.value; });
-    var safeRepo = b.repo_url && /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(b.repo_url);
+    var glw = b.repo_host === "gitlab";
+    var safeRepo = b.repo_url && /^https:\/\/(github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+|gitlab\.com\/[A-Za-z0-9_.-]+(\/[A-Za-z0-9_.-]+){1,5})$/.test(b.repo_url);
     out.push(h("section", { class: "panel wizard" }, [
       h("h3", { text: "Submit your contribution to " + b.project_title }),
-      h("p", { class: "muted" }, ["Open a pull request on ", safeRepo ? h("a", { href: b.repo_url, rel: "noopener noreferrer", target: "_blank", text: b.repo }) : (b.repo || "the project's repository"),
-        " first, from the GitHub account you're signed in with. It has to be opened during " + monthName(r.month) + ". It doesn't have to be merged to count, only real."]),
+      h("p", { class: "muted" }, [glw ? "Open a merge request on " : "Open a pull request on ", safeRepo ? h("a", { href: b.repo_url, rel: "noopener noreferrer", target: "_blank", text: b.repo }) : (b.repo || "the project's repository"),
+        " first, from " + (glw ? "the GitLab account linked to your Brainchild account" : "the GitHub account linked to your Brainchild account") + ". It has to be opened during " + monthName(r.month) + ". It doesn't have to be merged to count, only real."]),
       h("div", { class: "form-grid" }, [
-        h("div", { class: "field wide" }, [h("label", { for: "sub-pr", text: "Pull request link" }), input("sub-pr", st.sub.pr, { maxlength: "300", placeholder: "https://github.com/" + (b.repo || "owner/repo") + "/pull/12", inputmode: "url" }, function (v) { st.sub.pr = v; })]),
+        h("div", { class: "field wide" }, [h("label", { for: "sub-pr", text: glw ? "Merge request link" : "Pull request link" }), input("sub-pr", st.sub.pr, { maxlength: "300", placeholder: glw ? "https://gitlab.com/" + (b.repo || "group/project") + "/-/merge_requests/12" : "https://github.com/" + (b.repo || "owner/repo") + "/pull/12", inputmode: "url" }, function (v) { st.sub.pr = v; })]),
         h("div", { class: "field wide" }, [h("label", { for: "sub-task", text: "Task" }), sel]),
         h("div", { class: "field wide" }, [h("label", { for: "sub-note", text: "What did you try, and why? (one or two sentences)" }), area("sub-note", st.sub.note, { maxlength: "300" }, function (v) { st.sub.note = v; })])
       ]),
@@ -225,14 +226,14 @@
 
   function contributionRow(c) {
     var b = d.board, me = d.me;
-    var safe = /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/pull\/\d+$/.test(c.pr_url);
+    var safe = /^https:\/\/(github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/pull|gitlab\.com\/[A-Za-z0-9_.-]+(\/[A-Za-z0-9_.-]+){1,5}\/-\/merge_requests)\/\d+$/.test(c.pr_url), mark = /\/merge_requests\//.test(c.pr_url) ? "!" : "#";
     var mineBadges = (d.badges || []).filter(function (x) { return x.contribution_id === c.id; });
     var parts = [
       h("p", { class: "relay-title" }, [userLink(c.user), h("span", { class: "pill" + (c.wildcard ? " amber" : ""), text: c.wildcard ? "Wildcard" : c.tag || "Task" }),
         mineBadges.length ? h("span", null, mineBadges.map(function (x) { return h("span", { class: "pill amber", text: "★ " + x.label }); })) : null,
         c.status === "under_review" ? h("span", { class: "pill", text: "Flagged · under review" }) : c.status === "not_counted" ? h("span", { class: "pill", text: "Doesn't count" }) : null,
         c.mine ? h("span", { class: "pill amber", text: "Yours" }) : null]),
-      h("p", null, [safe ? h("a", { href: c.pr_url, rel: "noopener noreferrer", target: "_blank", text: "#" + c.pr_number + " " + c.pr_title }) : "#" + c.pr_number + " " + c.pr_title]),
+      h("p", null, [safe ? h("a", { href: c.pr_url, rel: "noopener noreferrer", target: "_blank", text: mark + c.pr_number + " " + c.pr_title }) : mark + c.pr_number + " " + c.pr_title]),
       c.wildcard ? null : h("p", { class: "muted", text: "Task: " + (c.task || "removed from the board") }),
       h("p", { text: "\u201c" + c.note + "\u201d" })
     ];

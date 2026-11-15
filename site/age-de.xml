@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<age-declaration>
+<!-- Age label for German youth-protection software, in the OMK age-de.xml format (v3.0).
+     Owner's decision, 15 Nov 2026: the site default is 18, and every page carries its own HTML meta
+     label: age=0, except Mature project pages, which carry age=18 (added by the site Worker). -->
+<ageblock-basic>
+<age-issuer>brainchild.nexus</age-issuer>
+<last-change>2026-11-15</last-change>
+<country>de</country>
+<label-version>1.0</label-version>
+<revisit-after>1days</revisit-after>
+</ageblock-basic>
+<ageblock-labeltype>
+<htmlmeta>true</htmlmeta>
+<default-age>18</default-age>
+</ageblock-labeltype>
+<ageblock-labeltype-definition>
+<labeltype-htmlmeta-definition>
+<label class="default">
+<min-age>0</min-age>
+<default-age>18</default-age>
+</label>
+<label class="site">
+<unit>Brainchild</unit>
+<scope>brainchild.nexus</scope>
+<scope>www.brainchild.nexus</scope>
+<min-age>0</min-age>
+<default-age>18</default-age>
+</label>
+</labeltype-htmlmeta-definition>
+</ageblock-labeltype-definition>
+</age-declaration>

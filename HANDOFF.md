@@ -346,7 +346,7 @@ what waits on the owner.** What is left:
    owner's pull request, can't be reviewed by anyone, so that pull request keeps counting. Adding a
    second moderator fixes it: give the agent their GitHub username and it adds their id to
    `MODERATOR_GITHUB_IDS` in `api/auth.js`.
-12. **The German age label: a question (15 Nov).** The age-label guides say `default-age` in
+12. **The German age label: answered 15 Nov (option b) and built.** The question was: The age-label guides say `default-age` in
     `/age-de.xml` should be the highest age on the domain (18 here), because it's what filters use when
     they can't read a page's own label. With the site default at 0 as decided, a filter that misses a
     Mature page's label would let it through. The guides also differ on the meta label's format (one
@@ -691,6 +691,22 @@ column `base_game`), so there is no migration and the CHECK constraint stays as 
     the raw HTML, not what JavaScript renders. So the site Worker must add the per-page label to the HTML
     response, e.g. with HTMLRewriter, after looking up the project's rating. Never set it from client-side JS.
   - Use the OMK v3.0 format linked in Opus's note. Where the guides disagree, follow the OMK document.
+  - **Done 15 Nov.**
+    - `site/age-de.xml` follows the OMK age-de.xml v3.0g document (its "Attachment 5" example):
+      `default-age` 18, `htmlmeta` true, and an htmlmeta definition for `brainchild.nexus`. `age-issuer`
+      is `brainchild.nexus`, since the site labels itself.
+    - Every page has `<meta name="age-de-meta-label" content="age=0 info=https://brainchild.nexus/age-de.xml
+      v=1.0 area=brainchild.nexus protocol=all">` in its HTML (format from section 15.2). The OMK document
+      has no "hash"; that came from a different guide, so it isn't used.
+    - `/project` and `/project.html` now go through the site Worker (`run_worker_first` in `wrangler.jsonc`).
+      For a Mature listing it rewrites that tag to `age=18` with HTMLRewriter and sends `no-cache`, so a
+      re-rating takes effect at once. If the rating can't be read, the page says 18.
+    - **Added by the agent, same rule:** each hosted game (`<project>.brainwave.nexus`) is its own domain, and
+      youth-protection software reads `age-de.xml` per domain. The builds Worker now answers `/age-de.xml`
+      on every game's address with `default-age` 18 for Mature projects (and for anything not listed) and 0
+      otherwise; a game's own uploaded `age-de.xml` is never served. The bare `brainwave.nexus` says 0.
+    - Not used: the `X-content-age` HTTP header (section 14). It must only go on HTML pages, which the
+      static `_headers` file can't single out cleanly; the meta label covers every page.
 - **Fallback:** if a complaint ever arrives, hiding Mature listings for `CF-IPCountry: DE` is the
   fallback. Don't build it now.
 - **"Historical symbols" is dropped (owner's decision):** it's removed from content notes in `list.js`

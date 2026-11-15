@@ -39,16 +39,36 @@ function page(status, title, text) {
   });
 }
 
+// OMK age-de.xml (v3.0): one age for the whole address.
+function ageXml(age) {
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>\n<age-declaration>\n<ageblock-basic>\n<age-issuer>brainchild.nexus</age-issuer>\n' +
+    '<last-change>2026-11-15</last-change>\n<country>de</country>\n<label-version>1.0</label-version>\n<revisit-after>1days</revisit-after>\n</ageblock-basic>\n' +
+    '<ageblock-labeltype>\n<default-age>' + age + '</default-age>\n</ageblock-labeltype>\n</age-declaration>\n';
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const host = url.hostname.toLowerCase();
     if (request.method !== "GET" && request.method !== "HEAD") return new Response("Method not allowed", { status: 405, headers: { allow: "GET, HEAD" } });
     if (host === BUILD_HOST || host === "www." + BUILD_HOST || !host.endsWith("." + BUILD_HOST)) {
+      if (url.pathname === "/age-de.xml") return new Response(ageXml(0), { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=300" } });
       return page(200, "Brainwave", "This address hosts playable builds of projects listed on Brainchild. Each game runs here, apart from the main site.");
     }
     const projectId = host.slice(0, -(BUILD_HOST.length + 1));
     if (!/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(projectId)) return page(404, "Not found", "There is no game at this address.");
+
+    // The age label for German youth-protection software, for this game's own address (each game is a
+    // separate FQDN). It follows the project's rating on Brainchild: 18 for Mature, otherwise 0. A game
+    // can't supply its own age-de.xml: this one is always served instead.
+    if (url.pathname === "/age-de.xml") {
+      let age = 18; // a game that isn't listed, or a rating that can't be read, is treated as 18
+      try {
+        const p = await env.DB.prepare("SELECT rating FROM projects WHERE id = ? AND hidden_at IS NULL").bind(projectId).first();
+        if (p) age = p.rating === "mature" ? 18 : 0;
+      } catch { age = 18; }
+      return new Response(ageXml(age), { headers: { "content-type": "application/xml; charset=utf-8", "cache-control": "public, max-age=300", "x-content-type-options": "nosniff" } });
+    }
 
     let path;
     try { path = decodeURIComponent(url.pathname).replace(/^\/+/, ""); } catch { path = null; }

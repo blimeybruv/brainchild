@@ -320,12 +320,33 @@ async function handleApi(request, env, ctx, url) {
   return response;
 }
 
+// The project page is one static file for every project, and youth-protection software reads the raw
+// HTML. So for a Mature listing the Worker rewrites the page's age label from 0 to 18 here, never in the
+// browser (owner's decision, 15 Nov: /age-de.xml defaults to 18; every page says 0 except Mature ones).
+const AGE_META = (age) => "age=" + age + " info=https://brainchild.nexus/age-de.xml v=1.0 area=brainchild.nexus protocol=all";
+async function projectPage(request, env, url) {
+  const res = await env.ASSETS.fetch(request);
+  const id = url.searchParams.get("id") || "";
+  if (res.status !== 200 || !/^[a-z0-9-]{1,80}$/.test(id) || !(res.headers.get("content-type") || "").includes("text/html")) return res;
+  let mature = false;
+  try {
+    const p = await env.DB.prepare("SELECT rating FROM projects WHERE id = ? AND hidden_at IS NULL").bind(id).first();
+    mature = !!p && p.rating === "mature";
+  } catch { mature = true; } // if the rating can't be read, err on the side of 18
+  if (!mature) return res;
+  const out = new HTMLRewriter().on('meta[name="age-de-meta-label"]', { element(el) { el.setAttribute("content", AGE_META(18)); } }).transform(res);
+  const headers = new Headers(out.headers);
+  headers.set("cache-control", "no-cache"); // the label follows the rating, which a moderator can change
+  return new Response(out.body, { status: out.status, headers });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (url.pathname === "/api" || url.pathname.startsWith("/api/")) {
       return handleApi(request, env, ctx, url);
     }
+    if (url.pathname === "/project" || url.pathname === "/project.html") return projectPage(request, env, url);
     // Anything else is a static file (or the 404 page) from site/.
     return env.ASSETS.fetch(request);
   }

@@ -19,6 +19,29 @@
       ? [h("p", null, ["Comment by @" + (r.comment_author || r.affected || "someone") + " on ", link, r.comment_removed ? " (already removed)" : ""]), h("blockquote", { class: "quote", text: r.comment_body || "[ no longer available ]" })]
       : [h("p", null, ["Project: ", link, r.project_owner ? " by @" + r.project_owner : "", r.project_hidden ? " (already removed)" : ""])];
   }
+  // Re-rating a listing that doesn't match the criteria, with a statement of reasons for the maintainer.
+  var RATING_NOTES = ["Violence", "Blood", "Horror", "Strong language", "Drug references", "Gambling-style mechanics"];
+  function rerateForm(projectId, reportId, err) {
+    var sel = h("select", { class: "select", "aria-label": "New rating" }, [["everyone", "Everyone"], ["teen", "Teen"], ["mature", "Mature"]].map(function (x) { return h("option", { value: x[0], text: x[1] }); }));
+    sel.value = "mature";
+    var boxes = RATING_NOTES.map(function (n) { return { n: n, el: h("input", { type: "checkbox" }) }; });
+    var why = h("textarea", { class: "textarea", rows: "2", maxlength: "2000", "aria-label": "Reasons for the new rating", placeholder: "Why, against the criteria (the maintainer will read this)" });
+    return h("div", { class: "panel rerate" }, [
+      h("p", { class: "muted", text: "Everyone: " + BC.RATINGS.everyone + " Teen: " + BC.RATINGS.teen + " Mature: " + BC.RATINGS.mature }),
+      sel,
+      h("div", { class: "check-list" }, boxes.map(function (b) { return h("label", null, [b.el, h("span", { text: b.n })]); })),
+      why,
+      h("div", { class: "actions" }, [btn("Change the rating", "btn-primary", function () {
+        err.textContent = "";
+        BC.api("POST", "/api/mod/projects/" + encodeURIComponent(projectId) + "/rating", { rating: sel.value, content_notes: boxes.filter(function (b) { return b.el.checked; }).map(function (b) { return b.n; }), reasons: why.value, report_id: reportId })
+          .then(function (res) {
+            if (res.ok) return load();
+            err.textContent = res.data.error === "invalid_fields" ? "A new rating needs its reasons written out (at least a sentence)." : res.data.error === "no_change" ? "That's already its rating and notes." : BC.errorText(res.data.error);
+          });
+      })])
+    ]);
+  }
+
   // A report that is really a submission: copy its text into a draft post and open the editor.
   function toDraft(url, err) {
     BC.api("POST", url, {}).then(function (res) {
@@ -43,7 +66,8 @@
       r.details ? h("p", null, [h("strong", { text: "Reporter's details: " }), r.details]) : null,
       view === "open" ? h("div", { class: "form-grid" }, [h("div", { class: "field wide" }, [reasons]), h("div", { class: "field" }, [ground])]) : null,
       view === "open" ? h("div", { class: "actions" }, [btn("Remove it", "btn-primary", function () { send("remove"); }), btn("Dismiss the report", "btn-ghost", function () { send("dismiss"); }),
-        r.details ? btn("Turn into a draft post", "btn-ghost", function () { toDraft("/api/mod/reports/" + r.id + "/draft", err); }) : null]) : h("p", { class: "muted", text: "Outcome: " + r.status + (r.resolved_at ? " on " + BC.niceDate(r.resolved_at) : "") + (r.resolution_note ? " · " + r.resolution_note : "") }),
+        r.details ? btn("Turn into a draft post", "btn-ghost", function () { toDraft("/api/mod/reports/" + r.id + "/draft", err); }) : null,
+        r.target_type === "project" && !r.project_hidden ? btn("Change rating…", "btn-ghost", function (e) { e.target.replaceWith(rerateForm(r.project_id, r.id, err)); }) : null]) : h("p", { class: "muted", text: "Outcome: " + r.status + (r.resolved_at ? " on " + BC.niceDate(r.resolved_at) : "") + (r.resolution_note ? " · " + r.resolution_note : "") }),
       err
     ]));
   }
@@ -98,16 +122,26 @@
       err
     ]);
   }
+  function ratingLine(json) {
+    var v = null;
+    try { v = JSON.parse(json || "null"); } catch (e) { v = null; }
+    if (!v) return "?";
+    var name = { everyone: "Everyone", teen: "Teen", mature: "Mature" }[v.rating] || v.rating;
+    return name + (v.content_notes && v.content_notes.length ? " (" + v.content_notes.join(", ").toLowerCase() + ")" : "");
+  }
   function appealItem(a) {
     var note = h("textarea", { class: "textarea", rows: "2", maxlength: "2000", "aria-label": "Note to the person", placeholder: "A short note to the person (optional)" });
     function send(decision) { BC.api("POST", "/api/mod/actions/" + a.id + "/appeal", { decision: decision, note: note.value }).then(load); }
     return h("div", { class: "panel queue-item" }, [
       h("h3", { text: "Review requested by @" + (a.affected || "someone") + " · " + BC.niceDate(a.appeal_at) })
     ].concat(target(a)).concat([
-      h("p", null, [h("strong", { text: a.target_type === "relay_pr" ? "Why it doesn't count: " : "Why it was removed: " }), a.reasons]),
+      a.action === "rerate" ? h("p", { text: "Rating changed by a moderator: " + ratingLine(a.old_value) + " → " + ratingLine(a.new_value) }) : null,
+      h("p", null, [h("strong", { text: a.action === "rerate" ? "Why: " : a.target_type === "relay_pr" ? "Why it doesn't count: " : "Why it was removed: " }), a.reasons]),
       h("p", null, [h("strong", { text: "Their request: " }), a.appeal_text]),
       note,
-      h("div", { class: "actions" }, a.target_type === "relay_pr"
+      h("div", { class: "actions" }, a.action === "rerate"
+        ? [btn("Restore the maker's rating", "btn-primary", function () { send("restore"); }), btn("Keep the new rating", "btn-ghost", function () { send("uphold"); })]
+        : a.target_type === "relay_pr"
         ? [btn("Let it count after all", "btn-primary", function () { send("restore"); }), btn("Keep the decision", "btn-ghost", function () { send("uphold"); })]
         : [btn("Put it back", "btn-primary", function () { send("restore"); }), btn("Keep it removed", "btn-ghost", function () { send("uphold"); })])
     ]));

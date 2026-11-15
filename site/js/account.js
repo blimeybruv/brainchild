@@ -15,9 +15,24 @@
         "Nothing was removed: the pull request stays on GitHub. Another pull request in the same round can still count." })
     ];
   }
+  function ratingLine(json) {
+    var v = null;
+    try { v = JSON.parse(json || "null"); } catch (e) { v = null; }
+    if (!v) return "?";
+    return ({ everyone: "Everyone", teen: "Teen", mature: "Mature" }[v.rating] || v.rating) + (v.content_notes && v.content_notes.length ? " (" + v.content_notes.join(", ").toLowerCase() + ")" : "");
+  }
+  // A moderator changed the rating of one of your listings.
+  function rerateDecision(d) {
+    return [
+      h("h3", { text: "A moderator changed the rating of \"" + (d.project_title || d.project_id) + "\" · " + BC.niceDate(d.created_at) }),
+      h("p", { text: "From " + ratingLine(d.old_value) + " to " + ratingLine(d.new_value) + "." }),
+      h("p", null, [h("strong", { text: "Why: " }), d.reasons]),
+      h("p", { class: "muted", text: "A moderator made this decision against the published rating criteria; no automated tool was involved. The project stays listed with the new rating." })
+    ];
+  }
   function decision(d) {
-    var relay = d.target_type === "relay_pr";
-    var out = relay ? relayDecision(d) : [
+    var relay = d.target_type === "relay_pr", rerate = d.action === "rerate";
+    var out = rerate ? rerateDecision(d) : relay ? relayDecision(d) : [
       h("h3", { text: (d.target_type === "project" ? "Your project \"" + (d.project_title || d.project_id) + "\" was removed" : d.target_type === "proposal" ? "Your blog proposal for \"" + (d.project_title || d.project_id) + "\" was removed" : "Your comment on \"" + (d.project_title || d.project_id) + "\" was removed") + " · " + BC.niceDate(d.created_at) }),
       d.comment_body ? h("blockquote", { class: "quote", text: d.comment_body }) : d.proposal_goal ? h("blockquote", { class: "quote", text: d.proposal_goal }) : null,
       h("p", null, [h("strong", { text: "Why: " }), d.reasons]),
@@ -25,7 +40,7 @@
         "A moderator made this decision after a report; no automated tool was involved. " + (d.target_type === "project" ? "The project's page is hidden; its lineage and license record are kept." : d.target_type === "proposal" ? "The proposal has left the vote and its votes no longer count. The project itself is still listed." : "The comment is no longer shown.") })
     ];
     if (d.appeal_outcome) {
-      out.push(h("p", null, [h("strong", { text: d.appeal_outcome === "restored" ? (relay ? "Reviewed: it counts after all. " : "Reviewed: it has been put back. ") : (relay ? "Reviewed: the decision stands. " : "Reviewed: the removal stands. ") }), d.appeal_note || ""]));
+      out.push(h("p", null, [h("strong", { text: d.appeal_outcome === "restored" ? (rerate ? "Reviewed: your rating has been put back. " : relay ? "Reviewed: it counts after all. " : "Reviewed: it has been put back. ") : (relay || rerate ? "Reviewed: the decision stands. " : "Reviewed: the removal stands. ") }), d.appeal_note || ""]));
     } else if (d.appeal_at) {
       out.push(h("p", { class: "muted", text: "You asked for a review on " + BC.niceDate(d.appeal_at) + ". A moderator will look at it again." }));
     } else {

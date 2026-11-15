@@ -2,7 +2,7 @@ window.BC.load(function () {
   var D = window.BC_DATA;
   var grid = document.getElementById("featured");
   var buttons = document.querySelectorAll("#home-filters .pill");
-  var featured = D.items.filter(function (i) { return i.featured; });
+  var featured = D.items.filter(function (i) { return i.featured && (i.rating !== "mature" || window.BC.matureOk()); });
 
   function render(filter) {
     grid.textContent = "";

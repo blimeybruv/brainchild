@@ -22,6 +22,7 @@ window.BC.load(function () {
     sort: document.getElementById("sort")
   };
 
+  function inRating(i) { return i.rating !== "mature" || window.BC.matureOk(); }
   function inType(i) { return !state.types.length || state.types.indexOf(i.kind) >= 0; }
   function inGenre(i) { return !state.genres.length || state.genres.indexOf(i.genre) >= 0; }
   function inStatus(i) { return !state.statuses.length || state.statuses.indexOf(i.status) >= 0; }
@@ -34,7 +35,7 @@ window.BC.load(function () {
   function except(skip) {
     return function (i) {
       return (skip === "type" || inType(i)) && (skip === "genre" || inGenre(i)) &&
-        (skip === "status" || inStatus(i)) && inGame(i) && inQuery(i);
+        (skip === "status" || inStatus(i)) && inGame(i) && inQuery(i) && inRating(i);
     };
   }
 
@@ -69,6 +70,13 @@ window.BC.load(function () {
       var f = document.getElementById(focusId);
       if (f) f.focus();
     }
+  }
+
+  // "Show Mature projects": off unless ticked; remembered for the browser session.
+  var mature = document.getElementById("f-mature");
+  if (mature) {
+    mature.checked = window.BC.matureOk();
+    mature.addEventListener("change", function () { window.BC.setMatureOk(mature.checked); render(); });
   }
 
   function renderAll() {

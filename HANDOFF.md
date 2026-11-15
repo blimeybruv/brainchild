@@ -347,6 +347,16 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    owner's pull request, can't be reviewed by anyone, so that pull request keeps counting. Adding a
    second moderator fixes it: give the agent their GitHub username and it adds their id to
    `MODERATOR_GITHUB_IDS` in `api/auth.js`.
+12. **The German age label: a question (15 Nov).** The age-label guides say `default-age` in
+    `/age-de.xml` should be the highest age on the domain (18 here), because it's what filters use when
+    they can't read a page's own label. With the site default at 0 as decided, a filter that misses a
+    Mature page's label would let it through. The guides also differ on the meta label's format (one
+    includes a "hash" code), and the official spec PDF wasn't reachable to settle it. Choose one:
+    - **(a) As decided:** default 0, and an 18 label on each Mature project page.
+    - **(b) Spec-safe:** default 18, with a 0 label on every page except Mature projects, which keep 18.
+      Same result for visitors; safer if a label isn't read.
+    - **(c) Hold it** until someone checks the official spec (online-management-kontor.de / FSK).
+    The page labels need the Worker to add a tag to `project.html` for Mature listings (a small change).
 11. **Try GitLab on the live site (added 15 Nov).** Everything GitLab-facing has only been tested against
     a stand-in for GitLab; the preview can't use the Worker's secrets, so the first real test is live.
     - While signed in with GitHub, open **Your account** (your handle, top right) and press **Link a GitLab
@@ -639,6 +649,22 @@ column `base_game`), so there is no migration and the CHECK constraint stays as 
   action. It copies the text and links back to the report.
 
 ## Owner decision, 14 Nov: the Mature gate (unblocked)
+
+**Progress, 15 Nov.**
+- **Done: the gate.** On a Mature project's page the game area and screenshots are covered by a notice
+  (the content notes, the Mature criteria, "Show it" and "Go back"), as in the Project mockup. "Show it"
+  is remembered for the browser session (`sessionStorage`), and so is Browse's new **Show Mature projects**
+  box. Mature projects are hidden from Browse and the home page's featured list unless it's ticked.
+  The description, packet and discussion stay visible.
+- **Done: the criteria** are on the listing and Edit pages (owner), on About, in Browse's filter and in
+  the gate notice (`BC.RATINGS` in `common.js`).
+- **Done: "Change rating…"** on project reports in the Moderation queue: the moderator picks the rating
+  and notes and writes the reasons (migration `0021`). It records a moderation decision with the old and
+  new rating, answers open "wrong rating" reports about the project, shows under "Rating changes", and
+  tells the maintainer on their account page. They can ask once for a review; "Restore the maker's
+  rating" puts the old rating back.
+- **Postponed, waiting on the owner: the German age label (`/age-de.xml` and the page meta label).** See
+  "Waiting on the owner".
 
 - **Same gate for everyone:** build the click-through gate from the Project mockup for Mature projects.
   The notice lists the content notes, with a "Show it" button that remembers the choice for the session.

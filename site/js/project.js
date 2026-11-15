@@ -21,6 +21,23 @@ window.BC.load(function () {
   document.getElementById("p-cta").textContent = S.cta + " this project";
   document.getElementById("p-stage").style.background = item.tone;
 
+  // Mature projects open behind a notice listing their content notes. "Show it" lasts for the session.
+  if (item.rating === "mature" && !window.BC.matureOk()) {
+    var player = document.querySelector(".player");
+    player.classList.add("gated");
+    var notes = (item.notes || []).filter(function (n) { return n !== "Historical symbols"; });
+    var show = h("button", { class: "btn btn-light", type: "button", text: "Show it" });
+    var gate = h("div", { class: "mature-gate", role: "group", "aria-label": "Mature content warning" }, [
+      h("span", { class: "badge", "data-status": "mature", text: "Mature" }),
+      h("p", { class: "gate-title", text: "This project is rated Mature" }),
+      h("p", { text: (notes.length ? "Contains: " + notes.join(", ").toLowerCase() + ". " : "") + "Mature means " + window.BC.RATINGS.mature.charAt(0).toLowerCase() + window.BC.RATINGS.mature.slice(1) }),
+      h("p", { class: "muted", text: "The maker chose this rating; report the project if it's wrong." }),
+      h("div", { class: "actions" }, [show, h("a", { class: "btn btn-ghost", href: "browse.html", text: "Go back" })])
+    ]);
+    show.addEventListener("click", function () { window.BC.setMatureOk(true); player.classList.remove("gated"); gate.remove(); });
+    player.insertBefore(gate, player.firstChild);
+  }
+
   var playLabel = document.getElementById("p-play-label");
   var hint = document.getElementById("p-hint");
   if (item.kind === "Mod") {

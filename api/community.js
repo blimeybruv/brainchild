@@ -231,7 +231,7 @@ export async function modQueue(request, env, session, url) {
       ORDER BY r.created_at ${closed ? "DESC" : "ASC"} LIMIT 200`
   ).all();
   const { results: appeals } = await env.DB.prepare(
-    `SELECT a.id, a.target_type, a.project_id, a.comment_id, a.category, a.ground, a.reasons, a.created_at, a.appeal_text, a.appeal_at,
+    `SELECT a.id, a.target_type, a.action, a.old_value, a.new_value, a.project_id, a.comment_id, a.category, a.ground, a.reasons, a.created_at, a.appeal_text, a.appeal_at,
             u.handle AS affected, p.title AS project_title, c.body AS comment_body, rc.pr_url, rc.pr_number, pr.goal AS proposal_goal
        FROM moderation_actions a
        LEFT JOIN users u ON u.id = a.affected_user_id
@@ -239,7 +239,7 @@ export async function modQueue(request, env, session, url) {
        LEFT JOIN comments c ON c.id = a.comment_id
        LEFT JOIN relay_contributions rc ON rc.action_id = a.id
        LEFT JOIN proposals pr ON pr.id = a.proposal_id
-      WHERE a.action = 'remove' AND a.appeal_at IS NOT NULL AND a.appeal_outcome IS NULL
+      WHERE a.action IN ('remove', 'rerate') AND a.appeal_at IS NOT NULL AND a.appeal_outcome IS NULL
       ORDER BY a.appeal_at LIMIT 200`
   ).all();
   // Rating changes made by maintainers, with the old and new values, newest first.
@@ -317,13 +317,20 @@ export async function modAppeal(request, env, session, id) {
   const decision = body && (body.decision === "restore" || body.decision === "uphold") ? body.decision : null;
   const note = body ? clean(body.note === undefined || body.note === null ? "" : body.note, 2000) : null;
   if (!decision || note === null) return bad("invalid_fields", 400, { fields: ["decision"] });
-  const a = await env.DB.prepare("SELECT * FROM moderation_actions WHERE id = ? AND action = 'remove'").bind(id).first();
+  const a = await env.DB.prepare("SELECT * FROM moderation_actions WHERE id = ? AND action IN ('remove', 'rerate')").bind(id).first();
   if (!a) return bad("not_found", 404);
   if (!a.appeal_at || a.appeal_outcome) return bad("already_resolved", 409);
   const now = nowText();
   const steps = [env.DB.prepare("UPDATE moderation_actions SET appeal_outcome = ?, appeal_note = ?, appeal_resolved_at = ? WHERE id = ?")
     .bind(decision === "restore" ? "restored" : "upheld", note || null, now, id)];
-  if (decision === "restore") {
+  if (decision === "restore" && a.action === "rerate") {
+    // Put back the rating the maker chose.
+    let old = null;
+    try { old = JSON.parse(a.old_value || "null"); } catch { old = null; }
+    if (old && typeof old.rating === "string") {
+      steps.push(env.DB.prepare("UPDATE projects SET rating = ?, content_notes = ?, updated_at = ? WHERE id = ?").bind(old.rating, JSON.stringify(old.content_notes || []), now, a.project_id));
+    }
+  } else if (decision === "restore") {
     steps.push(a.target_type === "comment"
       ? env.DB.prepare("UPDATE comments SET removed_at = NULL, removed_by = NULL WHERE id = ? AND removed_by = 'moderator'").bind(a.comment_id)
       : a.target_type === "proposal"
@@ -333,7 +340,7 @@ export async function modAppeal(request, env, session, id) {
         : env.DB.prepare("UPDATE projects SET hidden_at = NULL WHERE id = ?").bind(a.project_id));
   }
   await env.DB.batch(steps);
-  if (decision === "restore" && a.target_type === "project") {
+  if (decision === "restore" && a.target_type === "project") { // also clears a cached rating
     await caches.default.delete(new URL(request.url).origin + "/api/projects").catch(() => false);
   }
   return privateJson({ ok: true, outcome: decision === "restore" ? "restored" : "upheld" });
@@ -345,12 +352,12 @@ export async function modAppeal(request, env, session, id) {
 export async function myNotices(env, session) {
   if (!session) return bad("not_signed_in", 401);
   const { results: decisions } = await env.DB.prepare(
-    `SELECT a.id, a.target_type, a.project_id, a.category, a.ground, a.reasons, a.automated, a.created_at,
+    `SELECT a.id, a.target_type, a.action, a.old_value, a.new_value, a.project_id, a.category, a.ground, a.reasons, a.automated, a.created_at,
             a.appeal_text, a.appeal_at, a.appeal_outcome, a.appeal_note, p.title AS project_title, c.body AS comment_body, rc.pr_url, rc.pr_number,
             pr.goal AS proposal_goal
        FROM moderation_actions a LEFT JOIN projects p ON p.id = a.project_id LEFT JOIN comments c ON c.id = a.comment_id
        LEFT JOIN relay_contributions rc ON rc.action_id = a.id LEFT JOIN proposals pr ON pr.id = a.proposal_id
-      WHERE a.affected_user_id = ? AND a.action = 'remove' ORDER BY a.created_at DESC LIMIT 100`
+      WHERE a.affected_user_id = ? AND a.action IN ('remove', 'rerate') ORDER BY a.created_at DESC LIMIT 100`
   ).bind(session.userId).all();
   const { results: reports } = await env.DB.prepare(
     `SELECT r.id, r.target_type, r.project_id, r.category, r.status, r.created_at, r.resolved_at, p.title AS project_title
@@ -368,8 +375,53 @@ export async function appealNotice(request, env, session, id) {
   const text = body ? clean(body.text, 2000) : null;
   if (!text || text.length < 10) return bad("invalid_fields", 400, { fields: ["text"] });
   const r = await env.DB.prepare(
-    "UPDATE moderation_actions SET appeal_text = ?, appeal_at = ? WHERE id = ? AND affected_user_id = ? AND action = 'remove' AND appeal_at IS NULL"
+    "UPDATE moderation_actions SET appeal_text = ?, appeal_at = ? WHERE id = ? AND affected_user_id = ? AND action IN ('remove', 'rerate') AND appeal_at IS NULL"
   ).bind(text, nowText(), id, session.userId).run();
   if (!r.meta || r.meta.changes !== 1) return bad("already_resolved", 409);
   return privateJson({ ok: true });
+}
+
+// ---------- changing a listing's rating (moderators) ----------
+
+const RATING_NOTES = ["Violence", "Blood", "Horror", "Strong language", "Drug references", "Gambling-style mechanics", "Historical symbols"];
+
+// POST /api/mod/projects/<id>/rating  { rating, content_notes, reasons, report_id? }
+// A moderator re-rates a listing that doesn't match the criteria. The maintainer is told why and can ask once for a review.
+export async function modRerate(request, env, session, id) {
+  const stop = modGuard(request, env, session, true);
+  if (stop) return stop;
+  const body = await readJson(request);
+  if (!body) return bad("bad_request");
+  const rating = ["everyone", "teen", "mature"].includes(body.rating) ? body.rating : null;
+  const notes = Array.isArray(body.content_notes) ? body.content_notes : [];
+  const reasons = clean(body.reasons === undefined || body.reasons === null ? "" : body.reasons, 2000);
+  const fields = [];
+  if (!rating) fields.push("rating");
+  if (notes.some((n) => !RATING_NOTES.includes(n))) fields.push("content_notes");
+  if (reasons === null || reasons.length < 10) fields.push("reasons");
+  if (fields.length) return bad("invalid_fields", 400, { fields });
+  const p = await env.DB.prepare("SELECT id, owner_id, rating, content_notes FROM projects WHERE id = ? AND hidden_at IS NULL").bind(id).first();
+  if (!p) return bad("not_found", 404);
+  const newNotes = JSON.stringify(RATING_NOTES.filter((n) => notes.includes(n)));
+  if (p.rating === rating && (p.content_notes || "[]") === newNotes) return bad("no_change", 409);
+  const reportId = Number.isSafeInteger(body.report_id) ? body.report_id : null;
+  const now = nowText();
+  let oldNotes = [];
+  try { oldNotes = JSON.parse(p.content_notes || "[]"); } catch { oldNotes = []; }
+  const action = await env.DB.prepare(
+    `INSERT INTO moderation_actions (target_type, project_id, affected_user_id, action, ground, category, reasons, automated, moderator_id, report_id, created_at, old_value, new_value)
+     VALUES ('project', ?, ?, 'rerate', 'terms', 'rating', ?, 0, ?, ?, ?, ?, ?)`
+  ).bind(id, p.owner_id, reasons, session.userId, reportId, now, JSON.stringify({ rating: p.rating, content_notes: oldNotes }), JSON.stringify({ rating, content_notes: JSON.parse(newNotes) })).run();
+  const actionId = action.meta.last_row_id;
+  await env.DB.batch([
+    env.DB.prepare("UPDATE projects SET rating = ?, content_notes = ?, updated_at = ? WHERE id = ?").bind(rating, newNotes, now, id),
+    env.DB.prepare("INSERT INTO project_changes (project_id, user_id, changed_at, fields, rating_old, rating_new, notes_old, notes_new) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+      .bind(id, session.userId, now, JSON.stringify(["rating (by a moderator)"]), p.rating, rating, p.content_notes || "[]", newNotes),
+    // Open "wrong rating" reports about this project are answered by this decision.
+    env.DB.prepare("UPDATE reports SET status = 'actioned', resolved_at = ?, resolved_by = ?, action_id = ? WHERE status = 'open' AND project_id = ? AND comment_id IS NULL AND proposal_id IS NULL AND (category = 'rating' OR id = ?)")
+      .bind(now, session.userId, actionId, id, reportId)
+  ]);
+  const origin = new URL(request.url).origin;
+  await Promise.all(["/api/projects", "/api/projects/" + id].map((path) => caches.default.delete(origin + path).catch(() => false)));
+  return privateJson({ ok: true, action_id: actionId });
 }

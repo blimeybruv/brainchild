@@ -36,6 +36,7 @@
 //   POST /api/relay/tasks, /api/relay/tasks/<id>/remove | claim | unclaim   the winner's task board (relay-board.js)
 //   POST /api/relay/contributions, /api/relay/contributions/<id>/withdraw | flag   pull requests for the winner
 //   POST /api/mod/relay-flags/<id>/resolve                moderators only
+//   POST /api/mod/projects/<id>/rating                    a moderator changes a listing's rating, moderators only
 //   GET  /api/mod/merge?from=&into=, POST /api/mod/merge  merging two accounts of one person (merge.js), moderators only
 //   POST /api/relay/badges                                the maintainer's awards (relay-badges.js)
 //   GET  /api/users/<handle>                              a person's public page, cached for 60s
@@ -53,7 +54,7 @@ import { issueCode } from "./forge.js";
 import { listPosts, getPost, modPosts, savePost, postAction, pitch, pitchAction, draftFromReport } from "./posts.js";
 import { repoAccessRoute } from "./github.js";
 import { myRepos, listingInfo, createListing, editProject, adoptProject, licenseRecord, licenseText } from "./listings.js";
-import { listComments, postComment, commentAction, postReport, modQueue, modResolve, modAppeal, myNotices, appealNotice } from "./community.js";
+import { listComments, postComment, commentAction, postReport, modQueue, modResolve, modAppeal, myNotices, appealNotice, modRerate } from "./community.js";
 import { addScreenshot, deleteScreenshot, serveScreenshot } from "./screenshots.js";
 import { listVotes, castVote, propose, withdrawProposal } from "./votes.js";
 import { reportForm, postOutsideReport, resolveOutside } from "./outside.js";
@@ -213,6 +214,8 @@ async function handlePrivate(request, env, ctx, url, path) {
   if (m) return method === "POST" ? resolveOutside(request, env, session, Number(m[1])) : methodNotAllowed("POST");
   if (path === "/api/mod/reports") return method === "GET" ? modQueue(request, env, session, url) : methodNotAllowed("GET");
   if (path === "/api/pitches") return method === "POST" ? pitch(request, env, session) : methodNotAllowed("POST");
+  m = path.match(/^\/api\/mod\/projects\/([a-z0-9-]{1,80})\/rating$/);
+  if (m) return method === "POST" ? modRerate(request, env, session, m[1]) : methodNotAllowed("POST");
   if (path === "/api/mod/posts") return method === "GET" ? modPosts(request, env, session) : method === "POST" ? savePost(request, env, session) : methodNotAllowed("GET, POST");
   m = path.match(/^\/api\/mod\/posts\/(\d{1,12})\/(publish|unpublish|delete)$/);
   if (m) return method === "POST" ? postAction(request, env, session, Number(m[1]), m[2]) : methodNotAllowed("POST");

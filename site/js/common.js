@@ -239,6 +239,17 @@
     return box;
   }
 
+  // Mature projects: hidden in lists unless the visitor chooses to see them, and behind a click-through
+  // notice on their own page. The choice lasts for the browser session. No country detection, no ID checks.
+  var MATURE_KEY = "bc_show_mature";
+  function matureOk() { try { return window.sessionStorage.getItem(MATURE_KEY) === "1"; } catch (e) { return false; } }
+  function setMatureOk(on) { try { if (on) window.sessionStorage.setItem(MATURE_KEY, "1"); else window.sessionStorage.removeItem(MATURE_KEY); } catch (e) { /* private mode: just this page */ } }
+  var RATINGS = {
+    everyone: "No violence beyond cartoon or slapstick, no blood, no swearing.",
+    teen: "Combat and non-graphic violence, mild blood, horror themes and jump scares, moderate language, drug or alcohol references, war strategy.",
+    mature: "Realistic or graphic violence and gore, strong language throughout, drug use shown, disturbing themes."
+  };
+
   // The stored type "Mod" covers mods and plugins for any software (owner's decision, 14 Nov).
   function kindLabel(kind) { return kind === "Mod" ? "Mod / plugin" : kind; }
 
@@ -321,5 +332,6 @@
   else initAuth();
 
   window.BC = { h: h, card: card, metaLine: metaLine, store: safeStore(), load: load, getJSON: getJSON, whoAmI: whoAmI, fromRow: fromRow,
-    api: api, errorText: errorText, repoWhere: repoWhere, kindLabel: kindLabel, renderPost: renderPost, niceDate: niceDate, renderSteps: renderSteps, choices: choices, rulesBlock: rulesBlock };
+    api: api, errorText: errorText, repoWhere: repoWhere, kindLabel: kindLabel, renderPost: renderPost,
+    matureOk: matureOk, setMatureOk: setMatureOk, RATINGS: RATINGS, niceDate: niceDate, renderSteps: renderSteps, choices: choices, rulesBlock: rulesBlock };
 })();

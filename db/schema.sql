@@ -176,7 +176,9 @@ CREATE TABLE IF NOT EXISTS moderation_actions (
   appeal_outcome     TEXT,                          -- restored | upheld
   appeal_note        TEXT,
   appeal_resolved_at TEXT,
-  proposal_id        INTEGER                        -- target_type 'proposal'
+  proposal_id        INTEGER,                       -- target_type 'proposal'
+  old_value          TEXT,                          -- action 'rerate': the rating before (JSON)
+  new_value          TEXT                           -- action 'rerate': the rating after (JSON)
 );
 CREATE INDEX IF NOT EXISTS idx_actions_user ON moderation_actions (affected_user_id, created_at);
 

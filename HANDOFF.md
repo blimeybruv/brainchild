@@ -684,6 +684,13 @@ column `base_game`), so there is no migration and the CHECK constraint stays as 
   - Reuse this wording on the About page and in the Mature gate notice. Moderators can re-rate a listing
     that doesn't match: add a "Change rating" action to the moderation queue, with a statement of reasons
     and a notice to the maintainer.
+- **Age label: option (b), decided 15 Nov.**
+  - The site-wide default in `/age-de.xml` is **18**.
+  - Every page carries a **0** label, except Mature project pages, which carry 18.
+  - **Inject the label server-side.** `project.html` is one static file for every project, and filters read
+    the raw HTML, not what JavaScript renders. So the site Worker must add the per-page label to the HTML
+    response, e.g. with HTMLRewriter, after looking up the project's rating. Never set it from client-side JS.
+  - Use the OMK v3.0 format linked in Opus's note. Where the guides disagree, follow the OMK document.
 - **Fallback:** if a complaint ever arrives, hiding Mature listings for `CF-IPCountry: DE` is the
   fallback. Don't build it now.
 - **"Historical symbols" is dropped (owner's decision):** it's removed from content notes in `list.js`

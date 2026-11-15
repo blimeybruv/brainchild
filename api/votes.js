@@ -12,6 +12,7 @@
 
 import { privateJson, isSameOrigin } from "./http.js";
 import { relayNow } from "./relay.js"; // the site's clock, which tests can set (RELAY_NOW)
+import { recordFlag } from "./signals.js";
 
 const MAX_PROPOSALS_PER_USER = 3;
 
@@ -82,9 +83,12 @@ export async function castVote(request, env, session) {
   if (!session) return bad("not_signed_in", 401);
   const body = await readJson(request);
   if (!body) return bad("bad_request");
-  const { month } = votingMonth(relayNow(env));
+  const { month, closes } = votingMonth(relayNow(env));
   if (body.proposal_id === null) {
-    await env.DB.prepare("DELETE FROM votes WHERE user_id = ? AND month = ?").bind(session.userId, month).run();
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM votes WHERE user_id = ? AND month = ?").bind(session.userId, month),
+      env.DB.prepare("DELETE FROM net_flags WHERE kind = 'vote' AND scope = ? AND user_id = ?").bind(month, session.userId)
+    ]);
     return privateJson({ ok: true, my_vote: null });
   }
   if (!Number.isSafeInteger(body.proposal_id)) return bad("invalid_fields", 400, { fields: ["proposal_id"] });
@@ -98,6 +102,7 @@ export async function castVote(request, env, session) {
     `INSERT INTO votes (user_id, month, proposal_id) VALUES (?, ?, ?)
      ON CONFLICT (user_id, month) DO UPDATE SET proposal_id = excluded.proposal_id, created_at = datetime('now')`
   ).bind(session.userId, month, p.id).run();
+  await recordFlag(env, request, "vote", month, session.userId, closes); // a hashed network, for moderators
   return privateJson({ ok: true, my_vote: p.id });
 }
 

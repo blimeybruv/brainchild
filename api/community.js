@@ -13,6 +13,7 @@ import { isModerator } from "./auth.js";
 import { listOutside } from "./outside.js";
 import { listFlags } from "./relay-board.js";
 import { commentBadges } from "./relay-badges.js";
+import { moderatorSignals } from "./signals.js";
 
 export const REPORT_CATEGORIES = ["sexual", "rating", "malware", "license", "harass", "spam", "other"];
 const MAX_COMMENT = 2000;
@@ -248,7 +249,9 @@ export async function modQueue(request, env, session, url) {
   ).all();
   // Reports from people who aren't signed in arrive in the same queue.
   // Relay pull requests a maintainer flagged as junk are reviewed here too.
-  return privateJson({ reports, outside: await listOutside(env, closed), relay_flags: await listFlags(env, closed), appeals: closed ? [] : appeals, rating_changes: closed ? [] : ratings });
+  // Signals about possible vote rigging: worth a look, never acted on automatically.
+  return privateJson({ reports, outside: await listOutside(env, closed), relay_flags: await listFlags(env, closed), appeals: closed ? [] : appeals, rating_changes: closed ? [] : ratings,
+    signals: closed ? null : await moderatorSignals(env) });
 }
 
 // POST /api/mod/reports/<id>/resolve  { decision: "remove" | "dismiss", ground, reasons }

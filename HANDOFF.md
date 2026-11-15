@@ -529,6 +529,19 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
 
 ## Owner request, 14 Nov: vote-rigging signals and a privacy page
 
+**Signals: done 15 Nov** (`api/signals.js`, migration `0019`, "Signals worth a look" on the Moderation page).
+- Account age (Brainchild), linked account age and "nothing public" (no public repositories, gists or
+  GitLab projects, checked at each sign-in) are shown for anyone who voted or took part in a Relay round
+  while their network flag is still on record, when their Brainchild account is under 14 days old, the
+  linked account is under 30 days old, or nothing is public.
+- Network flags are recorded on blog votes, Relay entries and Relay rankings. The key is derived per vote
+  or round from the existing GitHub client secret, so the owner adds nothing; that also means the same
+  network gives different hashes in different votes, which is the "rotation". Withdrawing a vote or an
+  entry removes its flag. Rows expire 30 days after the vote or the round's voting closes, and expired
+  rows are deleted whenever a moderator opens the queue.
+- Moderators see sentences such as "3 votes in the blog vote for December 2026 came from one network"
+  and account ages, never hashes or addresses.
+
 - **Cheap signals first.** Show moderators these on votes, Relay entries and new accounts:
   - the age of the linked GitHub or GitLab account, and whether it has any public activity;
   - the age of the Brainchild account.

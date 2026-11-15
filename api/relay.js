@@ -22,6 +22,7 @@
 
 import { privateJson, isSameOrigin } from "./http.js";
 import { requireProjectAdmin } from "./forge.js";
+import { recordFlag } from "./signals.js";
 
 export const MIN_ENTRIES = 4;
 const ENTRY_LAST_DAY = 5;
@@ -238,6 +239,7 @@ export async function enterRelay(request, env, session) {
   try {
     const r = await env.DB.prepare("INSERT INTO relay_entries (round_id, project_id, user_id, pitch, created_at) VALUES (?, ?, ?, ?, ?)")
       .bind(round.id, id, session.userId, pitch, text(relayNow(env))).run();
+    await recordFlag(env, request, "relay_entry", round.month, session.userId, calendar(round.month).vote_closes);
     return privateJson({ ok: true, entry_id: r.meta.last_row_id }, 201);
   } catch {
     return bad("already_entered", 409); // one project per person per round
@@ -251,6 +253,7 @@ export async function withdrawRelay(request, env, session) {
   const round = await advance(env);
   if (round.status !== "entry") return bad("entry_closed", 409);
   const r = await env.DB.prepare("DELETE FROM relay_entries WHERE round_id = ? AND user_id = ?").bind(round.id, session.userId).run();
+  await env.DB.prepare("DELETE FROM net_flags WHERE kind = 'relay_entry' AND scope = ? AND user_id = ?").bind(round.month, session.userId).run();
   if (!r.meta || r.meta.changes < 1) return bad("not_found", 404);
   return privateJson({ ok: true });
 }
@@ -280,5 +283,6 @@ export async function rankRelay(request, env, session) {
     env.DB.prepare("DELETE FROM relay_votes WHERE round_id = ? AND voter_id = ?").bind(round.id, session.userId),
     ...picks.map((id, i) => env.DB.prepare("INSERT INTO relay_votes (round_id, voter_id, entry_id, rank) VALUES (?, ?, ?, ?)").bind(round.id, session.userId, id, i + 1))
   ]);
+  await recordFlag(env, request, "relay_rank", round.month, session.userId, calendar(round.month).vote_closes);
   return privateJson({ ok: true });
 }

@@ -389,6 +389,7 @@ CREATE TABLE IF NOT EXISTS identities (
   avatar_url          TEXT,
   provider_created_at TEXT,                          -- when the account was made there, if the provider says (a signal for moderators)
   linked_at           TEXT NOT NULL DEFAULT (datetime('now')),
+  public_activity     INTEGER,                       -- 1 = has public repos/projects, 0 = none, NULL = not known yet
   UNIQUE (provider, provider_user_id)
 );
 CREATE INDEX IF NOT EXISTS idx_identities_user ON identities (user_id);
@@ -415,3 +416,16 @@ CREATE TABLE IF NOT EXISTS verify_codes (
   used_at    INTEGER                              -- set when a listing, handoff or adoption used it
 );
 CREATE INDEX IF NOT EXISTS idx_verify_codes_user ON verify_codes (user_id, created_at);
+
+-- A keyed hash of the network a vote, Relay entry or Relay ranking came from: the IPv4 /24 or IPv6 /64.
+-- The raw address is never stored. The key is different for every vote and round, so hashes can't be
+-- linked across them. Rows are deleted 30 days after that vote or round closes.
+CREATE TABLE IF NOT EXISTS net_flags (
+  kind       TEXT NOT NULL CHECK (kind IN ('vote', 'relay_entry', 'relay_rank')),
+  scope      TEXT NOT NULL,                       -- the vote's month (2026-12) or the Relay round's month
+  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  net_hash   TEXT NOT NULL,
+  expires_at TEXT NOT NULL,                       -- date after which the row is deleted
+  PRIMARY KEY (kind, scope, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_net_flags_expiry ON net_flags (expires_at);

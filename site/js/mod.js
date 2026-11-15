@@ -156,6 +156,29 @@
     ]);
   }
 
+  // Possible vote rigging. Counts and ages only: no addresses, no hashes, and nothing happens automatically.
+  var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  function monthName(m) { return MONTHS[Number(m.slice(5, 7)) - 1] + " " + m.slice(0, 4); }
+  function what(kind, scope, n) {
+    return kind === "vote" ? (n === 1 ? "voted" : n + " votes") + " in the blog vote for " + monthName(scope)
+      : kind === "relay_entry" ? (n === 1 ? "entered" : n + " entries in") + " the " + monthName(scope) + " Relay round"
+      : (n === 1 ? "ranked projects in" : n + " rankings in") + " the " + monthName(scope) + " Relay round";
+  }
+  function signalsSection(sig) {
+    if (!sig || (!sig.shared_networks.length && !sig.accounts.length)) return null;
+    var WHY = { new_account: "Brainchild account under 14 days old", new_linked_account: "GitHub/GitLab account under 30 days old", no_public_activity: "no public repositories or projects" };
+    var items = sig.shared_networks.map(function (x) {
+      return h("li", { text: what(x.kind, x.scope, x.count).replace(/^\d+ /, function (m) { return m; }) + " came from one network." });
+    }).concat(sig.accounts.map(function (a) {
+      var linked = a.linked.map(function (l) { return (NAMES[l.provider] || l.provider) + (l.age_days !== null ? " " + l.age_days + " days old" : "") + (l.public_activity === false ? ", nothing public" : ""); }).join("; ");
+      return h("li", null, [h("a", { href: "user.html?u=" + encodeURIComponent(a.handle), text: "@" + a.handle }), " " + what(a.kind, a.scope, 1) + ": " + a.why.map(function (w) { return WHY[w] || w; }).join(", ") +
+        (a.account_age_days !== null ? " (Brainchild account " + a.account_age_days + " days old" + (linked ? "; " + linked : "") + ")" : "")]);
+    }));
+    return h("section", null, [h("h2", { text: "Signals worth a look" }),
+      h("p", { class: "muted", text: "Possible vote rigging. These are hints, not proof: people share networks at home, at school and at work. Nothing happens automatically; addresses are never stored." }),
+      h("ul", { class: "relay-how" }, items)]);
+  }
+
   function load() {
     BC.api("GET", "/api/mod/reports" + (view === "closed" ? "?status=closed" : "")).then(function (res) {
       if (!res.ok) return message(res.status === 401 ? "Sign in to see the moderation queue." : res.status === 403 ? "This page is for Brainchild's moderators." : BC.errorText("server_error"));
@@ -164,6 +187,8 @@
       root.appendChild(h("div", { class: "actions" }, [
         btn("Open reports", view === "open" ? "btn-light" : "btn-ghost", function () { view = "open"; load(); }),
         btn("Closed reports", view === "closed" ? "btn-light" : "btn-ghost", function () { view = "closed"; load(); })]));
+      var sigs = view === "open" ? signalsSection(d.signals) : null;
+      if (sigs) root.appendChild(sigs);
       if (d.appeals.length) { root.appendChild(h("h2", { text: "Requests to review a removal" })); root.appendChild(h("div", { class: "queue" }, d.appeals.map(appealItem))); }
       if (d.rating_changes && d.rating_changes.length) {
         root.appendChild(h("h2", { text: "Rating changes by maintainers" }));

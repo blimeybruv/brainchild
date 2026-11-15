@@ -221,6 +221,10 @@ async function saveIdentity(env, userId, p) {
      ON CONFLICT (provider, provider_user_id) DO UPDATE SET user_id = excluded.user_id, handle = excluded.handle, avatar_url = excluded.avatar_url,
        provider_created_at = COALESCE(excluded.provider_created_at, identities.provider_created_at)`
   ).bind(userId, p.provider, String(p.id), p.handle, p.avatar, p.createdAt).run();
+  // Whether the account has anything public (a signal for moderators about brand-new throwaway accounts).
+  if (p.activity === 0 || p.activity === 1) {
+    await env.DB.prepare("UPDATE identities SET public_activity = ? WHERE provider = ? AND provider_user_id = ?").bind(p.activity, p.provider, String(p.id)).run();
+  }
   if (p.provider === "github") await env.DB.prepare("UPDATE users SET github_id = ? WHERE id = ?").bind(p.id, userId).run();
 }
 
@@ -452,8 +456,10 @@ export async function callback(request, env, url) {
     return r.failWith("failed").fail;
   }
   const created = profile && typeof profile.created_at === "string" && /^\d{4}-\d\d-\d\dT/.test(profile.created_at) ? profile.created_at.slice(0, 19).replace("T", " ") : null;
+  const pub = Number(profile.public_repos) + Number(profile.public_gists);
   return finish(request, env, origin, r.attempt, r.clear, r.failWith, {
-    provider: "github", id: githubId, handle, avatar: "https://avatars.githubusercontent.com/u/" + githubId + "?v=4", createdAt: created
+    provider: "github", id: githubId, handle, avatar: "https://avatars.githubusercontent.com/u/" + githubId + "?v=4", createdAt: created,
+    activity: Number.isFinite(pub) ? (pub > 0 ? 1 : 0) : null
   }, tokens);
 }
 
@@ -481,7 +487,13 @@ export async function gitlabCallback(request, env, url) {
   // person's email address, so it is never stored or shown.
   const avatar = typeof profile.avatar_url === "string" && /^https:\/\/gitlab\.com\/uploads\/[A-Za-z0-9_./-]+$/.test(profile.avatar_url) ? profile.avatar_url : null;
   const created = typeof profile.created_at === "string" && /^\d{4}-\d\d-\d\dT/.test(profile.created_at) ? profile.created_at.slice(0, 19).replace("T", " ") : null;
-  return finish(request, env, origin, r.attempt, r.clear, r.failWith, { provider: "gitlab", id, handle, avatar, createdAt: created }, tokens);
+  // Does the account have any public projects? (One small request; a failure just leaves it unknown.)
+  let activity = null;
+  try {
+    const pr = await fetch(gitlabApiBase(env) + "/users/" + id + "/projects?per_page=1&simple=true&visibility=public", { headers: { authorization: "Bearer " + tokens.access, accept: "application/json", "user-agent": USER_AGENT } });
+    if (pr.ok) { const list = await pr.json(); if (Array.isArray(list)) activity = list.length ? 1 : 0; }
+  } catch { activity = null; }
+  return finish(request, env, origin, r.attempt, r.clear, r.failWith, { provider: "gitlab", id, handle, avatar, createdAt: created, activity }, tokens);
 }
 
 export async function logout(request, env, ctx) {

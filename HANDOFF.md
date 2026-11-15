@@ -347,6 +347,13 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    owner's pull request, can't be reviewed by anyone, so that pull request keeps counting. Adding a
    second moderator fixes it: give the agent their GitHub username and it adds their id to
    `MODERATOR_GITHUB_IDS` in `api/auth.js`.
+11. **Try GitLab on the live site (added 15 Nov).** Everything GitLab-facing has only been tested against
+    a stand-in for GitLab; the preview can't use the Worker's secrets, so the first real test is live.
+    - While signed in with GitHub, open **Your account** (your handle, top right) and press **Link a GitLab
+      account**. You should come back to the account page with "Linked", and see both sign-ins listed.
+    - Sign out, then sign in again choosing **Continue with GitLab**: you should land on the same account.
+    - Optional: if you have a public GitLab project, try **List a project**, choose **GitLab.com**, and
+      check that it appears with a "Maintainer" label.
 10. **Relay rounds are finished and live; the first real round opens on 1 Dec.** Nothing in them has been
     used by real people yet. The pull request check has only run against a stand-in for GitHub, so the
     first real contribution is the real test: if GitHub refuses the lookup, the person sees "GitHub

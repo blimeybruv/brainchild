@@ -356,11 +356,11 @@ what waits on the owner.** What is left:
       Same result for visitors; safer if a label isn't read.
     - **(c) Hold it** until someone checks the official spec (online-management-kontor.de / FSK).
     The page labels need the Worker to add a tag to `project.html` for Mature listings (a small change).
-11. **Try GitLab on the live site (added 15 Nov).** Everything GitLab-facing has only been tested against
-    a stand-in for GitLab; the preview can't use the Worker's secrets, so the first real test is live.
-    - While signed in with GitHub, open **Your account** (your handle, top right) and press **Link a GitLab
-      account**. You should come back to the account page with "Linked", and see both sign-ins listed.
-    - Sign out, then sign in again choosing **Continue with GitLab**: you should land on the same account.
+11. **GitLab on the live site: linking confirmed 15 Nov.** The owner linked their GitLab account to their
+    Brainchild account at 20:31. The live database shows both sign-ins on one account, the GitLab
+    account's age and public-activity check were recorded, and the session holds a GitLab token, so the
+    whole real sign-in works: token exchange, profile and project lookup. Still untested with real data:
+    - Signing in with **Continue with GitLab** from signed out (it should land on the same account).
     - Optional: if you have a public GitLab project, try **List a project**, choose **GitLab.com**, and
       check that it appears with a "Maintainer" label.
     - Self-hosted GitLab and the moderators' "Merge two accounts" tool (foot of the Moderation page) are
@@ -761,8 +761,11 @@ A round lasts one calendar month. The Relay mockup shows the stages.
   Martian Mono for code, and Silkscreen for pixel accents. Option B is held in reserve.
 - **Background:** brushed metal with a faint chip-lattice pattern.
 - **Hosting:** screenshots and builds are hosted on Brainchild (R2), not only in repos.
+- **Logo (decided 15 Nov):** the owner's cradled-brain mark, used as the header logo (`site/img/favicon-180.png`)
+  and as the favicon (`favicon-32.png`, `favicon-180.png`, `favicon-512.png`).
 
 ## Open (ask the owner; don't decide)
 
-- Logo: the C cradling a B, with the B drawn as a brain or as nerd glasses. The owner has their own sketches.
+The hero background is still being decided (owner, 15 Nov).
+
 - Hero background: the Julia, smoke or contour option from `HeroFractal`.

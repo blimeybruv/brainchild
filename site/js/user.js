@@ -17,6 +17,9 @@
     document.getElementById("u-name").textContent = "@" + u.handle;
     document.getElementById("u-sub").textContent = "Member since " + BC.niceDate(u.member_since) + " · " + prs + (prs === 1 ? " Relay contribution" : " Relay contributions");
     root.textContent = "";
+    if (u.linked && u.linked.length) {
+      root.appendChild(h("p", { class: "muted", text: "Also " + u.linked.map(function (x) { return "@" + x.handle + " on " + (x.provider === "github" ? "GitHub" : "GitLab"); }).join(" and ") + "." }));
+    }
     root.appendChild(h("h2", { text: "Badges" }));
     root.appendChild(u.badges.length ? h("div", { class: "relay-list" }, u.badges.map(function (b) {
       return h("div", { class: "relay-entry" }, [h("div", { class: "c-grow" }, [
@@ -29,7 +32,7 @@
     })) : h("p", { class: "muted", text: "None yet." }));
     root.appendChild(h("h2", { text: "Projects they maintain" }));
     root.appendChild(u.projects.length ? h("ul", { class: "relay-how" }, u.projects.map(function (p) {
-      return h("li", null, [projectLink(p.id, p.title), " · " + (p.kind === "Mod" ? "Mod for " + p.base_game : p.kind + " · " + p.genre)]);
+      return h("li", null, [projectLink(p.id, p.title), " · " + (p.kind === "Mod" ? "Made for " + p.base_game : p.kind + " · " + p.genre) + (p.platform ? " · on " + p.platform : "")]);
     })) : h("p", { class: "muted", text: "None listed." }));
   });
 })();

@@ -37,7 +37,7 @@
       out.push(h("p", { text: "Signed in as @" + st.user.handle + "." }));
       out.push(h("div", { class: "actions" }, [btn("Continue", function () { go(2); })]));
     } else {
-      out.push(h("div", { class: "actions" }, [h("a", { class: "btn btn-light", href: "/api/auth/login?return_to=" + encodeURIComponent("/adopt.html?id=" + p.id), text: "Continue with GitHub" })]));
+      out.push(h("div", { class: "actions" }, [h("a", { class: "btn btn-light", href: "/api/auth/login?provider=github&return_to=" + encodeURIComponent("/adopt.html?id=" + p.id), text: "Continue with GitHub" })]));
     }
     return out;
   }

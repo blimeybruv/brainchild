@@ -43,12 +43,60 @@
     }
     return h("div", { class: "panel queue-item" }, out);
   }
+  // Sign-ins: the GitHub and GitLab accounts linked to this Brainchild account.
+  var NAMES = { github: "GitHub", gitlab: "GitLab" };
+  function signIns(box) {
+    Promise.all([BC.api("GET", "/api/my/identities"), BC.getJSON("/api/me").catch(function () { return {}; })]).then(function (r) {
+      var res = r[0], me = r[1] || {}, avail = me.providers || {};
+      box.textContent = "";
+      if (!res.ok) return;
+      var d = res.data, err = h("p", { class: "form-error", role: "alert" });
+      box.appendChild(h("h2", { text: "Sign-ins" }));
+      box.appendChild(h("p", { class: "muted", text: "Your projects, comments, credit and badges belong to your Brainchild account. You can sign in with any account linked here." }));
+      var rows = ["github", "gitlab"].map(function (p) {
+        var it = d.identities.filter(function (x) { return x.provider === p; })[0];
+        var back = encodeURIComponent("/account.html");
+        var linkHref = p === "github" ? "/api/auth/login?provider=github&link=1&return_to=" + back : "/api/auth/gitlab/login?link=1&return_to=" + back;
+        var controls = [];
+        if (it) {
+          if (!it.connected && avail[p]) controls.push(h("a", { class: "btn btn-ghost", href: linkHref, text: "Connect for this session" }));
+          if (d.identities.length > 1) {
+            var un = h("button", { class: "btn btn-ghost", type: "button", text: "Unlink" });
+            un.addEventListener("click", function () {
+              if (!window.confirm("Unlink your " + NAMES[p] + " account? You can link it again later.")) return;
+              BC.api("POST", "/api/my/identities/" + p + "/unlink", {}).then(function (x) { if (x.ok) signIns(box); else err.textContent = BC.errorText(x.data && x.data.error); });
+            });
+            controls.push(un);
+          }
+        } else if (avail[p]) {
+          controls.push(h("a", { class: "btn btn-light", href: linkHref, text: "Link a " + NAMES[p] + " account" }));
+        }
+        return h("div", { class: "relay-entry" }, [h("div", { class: "c-grow" }, [
+          h("p", { class: "relay-title" }, [NAMES[p], it ? h("span", { class: "pill", text: "@" + it.handle }) : null]),
+          h("p", { class: "muted", text: it ? "Linked " + BC.niceDate(it.linked_at) + (it.connected ? " · connected in this session" : "") : avail[p] ? "Not linked." : "Not linked. Linking isn't available at this address." })
+        ]), controls.length ? h("div", { class: "actions" }, controls) : null]);
+      });
+      box.appendChild(h("div", { class: "relay-list" }, rows));
+      if (d.identities.length === 1) box.appendChild(h("p", { class: "muted", style: "font-size:14px", text: "Your only sign-in can't be unlinked." }));
+      var show = h("input", { type: "checkbox", id: "show-ids" });
+      show.checked = d.show_identities;
+      show.addEventListener("change", function () {
+        BC.api("POST", "/api/my/profile", { show_identities: show.checked }).then(function (x) { if (!x.ok) { show.checked = !show.checked; err.textContent = BC.errorText(x.data && x.data.error); } });
+      });
+      box.appendChild(h("label", { class: "check", for: "show-ids" }, [show, h("span", { text: "Show my linked GitHub and GitLab usernames on my public profile" })]));
+      box.appendChild(err);
+    });
+  }
+
   function load() {
     BC.api("GET", "/api/my/notices").then(function (res) {
       if (res.status === 401) return message([h("a", { href: "/api/auth/login?return_to=" + encodeURIComponent("/account.html"), text: "Sign in with GitHub" }), " to see your notices."]);
       if (!res.ok) return message([BC.errorText("server_error")]);
       var d = res.data, S = { open: "Waiting for a moderator", actioned: "Looked at: it was removed", dismissed: "Looked at: no action was taken" };
       root.textContent = "";
+      var ids = h("section", { class: "account-signins" });
+      root.appendChild(ids);
+      signIns(ids);
       root.appendChild(h("h2", { text: "Decisions about things you posted" }));
       root.appendChild(d.decisions.length ? h("div", { class: "queue" }, d.decisions.map(decision)) : h("p", { class: "muted", text: "No decisions have been made about anything of yours." }));
       root.appendChild(h("h2", { text: "Your reports" }));

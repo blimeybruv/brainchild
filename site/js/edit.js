@@ -125,7 +125,7 @@
     p = res.data.project;
     var k = res.data.packet || {};
     document.getElementById("e-title-h").textContent = "Edit " + p.title;
-    if (!user) return message([h("a", { href: "/api/auth/login?return_to=" + encodeURIComponent("/edit.html?id=" + id), text: "Sign in with GitHub" }), " to edit this page."]);
+    if (!user) return message([h("a", { href: "/api/auth/login?provider=github&return_to=" + encodeURIComponent("/edit.html?id=" + id), text: "Sign in with GitHub" }), " to edit this page."]);
     if (user.handle !== p.owner) return message(["Only this project's maintainer, @" + (p.owner || "unknown") + ", can edit its page."]);
     f = {
       title: p.title || "", note: p.note || "", genre: p.genre, tech: p.tech || "", browser: !!p.browser, status: p.status,

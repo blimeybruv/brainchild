@@ -9,7 +9,8 @@ CREATE TABLE IF NOT EXISTS users (
   email       TEXT UNIQUE,                      -- unused: sign-in never asks GitHub for an email
   created_at  TEXT NOT NULL DEFAULT (datetime('now')),
   github_id   INTEGER,                          -- GitHub's permanent numeric id (handles can change)
-  avatar_url  TEXT
+  avatar_url  TEXT,
+  show_identities INTEGER NOT NULL DEFAULT 0    -- 1 = the public profile lists linked GitHub/GitLab accounts
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_github_id ON users (github_id);
 
@@ -24,7 +25,11 @@ CREATE TABLE IF NOT EXISTS sessions (
   gh_access_expires_at  INTEGER,                -- NULL = the token does not expire
   gh_refresh            TEXT,
   gh_refresh_expires_at INTEGER,
-  gh_refresh_lock       INTEGER                 -- set while one request is refreshing the tokens
+  gh_refresh_lock       INTEGER,                -- set while one request is refreshing the tokens
+  gl_access             TEXT,                   -- the same for GitLab.com
+  gl_access_expires_at  INTEGER,
+  gl_refresh            TEXT,
+  gl_refresh_lock       INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions (user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions (expires_at);
@@ -370,3 +375,17 @@ CREATE TABLE IF NOT EXISTS relay_badges (
   UNIQUE (round_id, kind)                          -- one of each per round
 );
 CREATE INDEX IF NOT EXISTS idx_relay_badges_user ON relay_badges (user_id);
+
+-- Linked sign-ins: one Brainchild account can have a GitHub and a GitLab.com sign-in.
+CREATE TABLE IF NOT EXISTS identities (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id             TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  provider            TEXT NOT NULL CHECK (provider IN ('github', 'gitlab')),
+  provider_user_id    TEXT NOT NULL,                 -- the provider's permanent numeric id, as text
+  handle              TEXT NOT NULL,                 -- the username there (it can change; refreshed at each sign-in)
+  avatar_url          TEXT,
+  provider_created_at TEXT,                          -- when the account was made there, if the provider says (a signal for moderators)
+  linked_at           TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (provider, provider_user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_identities_user ON identities (user_id);

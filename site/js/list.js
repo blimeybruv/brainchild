@@ -98,7 +98,7 @@
     } else {
       out.push(h("h3", { text: "Sign in with GitHub" }));
       out.push(h("p", { text: "Brainchild uses your GitHub account to prove you own the project. We only ask GitHub which public repositories you can manage; we never push to them, and we never see your email address." }));
-      out.push(h("div", { class: "actions" }, [h("a", { class: "btn btn-light", href: "/api/auth/login?return_to=" + encodeURIComponent("/list.html?intent=" + st.intent), text: "Continue with GitHub" })]));
+      out.push(h("div", { class: "actions" }, [h("a", { class: "btn btn-light", href: "/api/auth/login?provider=github&return_to=" + encodeURIComponent("/list.html?intent=" + st.intent), text: "Continue with GitHub" })]));
     }
     return out;
   }

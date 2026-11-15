@@ -81,7 +81,7 @@
     var left = Math.max(0, r.min_entries - d.entries.length);
     out.push(h("p", { class: "muted", text: d.entries.length + " entered so far · entry closes at the end of " + BC.niceDate(r.entry_closes) + (left ? " · " + left + " more needed for the round to run" : "") }));
     if (!me.signed_in) {
-      out.push(h("p", { class: "callout plain" }, [signIn("Sign in with GitHub"), " to enter a project you maintain."]));
+      out.push(h("p", { class: "callout plain" }, [signIn("Sign in"), " to enter a project you maintain."]));
     } else if (me.entry_id) {
       out.push(h("div", { class: "callout" }, [h("span", { class: "mark", "aria-hidden": "true", text: "✓" }), h("div", null, [
         h("p", null, [h("strong", { text: "You're in this round." })]),
@@ -116,7 +116,7 @@
     var r = d.round, me = d.me, out = [];
     var entrant = !!me.entry_id, used = Object.keys(st.ranks).length;
     out.push(h("p", { class: "muted", text: d.entries.length + " projects entered · ranking closes at the end of " + BC.niceDate(r.vote_closes) + " · results appear after that" }));
-    if (!me.signed_in) out.push(h("p", { class: "callout plain" }, [signIn("Sign in with GitHub"), " if you entered this round, to rank the other projects."]));
+    if (!me.signed_in) out.push(h("p", { class: "callout plain" }, [signIn("Sign in"), " if you entered this round, to rank the other projects."]));
     else if (!entrant) out.push(h("p", { class: "callout plain", text: "Only people who entered a project in this round rank the others. Anyone can contribute to the winner once it's chosen." }));
     else out.push(h("p", { class: "callout plain", text: "Rank three projects other than your own: 1 is your first choice (3 points), then 2 (2 points) and 3 (1 point). " + (used === 3 ? "Ready to send." : "Pick " + (3 - used) + " more.") }));
     out.push(h("div", { class: "relay-list" }, d.entries.map(function (e) {
@@ -197,7 +197,7 @@
   function submitSection() {
     var r = d.round, b = d.board, me = d.me, out = [];
     if (!b.accepting) return out;
-    if (!me.signed_in) { out.push(h("p", { class: "callout plain" }, [signIn("Sign in with GitHub"), " to take a task or submit a pull request. Anyone can contribute, not only people who entered."])); return out; }
+    if (!me.signed_in) { out.push(h("p", { class: "callout plain" }, [signIn("Sign in"), " to take a task or submit a pull request. Anyone can contribute, not only people who entered."])); return out; }
     if (me.maintainer) { out.push(h("p", { class: "callout plain", text: "This is your project's round. Contributions appear below as people submit them. Accept good-faith work even if you don't merge it; if one is junk, flag it with a reason and a moderator will review it." })); return out; }
     if (me.entry_id) {
       out.push(h("p", { class: "callout plain", text: me.contributed ? "Your pull request is in for this round. Thank you." : "You entered this round, so you're expected to open a pull request on " + b.project_title + " by the end of " + BC.niceDate(r.ends) + ". Without one, you can't nominate a project in the next round." }));

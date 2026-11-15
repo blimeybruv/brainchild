@@ -419,6 +419,39 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
 - **Self-hosted GitLab only:** keep the verification-file method (a code committed to the
   repo). Label those listings "verified: push access", and require a fresh file at handoff.
 
+**Progress, 15 Nov (batch 10).**
+- **Done: GitLab.com sign-in and linked accounts** (`api/auth.js`, `api/gitlab.js`, `api/identities.js`,
+  migration `0015`, `site/signin.html`, the Sign-ins section of `site/account.html`).
+  - The owner registered the GitLab app (scopes `read_user read_api`, return addresses for the site and
+    the branch preview) and saved `GITLAB_CLIENT_ID` and `GITLAB_CLIENT_SECRET` as Worker secrets on 14 Nov.
+  - "Sign in" now opens a page with "Continue with GitHub" and "Continue with GitLab". Pages that need
+    GitHub (listing, adopting, editing) still go straight to GitHub until GitLab projects can be listed.
+  - `identities` holds each sign-in; everyone who had signed in with GitHub was copied in. `users.github_id`
+    stays, so the moderator list (by GitHub id) works as before.
+  - Handles: a new GitLab account takes its GitLab username, with `-gl` added if someone here already has
+    it. An account with a GitHub sign-in keeps following its GitHub username.
+  - **Security fix on the way:** a GitHub sign-in could claim any account whose handle matched and that had
+    no GitHub id. It can now only claim a pre-seeded record with no sign-in of any kind, so a GitLab
+    account can't be taken over by someone registering the same name on GitHub.
+  - Linking: account page, "Link a GitHub/GitLab account". If that sign-in already has its own account
+    and that account has never been used (no projects, comments, votes, reports, Relay activity, builds,
+    screenshots or moderation records), it is folded in; otherwise the person is told to ask a moderator.
+    One sign-in per provider per account. Linking again ("Connect for this session") just refreshes the
+    token on the current session.
+  - Unlinking works except for the last sign-in, and drops that provider's tokens from every session.
+  - GitLab avatars are shown only when uploaded to gitlab.com (`img-src` now allows `https://gitlab.com`).
+    Gravatar addresses are never stored, because they contain a hash of the person's email address.
+  - The public member page lists linked usernames only when the person ticks the box on their account
+    page; it always shows each project's platform.
+  - GitLab tokens expire after two hours and are refreshed like GitHub's (`api/gitlab.js`), sealed
+    separately from the GitHub ones, and revoked at sign-out.
+- **Still to build (next batches):**
+  1. Listing, editing, handing off and adopting **GitLab.com projects**, with the Owner or Maintainer
+     check (`access_level` 40 or 50) at each step; refuse Codeberg addresses with a plain message.
+  2. The **manual merge tool** for moderators (accounts that have both been used).
+  3. **Self-hosted GitLab** listings verified with a file ("verified: push access").
+  4. Relay contributions on a GitLab winner (merge requests, matched to the contributor's GitLab sign-in).
+
 **Linked accounts.**
 - **Accounts:** one Brainchild account per person (handle, badges, comments, lineage, votes), with any
   number of linked sign-ins. Add an `identities` table (provider, provider_user_id, handle,

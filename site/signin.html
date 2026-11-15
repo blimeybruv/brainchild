@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in · Brainchild</title>
+<meta name="description" content="Sign in to Brainchild with GitHub or GitLab.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="img/favicon-32.png" sizes="32x32" type="image/png"><link rel="icon" href="img/favicon-512.png" sizes="512x512" type="image/png"><link rel="apple-touch-icon" href="img/favicon-180.png">
+<link rel="stylesheet" href="css/styles.css?v=16">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <nav class="wrap site-nav" aria-label="Main">
+    <a class="brand" href="index.html">
+      <img class="brand-mark" src="/img/favicon-180.png" width="38" height="38" alt="">
+      <span class="brand-name">Brainchild</span>
+    </a>
+    <div class="nav-links">
+      <a href="browse.html">Browse</a>
+      <a href="blog.html">Blog</a>
+      <a href="relay.html">Relay rounds</a>
+      <a href="index.html#handoff">How handoff works</a>
+    </div>
+    <div class="nav-actions">
+      <a class="btn btn-plain" href="/api/auth/login" data-auth="signin">Sign in</a>
+      <a class="btn btn-primary" href="list.html">List a project</a>
+    </div>
+  </nav>
+</header>
+
+<main id="main" class="wrap wizard-page">
+  <div class="wizard-head">
+    <div>
+      <p class="eyebrow">Sign in</p>
+      <h1>Sign in to Brainchild</h1>
+      <p class="sub">Use the account where your projects live. Brainchild only reads which projects you manage; it never changes anything there, and it never asks for your email address.</p>
+    </div>
+  </div>
+  <div class="wizard-list">
+    <section class="panel wizard signin-choices" id="signin-choices">
+      <a class="btn btn-light btn-lg" id="signin-github" href="/api/auth/login?provider=github">Continue with GitHub</a>
+      <a class="btn btn-light btn-lg" id="signin-gitlab" href="/api/auth/gitlab/login">Continue with GitLab</a>
+      <p class="muted" id="signin-note">Already have an account with the other one? Sign in with that, then link this one from your account page, so everything stays in one place.</p>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span class="brand-name">Brainchild</span>
+    <span class="grow">A free home for projects that deserve another go.</span>
+    <a href="about.html">About</a>
+    <a href="licenses.html">Licensing guide</a>
+    <a href="report.html">Report a problem</a>
+    <a href="contact.html">Contact</a>
+    <a href="https://github.com/blimeybruv/brainchild" rel="noopener">Source</a>
+  </div>
+</footer>
+
+<script src="js/common.js?v=16"></script>
+<script src="js/signin.js?v=1"></script>
+</body>
+</html>

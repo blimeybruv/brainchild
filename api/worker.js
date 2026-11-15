@@ -5,7 +5,9 @@
 //
 // Routes:
 //   GET  /api/health, /api/projects, /api/projects/<id>   public, cached for 60s
-//   GET  /api/auth/login, /api/auth/callback              GitHub sign-in (auth.js)
+//   GET  /api/auth/login, /api/auth/callback              GitHub sign-in (auth.js); with no provider, login goes to signin.html
+//   GET  /api/auth/gitlab/login, /api/auth/gitlab/callback   GitLab.com sign-in (auth.js); ?link=1 links it to the signed-in account
+//   GET  /api/my/identities, POST /api/my/identities/<github|gitlab>/unlink, POST /api/my/profile   linked sign-ins (identities.js)
 //   POST /api/auth/logout
 //   GET  /api/me                                          who is signed in
 //   GET  /api/repos/<owner>/<repo>/access                 repo ownership check (github.js)
@@ -37,7 +39,8 @@
 //   GET/POST /api/votes, POST /api/proposals, POST /api/proposals/<id>/delete   monthly community vote (votes.js)
 
 import { json, privateJson, NO_STORE, siteOrigin } from "./http.js";
-import { login, callback, logout, me, getSession } from "./auth.js";
+import { login, callback, gitlabLogin, gitlabCallback, logout, me, getSession } from "./auth.js";
+import { myIdentities, unlinkIdentity, saveProfile } from "./identities.js";
 import { repoAccessRoute } from "./github.js";
 import { myRepos, listingInfo, createListing, editProject, adoptProject, licenseRecord, licenseText } from "./listings.js";
 import { listComments, postComment, commentAction, postReport, modQueue, modResolve, modAppeal, myNotices, appealNotice } from "./community.js";
@@ -151,6 +154,8 @@ async function handlePrivate(request, env, ctx, url, path) {
   if (path === "/api/auth/login") return method === "GET" ? login(request, env, url) : methodNotAllowed("GET");
   if (path === "/api/auth/callback") return method === "GET" ? callback(request, env, url) : methodNotAllowed("GET");
   if (path === "/api/auth/logout") return method === "POST" ? logout(request, env, ctx) : methodNotAllowed("POST");
+  if (path === "/api/auth/gitlab/login") return method === "GET" ? gitlabLogin(request, env, url) : methodNotAllowed("GET");
+  if (path === "/api/auth/gitlab/callback") return method === "GET" ? gitlabCallback(request, env, url) : methodNotAllowed("GET");
   if (path === "/api/me") return method === "GET" ? me(request, env, url) : methodNotAllowed("GET");
   if (path === "/api/my/repos") return method === "GET" ? myRepos(env, await getSession(request, env)) : methodNotAllowed("GET");
   const repo = path.match(/^\/api\/repos\/([^/]+)\/([^/]+)\/(access|listing-info)$/);
@@ -196,6 +201,10 @@ async function handlePrivate(request, env, ctx, url, path) {
   m = path.match(/^\/api\/mod\/actions\/(\d{1,12})\/appeal$/);
   if (m) return method === "POST" ? modAppeal(request, env, session, Number(m[1])) : methodNotAllowed("POST");
   if (path === "/api/my/notices") return method === "GET" ? myNotices(env, session) : methodNotAllowed("GET");
+  if (path === "/api/my/identities") return method === "GET" ? myIdentities(env, session) : methodNotAllowed("GET");
+  m = path.match(/^\/api\/my\/identities\/(github|gitlab)\/unlink$/);
+  if (m) return method === "POST" ? unlinkIdentity(request, env, session, m[1]) : methodNotAllowed("POST");
+  if (path === "/api/my/profile") return method === "POST" ? saveProfile(request, env, session) : methodNotAllowed("POST");
   m = path.match(/^\/api\/my\/notices\/(\d{1,12})\/appeal$/);
   if (m) return method === "POST" ? appealNotice(request, env, session, Number(m[1])) : methodNotAllowed("POST");
   m = path.match(/^\/api\/projects\/([a-z0-9-]{1,80})\/builds$/);

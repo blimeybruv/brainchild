@@ -4,7 +4,7 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   X-Frame-Options: DENY
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://avatars.githubusercontent.com; connect-src 'self' https://cloudflareinsights.com; frame-src https://*.brainwave.nexus; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://avatars.githubusercontent.com https://gitlab.com; connect-src 'self' https://cloudflareinsights.com; frame-src https://*.brainwave.nexus; base-uri 'self'; form-action 'self'
 
 /img/*
   Cache-Control: public, max-age=604800
@@ -19,7 +19,7 @@
 # policy for these paths so the one below replaces it instead of adding to it.
 /report
   ! Content-Security-Policy
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://avatars.githubusercontent.com; connect-src 'self' https://cloudflareinsights.com; frame-src https://challenges.cloudflare.com; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://avatars.githubusercontent.com https://gitlab.com; connect-src 'self' https://cloudflareinsights.com; frame-src https://challenges.cloudflare.com; base-uri 'self'; form-action 'self'
 /report.html
   ! Content-Security-Policy
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://avatars.githubusercontent.com; connect-src 'self' https://cloudflareinsights.com; frame-src https://challenges.cloudflare.com; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://static.cloudflareinsights.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://avatars.githubusercontent.com https://gitlab.com; connect-src 'self' https://cloudflareinsights.com; frame-src https://challenges.cloudflare.com; base-uri 'self'; form-action 'self'

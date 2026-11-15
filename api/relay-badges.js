@@ -102,10 +102,10 @@ export async function commentBadges(env, projectId) {
 // GET /api/users/<handle> : a person's public page. Never includes an email address.
 export async function userPage(env, handle) {
   if (!/^[A-Za-z0-9~_.-]{1,60}$/.test(handle)) return json({ error: "not_found" }, 404, { "cache-control": "no-store" });
-  const u = await env.DB.prepare("SELECT id, handle, avatar_url, created_at FROM users WHERE handle = ? COLLATE NOCASE").bind(handle).first();
+  const u = await env.DB.prepare("SELECT id, handle, avatar_url, created_at, show_identities FROM users WHERE handle = ? COLLATE NOCASE").bind(handle).first();
   if (!u) return json({ error: "not_found" }, 404, { "cache-control": "no-store" });
   const { results: projects } = await env.DB.prepare(
-    "SELECT id, title, kind, genre, base_game FROM projects WHERE owner_id = ? AND hidden_at IS NULL ORDER BY title LIMIT 100"
+    "SELECT id, title, kind, genre, base_game, repo_url FROM projects WHERE owner_id = ? AND hidden_at IS NULL ORDER BY title LIMIT 100"
   ).bind(u.id).all();
   const { results: badges } = await env.DB.prepare(
     `SELECT b.kind, r.month, ${NUMBER} AS number, p.id AS project_id, p.title AS project_title
@@ -119,9 +119,16 @@ export async function userPage(env, handle) {
        JOIN relay_entries e ON e.id = r.winner_entry_id JOIN projects p ON p.id = e.project_id
       WHERE c.user_id = ? AND ${COUNTS} GROUP BY r.id ORDER BY r.id DESC LIMIT 50`
   ).bind(u.id).all();
+  // Linked GitHub and GitLab accounts are listed only if the person chose to show them.
+  let linked = null;
+  if (u.show_identities) {
+    const { results } = await env.DB.prepare("SELECT provider, handle FROM identities WHERE user_id = ? ORDER BY provider").bind(u.id).all();
+    linked = results;
+  }
+  const platform = (url) => /^https:\/\/github\.com\//.test(url || "") ? "GitHub" : /^https:\/\/gitlab\.com\//.test(url || "") ? "GitLab" : null;
   return json({
-    handle: u.handle, avatar_url: u.avatar_url, member_since: u.created_at,
-    projects,
+    handle: u.handle, avatar_url: u.avatar_url, member_since: u.created_at, linked,
+    projects: projects.map((p) => ({ id: p.id, title: p.title, kind: p.kind, genre: p.genre, base_game: p.base_game, platform: platform(p.repo_url) })),
     badges: badges.map((b) => ({ kind: b.kind, label: BADGES[b.kind] + " · Relay round " + b.number, month: b.month, project_id: b.project_id, project_title: b.project_title })),
     relay: rounds
   });

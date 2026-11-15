@@ -163,7 +163,7 @@ window.BC.load(function () {
     BC.api("POST", "/api/proposals", { project_id: sel.value, goal: document.getElementById("goal").value }).then(function (res) {
       if (res.ok) { e.target.reset(); note.textContent = "Thanks, your proposal is in the vote."; return loadVotes(); }
       var code = res.data && res.data.error;
-      if (code === "not_signed_in") { note.textContent = ""; note.appendChild(signIn("Sign in with GitHub")); note.appendChild(document.createTextNode(" to propose a project.")); return; }
+      if (code === "not_signed_in") { note.textContent = ""; note.appendChild(signIn("Sign in")); note.appendChild(document.createTextNode(" to propose a project.")); return; }
       note.textContent = {
         invalid_fields: "Choose a project and describe the goal in a sentence or two (10 to 300 characters).",
         already_proposed: "That project has already been proposed for this vote.",

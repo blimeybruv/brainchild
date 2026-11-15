@@ -205,7 +205,11 @@
   var SIGNIN_NOTICES = {
     unavailable: "Sign-in isn't available here right now.",
     denied: "Sign-in was cancelled. Nothing was shared with Brainchild.",
-    failed: "Sign-in didn't work. Please try again."
+    failed: "Sign-in didn't work. Please try again.",
+    linked: "Linked. You can now sign in with either account.",
+    connected: "Connected. You can work on projects from that account now.",
+    already_linked: "Your account already has a sign-in from that site. Unlink it on your account page first if you want to use a different one.",
+    link_conflict: "That sign-in already belongs to another Brainchild account that has been used, so they can't be joined automatically. Ask a moderator through the contact page to merge them."
   };
 
   // After a failed sign-in the server sends people back with ?signin=<code>. Show it once.
@@ -233,14 +237,16 @@
 
   // Swap the "Sign in" link for the signed-in user's avatar and handle.
   function showAccount(link, user) {
-    var avatar = typeof user.avatar_url === "string" && user.avatar_url.indexOf("https://avatars.githubusercontent.com/") === 0
-      ? h("img", { class: "avatar", src: user.avatar_url + "&s=64", alt: "", width: "28", height: "28", referrerpolicy: "no-referrer" })
+    var gh = typeof user.avatar_url === "string" && user.avatar_url.indexOf("https://avatars.githubusercontent.com/") === 0;
+    var gl = typeof user.avatar_url === "string" && user.avatar_url.indexOf("https://gitlab.com/uploads/") === 0;
+    var avatar = gh || gl
+      ? h("img", { class: "avatar", src: user.avatar_url + (gh ? "&s=64" : ""), alt: "", width: "28", height: "28", referrerpolicy: "no-referrer" })
       : null;
     var out = h("button", { class: "btn btn-plain", type: "button", text: "Sign out" });
     out.addEventListener("click", function () { signOut(out); });
     link.replaceWith(h("span", { class: "account" }, [
       user.moderator ? h("a", { class: "account-link", href: "mod.html", text: "Moderation" }) : null,
-      avatar, h("a", { class: "account-name", href: "account.html", title: "Your notices", text: "@" + user.handle }), out]));
+      avatar, h("a", { class: "account-name", href: "account.html", title: "Your account", text: "@" + user.handle }), out]));
   }
 
   var mePromise = null;

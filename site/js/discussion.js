@@ -107,7 +107,7 @@
           var text = st.draft;
           act("/api/projects/" + encodeURIComponent(id) + "/comments", { body: text }).then(function (ok) { if (ok) { st.draft = ""; st.sort = "new"; render(); } });
         }, "Post comment")
-      : h("p", { class: "callout plain" }, [signInLink("Sign in with GitHub"), " to comment, mark comments helpful, or report one."]));
+      : h("p", { class: "callout plain" }, [signInLink("Sign in"), " to comment, mark comments helpful, or report one."]));
     if (st.error) root.appendChild(h("p", { class: "form-error", role: "alert", text: st.error }));
     var list = h("div", { class: "comments" }, pinned.concat(rest).map(comment));
     if (!d.comments.length) list.appendChild(h("p", { class: "muted", text: "No comments yet. Start the conversation." }));
@@ -156,7 +156,7 @@
     if (st.user) form();
     else {
       // No account needed: the report form takes it from here, with this page's address filled in.
-      body.appendChild(h("p", null, [signInLink("Sign in with GitHub"), " to report from here, or use the ",
+      body.appendChild(h("p", null, [signInLink("Sign in"), " to report from here, or use the ",
         h("a", { href: "report.html?url=" + encodeURIComponent(window.location.href), text: "report form" }), ", which needs no account."]));
     }
     dialog.showModal();

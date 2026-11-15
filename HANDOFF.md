@@ -542,6 +542,16 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
 - Moderators see sentences such as "3 votes in the blog vote for December 2026 came from one network"
   and account ages, never hashes or addresses.
 
+**Privacy page: done 15 Nov** (`site/privacy.html`, linked in every footer). It covers what is stored and
+why, the network check, signed-out reports, the two cookies (session, and the ten-minute sign-in cookie),
+Cloudflare's cookieless analytics, who else is involved (Cloudflare, GitHub and GitLab, Software
+Heritage), how long things are kept, and how to ask for a copy or deletion (report form or Contact; a
+moderator confirms it's really them).
+- It promises that deleting an account removes the sign-ins, the profile and what the person posted,
+  while license records and lineage stay. **There's no deletion tool yet:** a moderator would have to do
+  it by hand in the database. If requests come in, a "Delete account" tool for moderators is the next
+  step; ask the owner first.
+
 - **Cheap signals first.** Show moderators these on votes, Relay entries and new accounts:
   - the age of the linked GitHub or GitLab account, and whether it has any public activity;
   - the age of the Brainchild account.

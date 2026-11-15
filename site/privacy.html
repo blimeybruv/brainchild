@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy · Brainchild</title>
+<meta name="description" content="What Brainchild stores, why, for how long, and how to ask for it to be deleted.">
+<link rel="icon" href="img/favicon-32.png" sizes="32x32" type="image/png"><link rel="icon" href="img/favicon-512.png" sizes="512x512" type="image/png"><link rel="apple-touch-icon" href="img/favicon-180.png">
+<link rel="stylesheet" href="css/styles.css?v=16">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <nav class="wrap site-nav" aria-label="Main">
+    <a class="brand" href="index.html">
+      <img class="brand-mark" src="/img/favicon-180.png" width="38" height="38" alt="">
+      <span class="brand-name">Brainchild</span>
+    </a>
+    <div class="nav-links">
+      <a href="browse.html">Browse</a>
+      <a href="blog.html">Blog</a>
+      <a href="relay.html">Relay rounds</a>
+      <a href="index.html#handoff">How handoff works</a>
+    </div>
+    <div class="nav-actions">
+      <a class="btn btn-plain" href="/api/auth/login" data-auth="signin">Sign in</a>
+      <a class="btn btn-primary" href="list.html">List a project</a>
+    </div>
+  </nav>
+</header>
+
+<main id="main" class="wrap wizard-page">
+  <div class="wizard-head">
+    <div>
+      <p class="eyebrow">Privacy</p>
+      <h1>What Brainchild keeps, and why</h1>
+      <p class="sub">Brainchild keeps as little as it can. It never asks for your email address, it has no advertising, and nothing here tracks you across other sites.</p>
+    </div>
+  </div>
+  <div class="wizard-list">
+    <section class="panel wizard">
+      <h2>Your account</h2>
+      <p>You sign in with GitHub or GitLab. From them, Brainchild keeps:</p>
+      <ul>
+        <li>your account's permanent number there, and your username;</li>
+        <li>the address of your profile picture, if it's hosted by GitHub or GitLab itself;</li>
+        <li>when your account there was created, and whether it has any public repositories or projects. Moderators use these two to spot throwaway accounts made to rig a vote.</li>
+      </ul>
+      <p>It never asks for or stores your email address. If your GitLab picture comes from Gravatar, it isn't kept, because that address is made from your email.</p>
+      <p>To check that you manage a project, Brainchild holds a sign-in token from GitHub or GitLab. It's encrypted, it never leaves the server, it can only read (never change) anything there, and it ends when you sign out.</p>
+      <p>Your public profile shows your Brainchild handle, your projects and your badges. It shows your linked GitHub and GitLab usernames only if you turn that on in your account.</p>
+    </section>
+    <section class="panel wizard">
+      <h2>What you add</h2>
+      <p>Projects, handoff packets, comments, blog proposals, Relay entries and contributions, screenshots and builds are public once you post them, apart from what's marked private below.</p>
+      <ul>
+        <li><strong>Votes and rankings</strong> are private while voting is open. Afterwards only totals are shown, never who voted for what.</li>
+        <li><strong>License records and lineage</strong> are a public, permanent record: who released a project, under which license, at which commit, and who maintained it after. Others rely on them to know what they may do with the code.</li>
+        <li><strong>Reports</strong> you send are seen only by moderators. You can follow what happened to yours on your account page.</li>
+      </ul>
+    </section>
+    <section class="panel wizard">
+      <h2>The network check on votes</h2>
+      <p>When you vote on the blog, or enter or rank in a Relay round, Brainchild stores a scrambled code made from your network: the first three parts of an IPv4 address, or the first half of an IPv6 address. Your address itself is never stored.</p>
+      <p>The code is made with a secret key that's different for every vote and every round, so it can't be used to follow you from one to the next. Moderators never see it. They only see a count, such as "3 votes in this round came from one network", which is a reason to take a closer look and never a penalty on its own. The codes are deleted 30 days after that vote or round's voting closes.</p>
+    </section>
+    <section class="panel wizard">
+      <h2>Reports from people without an account</h2>
+      <p>The <a href="report.html">report form</a> keeps your report and, only if you give one, a reply-to address. That address is seen only by the moderator and is deleted the moment your report is closed. Your IP address isn't stored. The form uses Cloudflare Turnstile to keep out bots; only that page loads it.</p>
+    </section>
+    <section class="panel wizard">
+      <h2>Cookies and analytics</h2>
+      <ul>
+        <li><strong>Session cookie:</strong> when you're signed in, one cookie keeps you signed in for up to 30 days, or until you sign out. Brainchild stores only a scrambled copy of it.</li>
+        <li><strong>Sign-in cookie:</strong> a second cookie lasts at most ten minutes while you sign in, to make sure the sign-in you finish is the one you started.</li>
+        <li><strong>Analytics:</strong> Cloudflare Web Analytics, which counts page views without cookies and without following you around.</li>
+      </ul>
+      <p>There are no other cookies, no advertising and no tracking scripts.</p>
+    </section>
+    <section class="panel wizard">
+      <h2>Who else is involved</h2>
+      <ul>
+        <li><strong>Cloudflare</strong> runs the site, its database and its file storage.</li>
+        <li><strong>GitHub and GitLab</strong> handle signing in. Brainchild asks them about the projects you list.</li>
+        <li><strong>Software Heritage</strong> is asked to archive the public repository of each listed project. Brainchild sends only the repository's public address.</li>
+      </ul>
+    </section>
+    <section class="panel wizard">
+      <h2>How long things are kept</h2>
+      <ul>
+        <li>Sign-in sessions: up to 30 days, or until you sign out.</li>
+        <li>Network codes on votes: 30 days after voting closes.</li>
+        <li>Reply-to addresses on reports: until the report is closed.</li>
+        <li>Your account and what you post: until you remove it or ask for it to be deleted.</li>
+        <li>Moderation decisions, with their reasons: kept as a record, so they can be reviewed if you ask.</li>
+      </ul>
+    </section>
+    <section class="panel wizard">
+      <h2>Seeing or deleting your data</h2>
+      <p>To ask for a copy of what Brainchild holds about you, or for your account to be deleted, use the <a href="report.html">report form</a> and choose "Something else", or see <a href="contact.html">Contact</a>. Say which account it's about. A moderator will check that the request really comes from you, for example by asking you to confirm it while signed in.</p>
+      <p>Deleting your account removes your sign-ins, your profile and what you posted. License records and lineage of projects you released stay, because other people rely on them; we'll tell you exactly what stays when you ask.</p>
+    </section>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span class="brand-name">Brainchild</span>
+    <span class="grow">A free home for projects that deserve another go.</span>
+    <a href="about.html">About</a>
+    <a href="licenses.html">Licensing guide</a>
+    <a href="report.html">Report a problem</a>
+    <a href="contact.html">Contact</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="https://github.com/blimeybruv/brainchild" rel="noopener">Source</a>
+  </div>
+</footer>
+
+<script src="js/data.js"></script>
+<script src="js/common.js?v=20"></script>
+</body>
+</html>

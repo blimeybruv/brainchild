@@ -11,7 +11,8 @@
 //   POST /api/auth/logout
 //   GET  /api/me                                          who is signed in
 //   GET  /api/repos/<owner>/<repo>/access                 repo ownership check (github.js)
-//   GET  /api/my/repos                                    the signed-in user's public repos (listings.js)
+//   GET  /api/my/repos[?host=gitlab]                      the signed-in user's public repos on GitHub or GitLab.com (listings.js)
+//   GET  /api/listing-info?host=&repo=                    what the listing form needs about one repo, on either host
 //   GET  /api/repos/<owner>/<repo>/listing-info           ownership, license and agent file for the listing form
 //   POST /api/projects                                    publish a listing (dry_run: true only previews it)
 //   POST /api/projects/<id>/edit                          the maintainer edits the page
@@ -55,7 +56,7 @@ import { startBuild, putBuildFile, activateBuild, rollbackBuild, removeBuild, bu
 const PROJECT_FIELDS =
   "p.id, p.title, p.kind, p.genre, p.status, p.base_game, p.tech, p.browser, p.license, p.note, p.tone, p.featured, p.repo_url, " +
   "p.handed_off_at, p.updated_at, p.created_at, p.intent, p.rating, p.content_notes, p.assets_license, p.name_rights, p.open_to_transfer, " +
-  "u.handle AS owner, (u.github_id IS NOT NULL AND p.repo_id IS NOT NULL) AS owner_verified"
+  "u.handle AS owner, p.repo_host, (p.owner_id IS NOT NULL AND p.repo_id IS NOT NULL) AS owner_verified"
   + ", (SELECT s.id FROM screenshots s WHERE s.project_id = p.id ORDER BY s.id LIMIT 1) AS shot"
   + ", EXISTS (SELECT 1 FROM builds b WHERE b.project_id = p.id AND b.status = 'active') AS has_build";
 // Projects removed by a moderator are hidden everywhere.
@@ -126,7 +127,7 @@ async function getProject(env, id) {
     "SELECT works, broken, vision, agent_context, provenance, handoff_rules, updated_at FROM packets WHERE project_id = ?"
   ).bind(id).first();
   const { results: lineage } = await env.DB.prepare(
-    `SELECT u.handle, l.role, l.how, l.repo_full_name, l.started_at, l.ended_at
+    `SELECT u.handle, l.role, l.how, l.repo_full_name, l.repo_host, l.started_at, l.ended_at
        FROM lineage l JOIN users u ON u.id = l.user_id
       WHERE l.project_id = ? ORDER BY l.started_at, l.id`
   ).bind(id).all();
@@ -157,14 +158,19 @@ async function handlePrivate(request, env, ctx, url, path) {
   if (path === "/api/auth/gitlab/login") return method === "GET" ? gitlabLogin(request, env, url) : methodNotAllowed("GET");
   if (path === "/api/auth/gitlab/callback") return method === "GET" ? gitlabCallback(request, env, url) : methodNotAllowed("GET");
   if (path === "/api/me") return method === "GET" ? me(request, env, url) : methodNotAllowed("GET");
-  if (path === "/api/my/repos") return method === "GET" ? myRepos(env, await getSession(request, env)) : methodNotAllowed("GET");
+  if (path === "/api/my/repos") return method === "GET" ? myRepos(env, await getSession(request, env), url) : methodNotAllowed("GET");
+  // The listing form's look at one repo, on either host: ?host=github|gitlab&repo=<owner/name, group/sub/name or GitLab id>
+  if (path === "/api/listing-info") {
+    if (method !== "GET") return methodNotAllowed("GET");
+    return listingInfo(env, await getSession(request, env), url.searchParams.get("host") === "gitlab" ? "gitlab" : "github", url.searchParams.get("repo") || "");
+  }
   const repo = path.match(/^\/api\/repos\/([^/]+)\/([^/]+)\/(access|listing-info)$/);
   if (repo) {
     if (method !== "GET") return methodNotAllowed("GET");
     let owner, name;
     try { owner = decodeURIComponent(repo[1]); name = decodeURIComponent(repo[2]); } catch { return notFound(); }
     const session = await getSession(request, env);
-    return repo[3] === "access" ? repoAccessRoute(env, session, owner, name) : listingInfo(env, session, owner, name);
+    return repo[3] === "access" ? repoAccessRoute(env, session, owner, name) : listingInfo(env, session, "github", owner + "/" + name);
   }
   if (path === "/api/projects") return createListing(request, env, ctx, await getSession(request, env)); // POST only (see handleApi)
   const edit = path.match(/^\/api\/projects\/([a-z0-9-]{1,80})\/edit$/);
@@ -231,7 +237,7 @@ async function handlePrivate(request, env, ctx, url, path) {
 async function handleApi(request, env, ctx, url) {
   const path = url.pathname.replace(/\/+$/, "");
 
-  if (path.startsWith("/api/auth/") || path === "/api/me" || path.startsWith("/api/repos/") || path.startsWith("/api/my/") ||
+  if (path.startsWith("/api/auth/") || path === "/api/me" || path.startsWith("/api/repos/") || path.startsWith("/api/my/") || path === "/api/listing-info" ||
       (path === "/api/projects" && request.method === "POST") || /^\/api\/projects\/[^/]+\/(adopt|edit|comments|screenshots|builds)(\/.*)?$/.test(path) ||
       path.startsWith("/api/comments/") || path === "/api/reports" || path === "/api/relay" || path.startsWith("/api/relay/") || path === "/api/report-form" || path === "/api/outside-reports" || path === "/api/votes" || path.startsWith("/api/proposals") || path.startsWith("/api/mod/") || /^\/api\/screenshots\/\d+\/delete$/.test(path)) {
     try {

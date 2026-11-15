@@ -16,11 +16,11 @@ function recheckSeconds(env) { return Number(env.SWH_RECHECK_SECONDS) || 600; }
 function nowText() { return new Date().toISOString().replace("T", " ").slice(0, 19); }
 
 // The statement that queues a request; it goes in the same batch as the license record.
-export function queueArchive(env, projectId, version, repoFullName, now) {
+export function queueArchive(env, projectId, version, repoWebUrl, now) {
   return env.DB.prepare(
     `INSERT INTO archive_requests (project_id, license_version, repo_url, status, requested_at)
      SELECT ?, ?, ?, 'queued', ? WHERE EXISTS (SELECT 1 FROM license_records WHERE project_id = ? AND version = ?)`
-  ).bind(projectId, version, "https://github.com/" + repoFullName, now, projectId, version);
+  ).bind(projectId, version, repoWebUrl, now, projectId, version);
 }
 
 function statusFrom(d) {

@@ -21,7 +21,7 @@
 //     someone looks at it after the stage's date has passed.
 
 import { privateJson, isSameOrigin } from "./http.js";
-import { requireRepoAdmin } from "./github.js";
+import { requireProjectAdmin } from "./forge.js";
 
 export const MIN_ENTRIES = 4;
 const ENTRY_LAST_DAY = 5;
@@ -189,7 +189,7 @@ export async function roundView(env, session, month) {
   if (session) {
     // The projects this person could nominate: ones they maintain, with a verified repo.
     const { results: projects } = await env.DB.prepare(
-      "SELECT id, title FROM projects WHERE owner_id = ? AND repo_full_name IS NOT NULL AND hidden_at IS NULL ORDER BY title"
+      "SELECT id, title FROM projects WHERE owner_id = ? AND repo_full_name IS NOT NULL AND COALESCE(repo_host, 'github') = 'github' AND hidden_at IS NULL ORDER BY title"
     ).bind(session.userId).all();
     out.me.projects = projects;
     const { results: ranks } = await env.DB.prepare("SELECT entry_id, rank FROM relay_votes WHERE round_id = ? AND voter_id = ?").bind(round.id, session.userId).all();
@@ -222,15 +222,16 @@ export async function enterRelay(request, env, session) {
   if (!/^[a-z0-9-]{1,80}$/.test(id)) return bad("invalid_fields", 400, { fields: ["project_id"] });
   const round = await advance(env);
   if (round.status !== "entry") return bad("entry_closed", 409);
-  const p = await env.DB.prepare("SELECT id, owner_id, repo_full_name FROM projects WHERE id = ? AND hidden_at IS NULL").bind(id).first();
+  const p = await env.DB.prepare("SELECT id, owner_id, repo_full_name, repo_id, repo_host FROM projects WHERE id = ? AND hidden_at IS NULL").bind(id).first();
   if (!p) return bad("not_found", 404);
   if (p.owner_id !== session.userId) return bad("not_maintainer", 403);
   if (!p.repo_full_name) return bad("listing_not_verified", 409);
   const el = await eligibility(env, session.userId, round);
   if (!el.eligible) return bad("not_eligible", 409, { missed_month: el.missed_month });
   // GitHub is asked now: the entrant must still control the repo, and it must be able to take pull requests.
-  const [owner, name] = p.repo_full_name.split("/");
-  const own = await requireRepoAdmin(env, session, owner, name);
+  // Contributions are checked as GitHub pull requests, so for now only GitHub projects can enter.
+  if ((p.repo_host || "github") !== "github") return bad("relay_github_only", 409);
+  const own = await requireProjectAdmin(env, session, p);
   if (own.response) return own.response;
   if (own.repo.archived) return bad("repo_archived", 409);
   try {

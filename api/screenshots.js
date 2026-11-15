@@ -10,7 +10,7 @@
 //     upload as a web page.
 
 import { privateJson, json, NO_STORE, isSameOrigin } from "./http.js";
-import { requireRepoAdmin } from "./github.js";
+import { requireProjectAdmin } from "./forge.js";
 
 const MAX_BYTES = 2 * 1024 * 1024;
 const MAX_PER_PROJECT = 6;
@@ -28,13 +28,12 @@ async function maintainerOf(request, env, session, projectId) {
   if (!isSameOrigin(request)) return { response: bad("forbidden", 403) };
   if (!session) return { response: bad("not_signed_in", 401) };
   if (!/^[a-z0-9-]{1,80}$/.test(projectId)) return { response: bad("not_found", 404) };
-  const p = await env.DB.prepare("SELECT id, owner_id, repo_full_name FROM projects WHERE id = ? AND hidden_at IS NULL").bind(projectId).first();
+  const p = await env.DB.prepare("SELECT id, owner_id, repo_full_name, repo_id, repo_host FROM projects WHERE id = ? AND hidden_at IS NULL").bind(projectId).first();
   if (!p) return { response: bad("not_found", 404) };
   if (p.owner_id !== session.userId) return { response: bad("not_maintainer", 403) };
   // Listings made before sign-in existed have no verified repo yet; the owner lists them again first.
   if (!p.repo_full_name) return { response: bad("listing_not_verified", 409) };
-  const [owner, name] = p.repo_full_name.split("/");
-  const own = await requireRepoAdmin(env, session, owner, name);
+  const own = await requireProjectAdmin(env, session, p);
   if (own.response) return { response: own.response };
   return { project: p };
 }

@@ -60,7 +60,7 @@
     prov.appendChild(h("div", null, [add]));
     var saveBtn = h("button", { class: "btn btn-primary", type: "button", text: busy ? "Saving…" : "Save changes", disabled: busy ? true : null });
     saveBtn.addEventListener("click", save);
-    var repo = (p.repo_url || "").replace(/^https:\/\/github\.com\//, "");
+    var repo = (p.repo_url || "").replace(/^https:\/\/(github|gitlab)\.com\//, "");
 
     root.textContent = "";
     if (msg) root.appendChild(h("p", { class: msg.ok ? "callout plain" : "form-error", role: msg.ok ? "status" : "alert", text: msg.text }));
@@ -125,7 +125,7 @@
     p = res.data.project;
     var k = res.data.packet || {};
     document.getElementById("e-title-h").textContent = "Edit " + p.title;
-    if (!user) return message([h("a", { href: "/api/auth/login?provider=github&return_to=" + encodeURIComponent("/edit.html?id=" + id), text: "Sign in with GitHub" }), " to edit this page."]);
+    if (!user) return message([h("a", { href: "/api/auth/login?return_to=" + encodeURIComponent("/edit.html?id=" + id), text: "Sign in" }), " to edit this page."]);
     if (user.handle !== p.owner) return message(["Only this project's maintainer, @" + (p.owner || "unknown") + ", can edit its page."]);
     f = {
       title: p.title || "", note: p.note || "", genre: p.genre, tech: p.tech || "", browser: !!p.browser, status: p.status,

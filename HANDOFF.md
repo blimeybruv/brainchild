@@ -445,12 +445,30 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
     page; it always shows each project's platform.
   - GitLab tokens expire after two hours and are refreshed like GitHub's (`api/gitlab.js`), sealed
     separately from the GitHub ones, and revoked at sign-out.
+- **Done: GitLab.com projects** (`api/forge.js`, migration `0016`).
+  - `api/forge.js` answers every repository question for both hosts: who manages it, the head commit,
+    the license file at that commit, the CLAUDE.md or AGENTS.md, and the person's own repositories.
+    Listing, editing, handing off, adopting, hosted builds and screenshots all ask it, so the same
+    rules apply on both sites.
+  - The GitLab check is the person's role on the project, counting roles inherited from groups
+    (`/projects/:id/members/all/:user`): Maintainer (40) or Owner (50). Private projects can't be listed.
+    Nested groups (`group/sub/project`) work.
+  - The license text is read at the exact commit from the root `LICENSE`, `LICENCE` or `COPYING` file;
+    its SPDX id comes from GitLab's detection on the default branch, mapped from GitLab's keys.
+  - A repo is now identified by `(repo_host, repo_id)`. The unique index changed to match, because a
+    GitLab project and a GitHub repo can have the same number. `license_records` and `lineage` also
+    record the host, so records and credits link to the right site.
+  - The listing form has a "GitHub / GitLab.com" choice. If the account isn't linked to that site, or its
+    token has lapsed, it offers "Connect GitLab" (or GitHub), which links it and comes back.
+  - Adoption: the adopter's copy must be on the same site as the project. GitLab forks are proved with
+    `forked_from_project`; transfers keep the project id.
+  - Codeberg addresses get "Codeberg isn't supported"; other self-hosted addresses get "Only projects on
+    GitLab.com can be listed for now".
+  - Relay rounds stay GitHub-only for now: GitLab projects aren't offered for entry ("relay_github_only").
 - **Still to build (next batches):**
-  1. Listing, editing, handing off and adopting **GitLab.com projects**, with the Owner or Maintainer
-     check (`access_level` 40 or 50) at each step; refuse Codeberg addresses with a plain message.
-  2. The **manual merge tool** for moderators (accounts that have both been used).
-  3. **Self-hosted GitLab** listings verified with a file ("verified: push access").
-  4. Relay contributions on a GitLab winner (merge requests, matched to the contributor's GitLab sign-in).
+  1. The **manual merge tool** for moderators (accounts that have both been used).
+  2. **Self-hosted GitLab** listings verified with a file ("verified: push access").
+  3. Relay contributions on a GitLab winner (merge requests, matched to the contributor's GitLab sign-in).
 
 **Linked accounts.**
 - **Accounts:** one Brainchild account per person (handle, badges, comments, lineage, votes), with any

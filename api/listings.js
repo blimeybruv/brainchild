@@ -1,8 +1,9 @@
 // Listing a project, the license snapshot kept with it, and adopting a project.
 //
 // Rules encoded here (see HANDOFF.md):
-//   - Only an admin of a public GitHub repo can list it. The check is repeated at the moment
-//     of publishing and again at the moment of adoption (requireRepoAdmin).
+//   - Only someone who manages a public repo can list it: an admin on GitHub, a Maintainer or
+//     Owner on GitLab.com (forge.js). The check is repeated at the moment of publishing, at every
+//     edit, and again at the moment of adoption.
 //   - A listing needs a license. Without one nobody may legally continue the project.
 //   - Every release is recorded with its commit, license id and a fingerprint of the license
 //     text, and a copy of that text is kept. Records are only ever added, never changed:
@@ -13,7 +14,7 @@
 //   - Credit is never removed from lineage: adoption closes the old entry and adds a new one.
 
 import { json, privateJson, NO_STORE, isSameOrigin } from "./http.js";
-import { githubGet, repoAccess, requireRepoAdmin } from "./github.js";
+import { HOSTS, access, requireAdmin, requireProjectAdmin, headCommit, fetchLicense, fetchAgentFile, listRepos, parseRepoRef, repoUrl } from "./forge.js";
 import { queueArchive, refreshArchives, archiveStatus } from "./archive.js";
 
 const GENRES = ["Puzzle", "Platformer", "Racing", "Roguelite", "Narrative", "Sandbox", "Simulation", "Strategy", "Tactics", "Productivity", "Utility", "Creative tools"];
@@ -21,7 +22,6 @@ const CONTENT_NOTES = ["Violence", "Blood", "Horror", "Strong language", "Drug r
 const ASSET_LICENSES = ["CC BY 4.0", "CC BY-SA 4.0", "CC0", "Same as the code"];
 const NAME_RIGHTS = ["keep", "continuation", "rename"];
 const MAX_LISTINGS_PER_USER = 25;
-const MAX_LICENSE_BYTES = 200 * 1024;
 const MAX_BODY_BYTES = 100 * 1024;
 
 // ---------- small helpers ----------
@@ -64,61 +64,6 @@ async function readJson(request) {
 
 function bad(error, status = 400, extra = {}) { return privateJson({ error, ...extra }, status); }
 
-// ---------- GitHub lookups ----------
-
-async function headCommit(env, session, fullName, branch) {
-  const r = await githubGet(env, session, "/repos/" + fullName + "/commits/" + encodeURIComponent(branch));
-  if (r.reauth) return { error: "github_sign_in_again", status: 401 };
-  const sha = r.status === 200 && r.data && typeof r.data.sha === "string" && /^[0-9a-f]{40}$/.test(r.data.sha) ? r.data.sha : null;
-  return sha ? { sha } : { error: "no_commits", status: 409 };
-}
-
-// The license file GitHub finds in the repo, at a given commit. null = no license.
-async function fetchLicense(env, session, fullName, ref) {
-  const r = await githubGet(env, session, "/repos/" + fullName + "/license" + (ref ? "?ref=" + encodeURIComponent(ref) : ""));
-  if (r.reauth) return { error: "github_sign_in_again", status: 401 };
-  if (r.status === 404) return { license: null };
-  const d = r.data;
-  if (r.status !== 200 || !d || typeof d.content !== "string") return { error: "github_error", status: 502 };
-  let bytes;
-  try {
-    const bin = atob(d.content.replace(/\s+/g, ""));
-    bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  } catch { return { error: "github_error", status: 502 }; }
-  if (!bytes.length) return { license: null };
-  if (bytes.length > MAX_LICENSE_BYTES) return { error: "license_too_large", status: 409 };
-  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
-  let sha256 = "";
-  for (const b of digest) sha256 += b.toString(16).padStart(2, "0");
-  const spdx = d.license && typeof d.license.spdx_id === "string" && d.license.spdx_id !== "NOASSERTION" && /^[A-Za-z0-9.+-]{1,60}$/.test(d.license.spdx_id)
-    ? d.license.spdx_id : null;
-  return {
-    license: {
-      spdx, // null = GitHub found a license file but doesn't recognise it as a standard one
-      path: typeof d.path === "string" && d.path.length <= 200 ? d.path : "LICENSE",
-      bytes, sha256
-    }
-  };
-}
-
-async function fetchAgentFile(env, session, fullName) {
-  for (const path of ["CLAUDE.md", "AGENTS.md"]) {
-    const r = await githubGet(env, session, "/repos/" + fullName + "/contents/" + path);
-    if (r.reauth) return null;
-    if (r.status === 200 && r.data && typeof r.data.content === "string" && r.data.encoding === "base64") {
-      try {
-        const bin = atob(r.data.content.replace(/\s+/g, ""));
-        const bytes = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-        const body = new TextDecoder().decode(bytes);
-        if (body.trim()) return { path, text: body.slice(0, 20000) };
-      } catch { /* try the next file */ }
-    }
-  }
-  return null;
-}
-
 // ---------- the "handoff rules" block for CLAUDE.md / AGENTS.md ----------
 
 export function handoffRules(p) {
@@ -149,10 +94,10 @@ export function handoffRules(p) {
     : "- Name: don't use " + t + " as this project's name. Pick a new one and credit the original.";
   const lines = ["## Brainchild handoff rules (keep this section)", licRule, assets, nameRule];
   if (p.kind === "Mod" && p.baseGame) {
-    lines.push("- This is a mod for " + p.baseGame + ". The license covers only the mod's own files; " + p.baseGame + "'s own terms still apply.");
+    lines.push("- This is made for " + p.baseGame + ". The license covers only this project's own files; the terms of " + p.baseGame + " still apply.");
   }
   lines.push(
-    "- Lineage: originally by @" + p.handle + " (github.com/" + p.repoFullName + "),",
+    "- Lineage: originally by @" + p.handle + " (" + (p.repoUrl || repoUrl("github", p.repoFullName)).replace(/^https:\/\//, "") + "),",
     "  " + (p.intent === "leave" ? "handed off" : "listed") + " at commit " + p.commit.slice(0, 7) + " on " + niceDate(p.date) + ". Keep this credit in README.md.",
     "- If a change touches licensing, credits or the project name, flag it to the maintainer instead of deciding."
   );
@@ -166,35 +111,30 @@ function licenseLabel(spdx, assetsLicense) {
 
 // ---------- GET /api/my/repos : the repo picker ----------
 
-export async function myRepos(env, session) {
+export async function myRepos(env, session, url) {
   if (!session) return bad("not_signed_in", 401);
-  const r = await githubGet(env, session, "/user/repos?visibility=public&affiliation=owner,collaborator,organization_member&sort=pushed&per_page=100");
-  if (r.reauth) return bad("github_sign_in_again", 401);
-  if (r.status !== 200 || !Array.isArray(r.data)) return bad("github_error", 502);
-  const repos = r.data.filter((d) => d && Number.isSafeInteger(d.id) && typeof d.full_name === "string" && d.private !== true).slice(0, 100).map((d) => ({
-    id: d.id,
-    full_name: d.full_name,
-    description: typeof d.description === "string" ? d.description.slice(0, 200) : "",
-    admin: !!(d.permissions && d.permissions.admin === true),
-    fork: d.fork === true,
-    archived: d.archived === true,
-    listed: null
-  }));
+  const host = url && url.searchParams.get("host") === "gitlab" ? "gitlab" : "github";
+  const r = await listRepos(env, session, host);
+  if (r.error) return bad(r.error, r.status);
+  const repos = r.repos.map((x) => ({ ...x, listed: null }));
   if (repos.length) {
     const marks = repos.map(() => "?").join(",");
-    const { results } = await env.DB.prepare("SELECT id, repo_id FROM projects WHERE repo_id IN (" + marks + ")").bind(...repos.map((x) => x.id)).all();
+    const { results } = await env.DB.prepare("SELECT id, repo_id FROM projects WHERE COALESCE(repo_host, 'github') = ? AND repo_id IN (" + marks + ")")
+      .bind(host, ...repos.map((x) => x.id)).all();
     const byRepo = new Map(results.map((x) => [x.repo_id, x.id]));
     for (const x of repos) x.listed = byRepo.get(x.id) || null;
   }
-  return privateJson({ repos });
+  return privateJson({ host, repos });
 }
 
 // The listing for a repo, if there is one. Listings made before sign-in existed have no
-// GitHub repo id, so those are matched on the repo address instead.
+// repo id, so those are matched on the repo address instead.
 async function findListing(env, repo) {
   return env.DB.prepare(
-    "SELECT id, owner_id, repo_id, status FROM projects WHERE repo_id = ?1 OR (repo_id IS NULL AND lower(repo_url) = lower(?2)) ORDER BY repo_id IS NULL LIMIT 1"
-  ).bind(repo.id, "https://github.com/" + repo.full_name).first();
+    `SELECT id, owner_id, repo_id, status FROM projects
+      WHERE (COALESCE(repo_host, 'github') = ?1 AND repo_id = ?2) OR (repo_id IS NULL AND lower(repo_url) = lower(?3))
+      ORDER BY repo_id IS NULL LIMIT 1`
+  ).bind(repo.host, repo.id, repoUrl(repo.host, repo.full_name)).first();
 }
 // An older listing that belongs to this user: listing the repo again completes that listing
 // (verified owner, license record) instead of creating a second one.
@@ -204,9 +144,11 @@ function isLegacyOwn(existing, session) {
 
 // ---------- GET /api/repos/<owner>/<repo>/listing-info : everything the form needs about one repo ----------
 
-export async function listingInfo(env, session, owner, name) {
+export async function listingInfo(env, session, host, ref) {
   if (!session) return bad("not_signed_in", 401);
-  const a = await repoAccess(env, session, owner, name);
+  const parsed = parseRepoRef(host, ref);
+  if (parsed.error) return bad(parsed.error, 400);
+  const a = await access(env, session, parsed.host, parsed.ref);
   if (!a.ok) return bad(a.error, a.status);
   const out = { admin: a.admin, can_list: a.admin && !a.repo.private, repo: a.repo, license: null, agent_file: null, listed: null };
   const existing = await findListing(env, a.repo);
@@ -217,10 +159,10 @@ export async function listingInfo(env, session, owner, name) {
     out.can_hand_off = out.can_list && !out.can_update && existing.owner_id === session.userId && existing.status !== "adopt";
   }
   if (!out.can_list) return privateJson(out);
-  const lic = await fetchLicense(env, session, a.repo.full_name, null);
+  const lic = await fetchLicense(env, session, a.repo, null);
   if (lic.error) return bad(lic.error, lic.status);
   if (lic.license) out.license = { spdx: lic.license.spdx, path: lic.license.path, fingerprint: lic.license.sha256 };
-  out.agent_file = await fetchAgentFile(env, session, a.repo.full_name);
+  out.agent_file = await fetchAgentFile(env, session, a.repo);
   return privateJson(out);
 }
 
@@ -231,8 +173,9 @@ function validateListing(b) {
   const f = {};
   const take = (key, max, opts) => { const r = text(b[key], max, opts); if (r.error) errors.push(key); else f[key] = r.value; };
 
-  const repo = parseRepoName(b.repo);
-  if (!repo) errors.push("repo");
+  const parsed = parseRepoRef(HOSTS.includes(b.host) ? b.host : "github", b.repo);
+  const repo = parsed.error ? null : parsed;
+  if (!repo) errors.push(parsed.error === "codeberg_not_supported" || parsed.error === "gitlab_com_only" ? parsed.error : "repo");
   f.intent = b.intent === "leave" ? "leave" : b.intent === "stay" ? "stay" : null;
   if (!f.intent) errors.push("intent");
   // Someone stepping away puts the project up for adoption; someone staying asks for help or testers.
@@ -314,10 +257,11 @@ export async function createListing(request, env, ctx, session) {
   const body = await readJson(request);
   if (!body) return bad("bad_request");
   const { errors, f, repo } = validateListing(body);
+  for (const e of ["codeberg_not_supported", "gitlab_com_only"]) if (errors.includes(e)) return bad(e, 400);
   if (errors.length) return bad("invalid_fields", 400, { fields: errors });
 
   // Ownership is checked now, at the moment of publishing, never from an earlier answer.
-  const own = await requireRepoAdmin(env, session, repo.owner, repo.name);
+  const own = await requireAdmin(env, session, repo.host, repo.ref);
   if (own.response) return own.response;
   const r = own.repo;
   if (!r.default_branch) return bad("no_commits", 409);
@@ -328,9 +272,9 @@ export async function createListing(request, env, ctx, session) {
   const handoff = !!existing && !upgrade && existing.owner_id === session.userId && existing.status !== "adopt" && f.intent === "leave";
   if (existing && !upgrade && !handoff) return bad("already_listed", 409, { id: existing.id });
 
-  const head = await headCommit(env, session, r.full_name, r.default_branch);
+  const head = await headCommit(env, session, r);
   if (head.error) return bad(head.error, head.status);
-  const lic = await fetchLicense(env, session, r.full_name, head.sha);
+  const lic = await fetchLicense(env, session, r, head.sha);
   if (lic.error) return bad(lic.error, lic.status);
   if (!lic.license) return bad("no_license", 409);
   const last = existing ? await env.DB.prepare(
@@ -341,71 +285,71 @@ export async function createListing(request, env, ctx, session) {
   const date = today();
   const rules = handoffRules({
     spdx: lic.license.spdx, assetsLicense: f.assets_license, title: f.title, intent: f.intent, nameRights: f.name_rights,
-    kind: f.kind, baseGame: f.base_game, handle: session.handle, repoFullName: r.full_name, commit: head.sha, date
+    kind: f.kind, baseGame: f.base_game, handle: session.handle, repoFullName: r.full_name, repoUrl: repoUrl(r.host, r.full_name), commit: head.sha, date
   });
   const summary = {
     title: f.title, owner: session.handle, license: lic.license.spdx, license_path: lic.license.path,
-    fingerprint: lic.license.sha256, commit: head.sha, date, repo: r.full_name
+    fingerprint: lic.license.sha256, commit: head.sha, date, repo: r.full_name, host: r.host
   };
   if (body.dry_run === true) return privateJson({ ok: true, dry_run: true, summary, rules });
 
   const mine = await env.DB.prepare("SELECT COUNT(*) AS n FROM projects WHERE owner_id = ?").bind(session.userId).first();
   if (mine && mine.n >= MAX_LISTINGS_PER_USER) return bad("too_many_listings", 429);
-  const id = existing ? existing.id : await uniqueSlug(env, r.name || repo.name, r.owner || repo.owner);
+  const id = existing ? existing.id : await uniqueSlug(env, r.name || r.full_name.split("/").pop(), (r.owner || r.full_name.split("/")[0]).split("/").pop());
   if (!id) return bad("server_error", 500);
   const licenseKey = await storeLicense(env, lic.license);
   const now = new Date().toISOString().replace("T", " ").slice(0, 19);
   const handedOff = f.intent === "leave" ? now : null;
 
   const label = licenseLabel(lic.license.spdx, f.assets_license);
-  const repoUrl = "https://github.com/" + r.full_name;
+  const webUrl = repoUrl(r.host, r.full_name);
   const statements = existing ? [
     env.DB.prepare(
       `UPDATE projects SET title = ?, kind = ?, genre = ?, status = ?, base_game = ?, tech = ?, browser = ?, license = ?, note = ?,
               repo_url = ?, updated_at = ?, handed_off_at = ?, intent = ?, repo_id = ?, repo_full_name = ?, rating = ?,
-              content_notes = ?, assets_license = ?, name_rights = ?, open_to_transfer = ?
-        WHERE id = ? AND owner_id = ? AND (repo_id IS NULL OR repo_id = ?)`
-    ).bind(f.title, f.kind, f.genre, f.status, f.base_game || null, f.tech || null, f.browser, label, f.note, repoUrl, now, handedOff,
-      f.intent, r.id, r.full_name, f.rating, JSON.stringify(f.content_notes), f.assets_license, f.name_rights, f.open_to_transfer,
-      id, session.userId, r.id),
+              content_notes = ?, assets_license = ?, name_rights = ?, open_to_transfer = ?, repo_host = ?
+        WHERE id = ? AND owner_id = ? AND (repo_id IS NULL OR (repo_id = ? AND COALESCE(repo_host, 'github') = ?))`
+    ).bind(f.title, f.kind, f.genre, f.status, f.base_game || null, f.tech || null, f.browser, label, f.note, webUrl, now, handedOff,
+      f.intent, r.id, r.full_name, f.rating, JSON.stringify(f.content_notes), f.assets_license, f.name_rights, f.open_to_transfer, r.host,
+      id, session.userId, r.id, r.host),
     env.DB.prepare(
       `INSERT INTO packets (project_id, works, broken, vision, agent_context, provenance, handoff_rules, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT (project_id) DO UPDATE SET works = excluded.works, broken = excluded.broken, vision = excluded.vision,
          agent_context = excluded.agent_context, provenance = excluded.provenance, handoff_rules = excluded.handoff_rules, updated_at = excluded.updated_at`
     ).bind(id, f.works, f.broken || null, f.vision || null, f.agent_context || null, JSON.stringify(f.provenance), rules, now),
     // The lineage entry made with the old listing is kept; it only gains the repo it refers to.
-    env.DB.prepare("UPDATE lineage SET how = 'created', repo_full_name = ? WHERE project_id = ? AND user_id = ? AND how IS NULL")
-      .bind(r.full_name, id, session.userId),
+    env.DB.prepare("UPDATE lineage SET how = 'created', repo_full_name = ?, repo_host = ? WHERE project_id = ? AND user_id = ? AND how IS NULL")
+      .bind(r.full_name, r.host, id, session.userId),
     env.DB.prepare(
-      `INSERT INTO lineage (project_id, user_id, role, started_at, how, repo_full_name)
-       SELECT ?, ?, 'creator', ?, 'created', ? WHERE NOT EXISTS (SELECT 1 FROM lineage WHERE project_id = ?)`
-    ).bind(id, session.userId, now, r.full_name, id)
+      `INSERT INTO lineage (project_id, user_id, role, started_at, how, repo_full_name, repo_host)
+       SELECT ?, ?, 'creator', ?, 'created', ?, ? WHERE NOT EXISTS (SELECT 1 FROM lineage WHERE project_id = ?)`
+    ).bind(id, session.userId, now, r.full_name, r.host, id)
   ] : [
     env.DB.prepare(
       `INSERT INTO projects (id, title, kind, genre, status, base_game, tech, browser, license, note, owner_id, repo_url,
                              created_at, updated_at, handed_off_at, intent, repo_id, repo_full_name, rating, content_notes,
-                             assets_license, name_rights, open_to_transfer)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).bind(id, f.title, f.kind, f.genre, f.status, f.base_game || null, f.tech || null, f.browser, label, f.note, session.userId, repoUrl,
+                             assets_license, name_rights, open_to_transfer, repo_host)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).bind(id, f.title, f.kind, f.genre, f.status, f.base_game || null, f.tech || null, f.browser, label, f.note, session.userId, webUrl,
       now, now, handedOff, f.intent, r.id, r.full_name, f.rating, JSON.stringify(f.content_notes),
-      f.assets_license, f.name_rights, f.open_to_transfer),
+      f.assets_license, f.name_rights, f.open_to_transfer, r.host),
     env.DB.prepare(
       "INSERT INTO packets (project_id, works, broken, vision, agent_context, provenance, handoff_rules, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
     ).bind(id, f.works, f.broken || null, f.vision || null, f.agent_context || null, JSON.stringify(f.provenance), rules, now),
     env.DB.prepare(
-      "INSERT INTO lineage (project_id, user_id, role, started_at, how, repo_full_name) VALUES (?, ?, 'creator', ?, 'created', ?)"
-    ).bind(id, session.userId, now, r.full_name)
+      "INSERT INTO lineage (project_id, user_id, role, started_at, how, repo_full_name, repo_host) VALUES (?, ?, 'creator', ?, 'created', ?, ?)"
+    ).bind(id, session.userId, now, r.full_name, r.host)
   ];
   // The license record. If two publishes race, the second fails here (version 1 exists) and nothing is saved twice.
   statements.push(env.DB.prepare(
     `INSERT INTO license_records (project_id, version, kind, repo_full_name, commit_sha, spdx_id, license_sha256, license_key,
-                                  license_path, assets_license, name_rights, recorded_by, recorded_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                                  license_path, assets_license, name_rights, recorded_by, recorded_at, repo_host)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(id, (last ? last.version : 0) + 1, f.intent === "leave" ? "handoff" : "listing", r.full_name, head.sha, lic.license.spdx, lic.license.sha256, licenseKey,
-    lic.license.path, f.assets_license, f.name_rights, session.userId, now));
+    lic.license.path, f.assets_license, f.name_rights, session.userId, now, r.host));
   if (handoff) statements.push(changeRow(env, id, session.userId, now, ["status", "handed off"], null));
   // Ask Software Heritage to archive the repo. Sent after the response; never holds up a listing.
-  statements.push(queueArchive(env, id, (last ? last.version : 0) + 1, r.full_name, now));
+  statements.push(queueArchive(env, id, (last ? last.version : 0) + 1, webUrl, now));
   try {
     await env.DB.batch(statements);
   } catch (err) {
@@ -448,7 +392,7 @@ export async function editProject(request, env, ctx, session, id) {
   const body = await readJson(request);
   if (!body) return bad("bad_request");
   const p = await env.DB.prepare(
-    `SELECT id, owner_id, repo_full_name, title, kind, genre, tech, browser, note, status, intent, rating, content_notes, assets_license
+    `SELECT id, owner_id, repo_full_name, repo_id, repo_host, title, kind, genre, tech, browser, note, status, intent, rating, content_notes, assets_license
        FROM projects WHERE id = ? AND hidden_at IS NULL`
   ).bind(id).first();
   if (!p) return bad("not_found", 404);
@@ -487,9 +431,8 @@ export async function editProject(request, env, ctx, session, id) {
   f.provenance = JSON.stringify(provenance);
   if (errors.length) return bad("invalid_fields", 400, { fields: [...new Set(errors)] });
 
-  // GitHub is asked on every save whether this person still has admin rights on the repo.
-  const [owner, name] = p.repo_full_name.split("/");
-  const own = await requireRepoAdmin(env, session, owner, name);
+  // GitHub or GitLab is asked on every save whether this person still manages the repo.
+  const own = await requireProjectAdmin(env, session, p);
   if (own.response) return own.response;
   const r = own.repo;
 
@@ -500,9 +443,9 @@ export async function editProject(request, env, ctx, session, id) {
   ).bind(id).first();
   let snapshot = null;
   if (r.default_branch) {
-    const head = await headCommit(env, session, r.full_name, r.default_branch);
+    const head = await headCommit(env, session, r);
     if (head.error) return bad(head.error, head.status);
-    const lic = await fetchLicense(env, session, r.full_name, head.sha);
+    const lic = await fetchLicense(env, session, r, head.sha);
     if (lic.error) return bad(lic.error, lic.status);
     if (!lic.license) return bad("no_license", 409);
     if (!last || last.license_sha256 !== lic.license.sha256) {
@@ -550,10 +493,10 @@ export async function editProject(request, env, ctx, session, id) {
   if (snapshot) {
     statements.push(env.DB.prepare(
       `INSERT INTO license_records (project_id, version, kind, repo_full_name, commit_sha, spdx_id, license_sha256, license_key,
-                                    license_path, assets_license, name_rights, recorded_by, recorded_at)
-       SELECT ?, ?, 'license_change', ?, ?, ?, ?, ?, ?, assets_license, name_rights, ?, ? FROM projects WHERE id = ?`
+                                    license_path, assets_license, name_rights, recorded_by, recorded_at, repo_host)
+       SELECT ?, ?, 'license_change', ?, ?, ?, ?, ?, ?, assets_license, name_rights, ?, ?, ? FROM projects WHERE id = ?`
     ).bind(id, (last ? last.version : 0) + 1, r.full_name, snapshot.head.sha, snapshot.license.spdx, snapshot.license.sha256, snapshot.key,
-      snapshot.license.path, session.userId, now, id));
+      snapshot.license.path, session.userId, now, r.host, id));
   }
   await env.DB.batch(statements);
   ctx.waitUntil(forgetCached(request, ["/api/projects", "/api/projects/" + id, "/api/projects/" + id + "/license", "/api/projects/" + id + "/packet.md"]));
@@ -570,13 +513,13 @@ export async function licenseRecord(env, ctx, id) {
   ).bind(id).first();
   if (!project) return json({ error: "not_found" }, 404, NO_STORE);
   const { results: records } = await env.DB.prepare(
-    `SELECT r.version, r.kind, r.repo_full_name, r.commit_sha, r.spdx_id, r.license_sha256, r.license_path,
+    `SELECT r.version, r.kind, r.repo_full_name, r.repo_host, r.commit_sha, r.spdx_id, r.license_sha256, r.license_path,
             r.assets_license, r.name_rights, r.recorded_at, u.handle AS recorded_by
        FROM license_records r LEFT JOIN users u ON u.id = r.recorded_by
       WHERE r.project_id = ? ORDER BY r.version`
   ).bind(id).all();
   const { results: lineage } = await env.DB.prepare(
-    `SELECT u.handle, l.role, l.how, l.repo_full_name, l.started_at, l.ended_at
+    `SELECT u.handle, l.role, l.how, l.repo_full_name, l.repo_host, l.started_at, l.ended_at
        FROM lineage l JOIN users u ON u.id = l.user_id WHERE l.project_id = ? ORDER BY l.started_at, l.id`
   ).bind(id).all();
   // Viewing the record is also the moment to look in on archive requests that aren't finished.
@@ -608,17 +551,21 @@ export async function adoptProject(request, env, ctx, session, id) {
   if (!/^[a-z0-9-]{1,80}$/.test(id)) return bad("not_found", 404);
   const body = await readJson(request);
   if (!body) return bad("bad_request");
-  const repo = parseRepoName(body.repo);
   const method = body.method === "transfer" ? "transfer" : body.method === "fork" ? "fork" : null;
-  if (!repo || !method) return bad("invalid_fields", 400, { fields: [!repo ? "repo" : "method"] });
 
   const p = await env.DB.prepare(
-    `SELECT p.id, p.title, p.kind, p.base_game, p.status, p.owner_id, p.repo_id, p.repo_full_name, p.repo_url,
+    `SELECT p.id, p.title, p.kind, p.base_game, p.status, p.owner_id, p.repo_id, p.repo_full_name, p.repo_url, p.repo_host,
             p.name_rights, p.assets_license, p.open_to_transfer, p.intent, u.handle AS owner
        FROM projects p LEFT JOIN users u ON u.id = p.owner_id WHERE p.id = ? AND p.hidden_at IS NULL`
   ).bind(id).first();
   if (!p) return bad("not_found", 404);
   if (p.status !== "adopt") return bad("not_up_for_adoption", 409);
+  // The adopter's copy lives where the project lives: a GitLab project is forked on GitLab.
+  const host = p.repo_host || (/^https:\/\/gitlab\.com\//.test(p.repo_url || "") ? "gitlab" : "github");
+  const parsed = parseRepoRef(host, body.repo);
+  if (parsed.error === "codeberg_not_supported") return bad("codeberg_not_supported", 400);
+  if (!parsed.error && parsed.host !== host) return bad("wrong_host", 409, { host });
+  if (parsed.error || !method) return bad("invalid_fields", 400, { fields: [parsed.error ? "repo" : "method"] });
   if (p.owner_id && p.owner_id === session.userId) return bad("already_yours", 409);
   if (method === "transfer" && !p.open_to_transfer) return bad("transfer_not_offered", 409);
 
@@ -635,33 +582,32 @@ export async function adoptProject(request, env, ctx, session, id) {
   }
 
   // The adopter must control the repo they are linking, checked right now.
-  const own = await requireRepoAdmin(env, session, repo.owner, repo.name);
+  const own = await requireAdmin(env, session, parsed.host, parsed.ref);
   if (own.response) return own.response;
   const r = own.repo;
   if (!r.default_branch) return bad("no_commits", 409);
-  const other = await env.DB.prepare("SELECT id FROM projects WHERE repo_id = ? AND id <> ?").bind(r.id, id).first();
+  const other = await env.DB.prepare("SELECT id FROM projects WHERE repo_id = ? AND COALESCE(repo_host, 'github') = ? AND id <> ?").bind(r.id, r.host, id).first();
   if (other) return bad("already_listed", 409, { id: other.id });
 
-  // Where the project lives today, as GitHub reports it (this follows renames and transfers).
+  // Where the project lives today, as the host reports it (this follows renames and transfers).
   const oldName = p.repo_full_name || (parseRepoName(p.repo_url) ? parseRepoName(p.repo_url).owner + "/" + parseRepoName(p.repo_url).name : null);
   let originalId = p.repo_id;
-  if (!originalId && oldName) {
-    const o = parseRepoName(oldName);
-    const look = await repoAccess(env, session, o.owner, o.name);
+  if (!originalId && oldName && host === "github") {
+    const look = await access(env, session, "github", oldName);
     if (look.ok) originalId = look.repo.id;
   }
   if (!originalId) return bad("original_repo_unknown", 409);
   if (method === "fork") {
-    // GitHub's "parent" field is the proof that this repo was forked from the original.
+    // The host's record of what this repo was forked from (GitHub "parent", GitLab "forked_from_project") is the proof.
     if (!r.fork || r.parent_id !== originalId) return bad("not_a_fork_of_original", 409);
   } else if (r.id !== originalId) {
-    // A transferred repo keeps its GitHub id; only its owner changes.
+    // A transferred repo keeps its id; only its owner changes.
     return bad("not_the_transferred_repo", 409);
   }
 
-  const head = await headCommit(env, session, r.full_name, r.default_branch);
+  const head = await headCommit(env, session, r);
   if (head.error) return bad(head.error, head.status);
-  const lic = await fetchLicense(env, session, r.full_name, head.sha);
+  const lic = await fetchLicense(env, session, r, head.sha);
   if (lic.error) return bad(lic.error, lic.status);
   if (!lic.license) return bad("no_license", 409);
   const last = await env.DB.prepare(
@@ -674,7 +620,7 @@ export async function adoptProject(request, env, ctx, session, id) {
   const relicensed = !!(last && (last.spdx_id || null) !== (lic.license.spdx || null));
 
   const summary = {
-    title, repo: r.full_name, method, license: lic.license.spdx, previous_license: last ? last.spdx_id : null, relicensed,
+    title, repo: r.full_name, host: r.host, method, license: lic.license.spdx, previous_license: last ? last.spdx_id : null, relicensed,
     commit: head.sha, fingerprint: lic.license.sha256, date: today()
   };
   const packet = await env.DB.prepare("SELECT handoff_rules FROM packets WHERE project_id = ?").bind(id).first();
@@ -683,7 +629,7 @@ export async function adoptProject(request, env, ctx, session, id) {
   const rules = (packet && packet.handoff_rules) || handoffRules({
     spdx: last ? last.spdx_id : lic.license.spdx, assetsLicense: p.assets_license || "Same as the code", title: p.title,
     intent: "leave", nameRights: p.name_rights || "continuation", kind: p.kind, baseGame: p.base_game,
-    handle: p.owner || "the original maker", repoFullName: oldName || r.full_name, commit: head.sha, date: today()
+    handle: p.owner || "the original maker", repoFullName: oldName || r.full_name, repoUrl: repoUrl(host, oldName || r.full_name), commit: head.sha, date: today()
   });
   if (body.dry_run === true) return privateJson({ ok: true, dry_run: true, summary, rules });
 
@@ -693,29 +639,29 @@ export async function adoptProject(request, env, ctx, session, id) {
   const result = await env.DB.batch([
     // Only one adoption can win: this changes nothing unless the project is still up for adoption.
     env.DB.prepare(
-      `UPDATE projects SET owner_id = ?, title = ?, repo_url = ?, repo_id = ?, repo_full_name = ?, status = 'active', intent = 'stay',
+      `UPDATE projects SET owner_id = ?, title = ?, repo_url = ?, repo_id = ?, repo_full_name = ?, repo_host = ?, status = 'active', intent = 'stay',
               open_to_transfer = 0, handed_off_at = ?, updated_at = ?, license = ?
         WHERE id = ? AND status = 'adopt'`
-    ).bind(session.userId, title, "https://github.com/" + r.full_name, r.id, r.full_name, now, now,
+    ).bind(session.userId, title, repoUrl(r.host, r.full_name), r.id, r.full_name, r.host, now, now,
       licenseLabel(lic.license.spdx, p.assets_license), id),
     // Earlier maintainers stay in the lineage; their entry is closed, never deleted.
     env.DB.prepare(
       "UPDATE lineage SET ended_at = ? WHERE project_id = ? AND ended_at IS NULL AND EXISTS (SELECT 1 FROM projects WHERE id = ? AND owner_id = ? AND updated_at = ?)"
     ).bind(now, id, id, session.userId, now),
     env.DB.prepare(
-      `INSERT INTO lineage (project_id, user_id, role, started_at, how, repo_full_name)
-       SELECT ?, ?, 'maintainer', ?, ?, ? WHERE EXISTS (SELECT 1 FROM projects WHERE id = ? AND owner_id = ? AND updated_at = ?)`
-    ).bind(id, session.userId, now, method === "transfer" ? "transferred" : "forked", r.full_name, id, session.userId, now),
+      `INSERT INTO lineage (project_id, user_id, role, started_at, how, repo_full_name, repo_host)
+       SELECT ?, ?, 'maintainer', ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM projects WHERE id = ? AND owner_id = ? AND updated_at = ?)`
+    ).bind(id, session.userId, now, method === "transfer" ? "transferred" : "forked", r.full_name, r.host, id, session.userId, now),
     env.DB.prepare(
       `INSERT INTO license_records (project_id, version, kind, repo_full_name, commit_sha, spdx_id, license_sha256, license_key,
-                                    license_path, assets_license, name_rights, recorded_by, recorded_at)
-       SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM projects WHERE id = ? AND owner_id = ? AND updated_at = ?)`
+                                    license_path, assets_license, name_rights, recorded_by, recorded_at, repo_host)
+       SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM projects WHERE id = ? AND owner_id = ? AND updated_at = ?)`
     ).bind(id, version, relicensed ? "relicense" : "adoption", r.full_name, head.sha, lic.license.spdx, lic.license.sha256, licenseKey,
-      lic.license.path, p.assets_license, p.name_rights, session.userId, now, id, session.userId, now)
+      lic.license.path, p.assets_license, p.name_rights, session.userId, now, r.host, id, session.userId, now)
   ]);
   if (!result[0].meta || result[0].meta.changes !== 1) return bad("not_up_for_adoption", 409);
   // The adopter's repo is archived too (queued only if the license record above was written).
-  ctx.waitUntil(queueArchive(env, id, version, r.full_name, now).run().then(() => refreshArchives(env, id, true)).catch(() => {}));
+  ctx.waitUntil(queueArchive(env, id, version, repoUrl(r.host, r.full_name), now).run().then(() => refreshArchives(env, id, true)).catch(() => {}));
   ctx.waitUntil(forgetCached(request, ["/api/projects", "/api/projects/" + id, "/api/projects/" + id + "/license", "/api/projects/" + id + "/packet.md"]));
   return privateJson({ ok: true, id, url: "/project.html?id=" + encodeURIComponent(id), summary, rules });
 }

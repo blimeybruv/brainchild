@@ -21,7 +21,7 @@
   };
   var params = new URLSearchParams(window.location.search);
   var st = {
-    step: 1, user: null, intent: params.get("intent") === "leave" ? "leave" : "stay",
+    step: 1, user: null, intent: params.get("intent") === "leave" ? "leave" : "stay", host: params.get("host") === "gitlab" ? "gitlab" : "github", reauth: "",
     repos: null, repo: "", manual: params.get("repo") || "", info: null, error: "", busy: false,
     assets: "CC BY 4.0", nameRights: "continuation", agreed: false,
     f: { title: "", kind: "Game", genre: D.genres[0], base_game: "", tech: "", browser: false, note: "", works: "", broken: "", vision: "", agent_context: "" },
@@ -29,6 +29,15 @@
     auto: { title: "", agent: "" }, status: "help", transfer: false, rating: "everyone", notes: {}, preview: null, done: null
   };
 
+  var HOST = { github: "GitHub", gitlab: "GitLab" };
+  function hostName() { return HOST[st.host]; }
+  function roleName() { return st.host === "gitlab" ? "the Maintainer or Owner role" : "admin rights"; }
+  function here() { return "/list.html?intent=" + st.intent + "&host=" + st.host; }
+  // Signing in, or connecting the other site to the account you're signed in with.
+  function connectHref(host, link) {
+    return host === "gitlab" ? "/api/auth/gitlab/login?" + (link ? "link=1&" : "") + "return_to=" + encodeURIComponent(here())
+      : "/api/auth/login?provider=github&" + (link ? "link=1&" : "") + "return_to=" + encodeURIComponent(here());
+  }
   function go(n) { st.step = n; st.error = ""; render(); window.scrollTo(0, 0); }
   function btn(label, onClick, cls, disabled) {
     var b = h("button", { class: "btn " + (cls || "btn-primary"), type: "button", text: label, disabled: disabled ? true : null });
@@ -66,7 +75,7 @@
   }
   function payload(dryRun) {
     return {
-      repo: st.repo, intent: st.intent, status: st.status, title: st.f.title, kind: st.f.kind, genre: st.f.genre,
+      repo: st.info && st.host === "gitlab" ? String(st.info.repo.id) : st.repo, host: st.host, intent: st.intent, status: st.status, title: st.f.title, kind: st.f.kind, genre: st.f.genre,
       base_game: st.f.base_game, tech: st.f.tech, browser: st.f.browser, note: st.f.note, rating: st.rating,
       content_notes: NOTES.filter(function (n) { return st.notes[n]; }), assets_license: st.assets,
       name_rights: st.intent === "leave" ? st.nameRights : null, open_to_transfer: st.intent === "leave" && st.transfer,
@@ -76,6 +85,7 @@
   }
   function fail(res) {
     var e = res.data || {};
+    if (e.error === "github_sign_in_again" || e.error === "gitlab_sign_in_again") { st.reauth = e.error === "gitlab_sign_in_again" ? "gitlab" : "github"; st.busy = false; return render(); }
     st.error = e.error === "invalid_fields" && e.fields
       ? "Please fill in or fix: " + e.fields.map(function (k) { return FIELD_LABELS[k] || k.replace(/_/g, " "); }).join(", ") + "."
       : BC.errorText(e.error);
@@ -96,16 +106,18 @@
       out.push(h("p", { text: "Signed in as @" + st.user.handle + ". Next, choose the repository to list." }));
       out.push(h("div", { class: "actions" }, [btn("Choose a repository", function () { go(2); loadRepos(); })]));
     } else {
-      out.push(h("h3", { text: "Sign in with GitHub" }));
-      out.push(h("p", { text: "Brainchild uses your GitHub account to prove you own the project. We only ask GitHub which public repositories you can manage; we never push to them, and we never see your email address." }));
-      out.push(h("div", { class: "actions" }, [h("a", { class: "btn btn-light", href: "/api/auth/login?provider=github&return_to=" + encodeURIComponent("/list.html?intent=" + st.intent), text: "Continue with GitHub" })]));
+      out.push(h("h3", { text: "Sign in where your project lives" }));
+      out.push(h("p", { text: "Brainchild uses your GitHub or GitLab account to prove you manage the project. It only reads which public repositories you can manage; it never changes anything there, and it never sees your email address." }));
+      out.push(h("div", { class: "actions" }, [
+        h("a", { class: "btn btn-light", href: connectHref("github", false), text: "Continue with GitHub" }),
+        h("a", { class: "btn btn-light", href: "/api/auth/gitlab/login?return_to=" + encodeURIComponent("/list.html?intent=" + st.intent + "&host=gitlab"), text: "Continue with GitLab" })]));
     }
     return out;
   }
 
   function loadRepos() {
     if (st.repos) return;
-    BC.api("GET", "/api/my/repos").then(function (res) {
+    BC.api("GET", "/api/my/repos?host=" + st.host).then(function (res) {
       if (!res.ok) { st.repos = []; return fail(res); }
       st.repos = res.data.repos || [];
       render();
@@ -114,32 +126,46 @@
 
   function stepRepo() {
     var list;
-    if (!st.repos) list = h("p", { class: "muted", text: "Asking GitHub for your repositories…" });
-    else if (!st.repos.length) list = h("p", { class: "muted", text: "GitHub didn't return any public repositories. You can type an address below." });
+    var picker = h("div", null, [h("p", { class: "muted", style: "margin:0 0 8px", text: "Where the project lives" }), BC.choices("Where the project lives", [
+      { value: "github", label: "GitHub" }, { value: "gitlab", label: "GitLab.com" }
+    ], st.host, function (v) { if (v === st.host) return; st.host = v; st.repos = null; st.repo = ""; st.manual = ""; st.info = null; st.reauth = ""; st.error = ""; render(); loadRepos(); })]);
+    if (st.reauth === st.host) {
+      return [h("h2", { text: "Choose the project to list" }), picker,
+        h("div", { class: "callout plain" }, [
+          h("p", null, [h("strong", { text: "Connect your " + hostName() + " account" })]),
+          h("p", { text: "To check that you manage a " + hostName() + " project, Brainchild needs you to sign in to " + hostName() + " from this account. It stays linked, so you can sign in with either account afterwards." }),
+          h("div", { class: "actions" }, [h("a", { class: "btn btn-light", href: connectHref(st.host, true), text: "Connect " + hostName() })])]),
+        h("div", { class: "actions" }, [back()])];
+    }
+    if (!st.repos) list = h("p", { class: "muted", text: "Asking " + hostName() + " for your repositories…" });
+    else if (!st.repos.length) list = h("p", { class: "muted", text: hostName() + " didn't return any public repositories you manage. You can type an address below." });
     else list = BC.choices("Your repositories", st.repos.map(function (r) {
       var ok = r.admin && !r.listed;
       return { value: r.full_name, label: r.full_name, mono: true, desc: r.description || (r.fork ? "Fork" : ""), disabled: !ok,
-        extra: h("span", { class: "pill" + (ok ? "" : " warn"), text: r.listed ? "Already listed" : r.admin ? "Admin" : "No admin rights · can't list" }) };
+        extra: h("span", { class: "pill" + (ok ? "" : " warn"), text: r.listed ? "Already listed" : r.admin ? (st.host === "gitlab" ? "Maintainer" : "Admin") : "No admin rights · can't list" }) };
     }), st.repo, function (v) { st.repo = v; st.manual = ""; render(); }, "stack");
-    var manual = h("input", { class: "input", type: "text", placeholder: "owner/name", maxlength: "220" });
+    var manual = h("input", { class: "input", type: "text", placeholder: st.host === "gitlab" ? "group/project" : "owner/name", maxlength: "220" });
     manual.value = st.manual;
     manual.addEventListener("input", function () { st.manual = manual.value; });
     return [
       h("h2", { text: "Choose the project to list" }),
-      h("p", { text: "Only public repositories where you have admin rights can be listed." }),
+      picker,
+      h("p", { text: "Only public repositories where you have " + roleName() + " can be listed. Codeberg isn't supported." }),
       list,
-      field("Not in the list? Enter its GitHub address", manual, "For example: your-name/your-project"),
+      field("Not in the list? Enter its " + hostName() + " address", manual, st.host === "gitlab" ? "For example: your-name/your-project, or a group/subgroup/project path" : "For example: your-name/your-project"),
       errorLine(),
       h("div", { class: "actions" }, [btn(st.busy ? "Checking…" : "Check ownership", checkRepo, null, st.busy), back()])
     ];
   }
 
   function checkRepo() {
-    var name = (st.manual.trim() || st.repo).replace(/^https?:\/\/(www\.)?github\.com\//i, "").replace(/\.git$/, "").replace(/\/+$/, "");
-    if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(name)) { st.error = "Choose a repository, or enter one as owner/name."; return render(); }
+    var raw = st.manual.trim() || st.repo;
+    if (/codeberg\.org/i.test(raw)) { st.error = BC.errorText("codeberg_not_supported"); return render(); }
+    var name = raw.replace(/^https?:\/\/(www\.)?(github|gitlab)\.com\//i, "").replace(/\.git$/, "").replace(/\/+$/, "");
+    var okName = st.host === "gitlab" ? /^[A-Za-z0-9_.-]+(\/[A-Za-z0-9_.-]+){1,5}$/.test(name) : /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(name);
+    if (!okName) { st.error = "Choose a repository, or enter one as " + (st.host === "gitlab" ? "group/project" : "owner/name") + "."; return render(); }
     st.busy = true; st.error = ""; render();
-    var parts = name.split("/");
-    BC.api("GET", "/api/repos/" + encodeURIComponent(parts[0]) + "/" + encodeURIComponent(parts[1]) + "/listing-info").then(function (res) {
+    BC.api("GET", "/api/listing-info?host=" + st.host + "&repo=" + encodeURIComponent(name)).then(function (res) {
       if (!res.ok) return fail(res);
       st.busy = false;
       st.info = res.data;
@@ -172,7 +198,7 @@
   }
 
   function stepOwnership() {
-    var i = st.info, where = "github.com/" + i.repo.full_name;
+    var i = st.info, where = (st.host === "gitlab" ? "gitlab.com/" : "github.com/") + i.repo.full_name;
     if (i.listed && i.can_hand_off && st.intent !== "leave") {
       return [h("h2", { text: "Ownership check" }),
         h("div", { class: "callout plain" }, [
@@ -191,14 +217,14 @@
       return [h("h2", { text: "Ownership check" }),
         h("div", { class: "callout bad" }, [h("span", { class: "mark", "aria-hidden": "true", text: "×" }), h("div", null, [
           h("p", null, [h("strong", { text: "Not verified" })]),
-          h("p", { text: i.repo.private ? where + " is private. Only public repositories can be listed." : "GitHub says @" + st.user.handle + " doesn't have admin rights on " + where + ". Ask an admin of the repository to list it." })])]),
+          h("p", { text: i.repo.private ? where + " is private. Only public repositories can be listed." : hostName() + " says @" + st.user.handle + " doesn't have " + roleName() + " on " + where + ". Ask an admin of the repository to list it." })])]),
         h("div", { class: "actions" }, [back()])];
     }
     return [
       h("h2", { text: "Ownership check" }),
       h("div", { class: "callout" }, [h("span", { class: "mark", "aria-hidden": "true", text: "✓" }), h("div", null, [
-        h("p", null, [h("strong", { text: "Verified: @" + st.user.handle + " has admin rights on " + where })]),
-        h("p", { text: "GitHub confirmed this just now, and Brainchild asks again when you publish. You'll show as a verified owner on the project page." })])]),
+        h("p", null, [h("strong", { text: "Verified: @" + st.user.handle + " has " + roleName() + " on " + where })]),
+        h("p", { text: hostName() + " confirmed this just now, and Brainchild asks again when you publish. You'll show as a verified owner on the project page." })])]),
       i.listed && i.can_hand_off ? h("p", { text: "This project is already listed. Finishing these steps puts it up for adoption on the same page, with a new license snapshot; nothing is duplicated and its lineage stays." }) : null,
       i.listed && !i.can_hand_off ? h("p", { text: "This project already has a page on Brainchild from before sign-in existed. Publishing here updates that page and adds its license record; it doesn't create a second listing." }) : null,
       h("p", { class: "muted", text: "Why this matters: nobody can list your project, or claim to be you, without control of the repository." }),
@@ -209,7 +235,7 @@
   function stepLicense() {
     var lic = st.info.license, name = licenseName(), leaving = st.intent === "leave";
     var note = !lic ? ["bad", "No license: nobody can legally continue this project. Add a LICENSE file to your repo, then check again."]
-      : !lic.spdx ? ["amber", "GitHub found a license file but doesn't recognise it as a standard license. It will be listed as a custom license; people will need to read it."]
+      : !lic.spdx ? ["amber", hostName() + " found a license file but doesn't recognise it as a standard license. It will be listed as a custom license; people will need to read it."]
       : LICENSE_NOTES[lic.spdx] || (/^(GPL|AGPL|LGPL)-/.test(lic.spdx) ? ["good", "Accepted. Future versions must stay under this license."] : ["good", "Accepted."]);
     var out = [
       h("h2", { text: "License and handoff snapshot" }),
@@ -317,7 +343,7 @@
       t.checked = st.transfer;
       t.addEventListener("change", function () { st.transfer = t.checked; render(); });
       out.push(h("label", { class: "check-row" }, [t, h("span", null, [h("strong", { text: "I'm open to transferring the repo" }), h("br"),
-        h("span", { class: "muted", text: "If someone adopts it, you can move the repository to them on GitHub, keeping its stars, issues and links. Otherwise they'll fork it." })])]));
+        h("span", { class: "muted", text: "If someone adopts it, you can move the repository to them on " + hostName() + ", keeping its stars, issues and links. Otherwise they'll fork it." })])]));
     }
     out.push(h("fieldset", null, [
       h("legend", { text: "Content rating" }),

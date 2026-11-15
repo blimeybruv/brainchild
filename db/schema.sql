@@ -62,9 +62,10 @@ CREATE TABLE IF NOT EXISTS projects (
   name_rights   TEXT,                           -- keep | continuation | rename (only when leaving)
   open_to_transfer INTEGER NOT NULL DEFAULT 0,
   hidden_at     TEXT,                           -- set when a moderator removes the project; lineage and records are kept
+  repo_host     TEXT,                           -- github | gitlab: repo_id is that site's number for the repo
   CHECK (kind <> 'Mod' OR base_game IS NOT NULL)
 );
-CREATE UNIQUE INDEX IF NOT EXISTS idx_projects_repo_id ON projects (repo_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_projects_repo ON projects (repo_host, repo_id);   -- a repo id is unique per host
 CREATE INDEX IF NOT EXISTS idx_projects_filters ON projects (kind, status, genre);
 CREATE INDEX IF NOT EXISTS idx_projects_base_game ON projects (base_game);
 
@@ -89,7 +90,8 @@ CREATE TABLE IF NOT EXISTS lineage (
   started_at  TEXT NOT NULL DEFAULT (datetime('now')),
   ended_at    TEXT,                             -- set when someone else takes over; rows are never deleted
   how         TEXT,                             -- created | forked | transferred
-  repo_full_name TEXT
+  repo_full_name TEXT,
+  repo_host   TEXT NOT NULL DEFAULT 'github'    -- github | gitlab
 );
 CREATE INDEX IF NOT EXISTS idx_lineage_project ON lineage (project_id, started_at);
 
@@ -109,6 +111,7 @@ CREATE TABLE IF NOT EXISTS license_records (
   name_rights    TEXT,
   recorded_by    TEXT REFERENCES users(id),
   recorded_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  repo_host      TEXT NOT NULL DEFAULT 'github',   -- github | gitlab
   UNIQUE (project_id, version)
 );
 

@@ -84,17 +84,20 @@ window.BC.load(function () {
       if (u && u.handle === p.owner && p.owner_verified) { edit.setAttribute("href", "edit.html?id=" + pid); edit.hidden = false; }
     });
     document.dispatchEvent(new CustomEvent("bc:project", { detail: p })); // discussion.js adds screenshots
-    // Where the main button goes: adopting has its own page; everything else happens on GitHub,
-    // or in the discussion when there is no repository to point to.
+    // Where the main button goes: adopting has its own page; everything else happens on GitHub or
+    // GitLab, or in the discussion when there is no repository to point to.
     var cta = document.getElementById("p-cta");
-    var repo = p.repo_url && /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/?$/.test(p.repo_url) ? p.repo_url.replace(/\/$/, "") : null;
+    var gh = p.repo_url && /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/?$/.test(p.repo_url);
+    var glab = p.repo_url && /^https:\/\/gitlab\.com\/[A-Za-z0-9_.-]+(\/[A-Za-z0-9_.-]+){1,5}\/?$/.test(p.repo_url);
+    var repo = gh || glab ? p.repo_url.replace(/\/$/, "") : null;
+    var forkUrl = repo ? repo + (glab ? "/-/forks/new" : "/fork") : null, issuesUrl = repo ? repo + (glab ? "/-/issues" : "/issues") : null;
     if (p.status === "adopt") cta.setAttribute("href", "adopt.html?id=" + pid);
     else if (p.status === "test" && p.play_url) cta.setAttribute("href", "#p-stage");
-    else if (repo && p.status === "archived") { cta.setAttribute("href", repo + "/fork"); cta.setAttribute("rel", "noopener"); }
-    else if (repo && p.status !== "active") { cta.setAttribute("href", repo + "/issues"); cta.setAttribute("rel", "noopener"); }
+    else if (repo && p.status === "archived") { cta.setAttribute("href", forkUrl); cta.setAttribute("rel", "noopener"); }
+    else if (repo && p.status !== "active") { cta.setAttribute("href", issuesUrl); cta.setAttribute("rel", "noopener"); }
     else if (repo) { cta.setAttribute("href", repo); cta.setAttribute("rel", "noopener"); }
     var fork = document.getElementById("p-fork");
-    if (fork && repo) { fork.setAttribute("href", repo + "/fork"); fork.setAttribute("rel", "noopener"); fork.hidden = false; }
+    if (fork && repo) { fork.setAttribute("href", forkUrl); fork.setAttribute("rel", "noopener"); fork.hidden = false; }
     // The packet as one Markdown file, when the maker has written one.
     var dl = document.getElementById("p-packet-dl");
     if (dl && packet) { dl.setAttribute("href", "/api/projects/" + pid + "/packet.md"); dl.setAttribute("download", p.id + "-handoff-packet.md"); dl.hidden = false; }

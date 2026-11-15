@@ -75,6 +75,7 @@ Previews run the same code against the test database and bucket (the `previews` 
 | `POST /api/relay/tasks`, `/api/relay/tasks/<id>/remove`, `/claim`, `/unclaim` | The winner's task board and "I'm working on this" |
 | `POST /api/relay/contributions`, `/api/relay/contributions/<id>/withdraw`, `/flag` | Pull requests for the winner (checked on GitHub), and the maintainer's junk flag |
 | `POST /api/mod/relay-flags/<id>/resolve` | A moderator agrees with or clears a junk flag |
+| `GET /api/listing-info?host=github\|gitlab&repo=` | What the listing form needs about one repository on either site |
 | `GET /api/auth/gitlab/login`, `/api/auth/gitlab/callback` | GitLab.com sign-in; `?link=1` (also on the GitHub login) links it to the signed-in account |
 | `GET /api/my/identities`, `POST /api/my/identities/<github\|gitlab>/unlink`, `POST /api/my/profile` | The account's linked sign-ins, and whether the profile shows them |
 | `POST /api/relay/badges` | The winning maintainer's badges (or a moderator's, if the maintainer awarded none) |

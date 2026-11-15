@@ -12,7 +12,7 @@
 //   - Each version gets a number, its upload date, and the repo's latest commit at that moment.
 
 import { privateJson, isSameOrigin } from "./http.js";
-import { requireRepoAdmin, githubGet } from "./github.js";
+import { requireProjectAdmin, headCommit } from "./forge.js";
 import { MAX_FILE_BYTES, MAX_BUILD_BYTES, MAX_BUILD_FILES, MAX_ALL_BUILDS_BYTES, cleanPath, typeFor, hostFor } from "./build-rules.js";
 
 function bad(error, status = 400, extra = {}) { return privateJson({ error, ...extra }, status); }
@@ -27,13 +27,12 @@ export function playUrl(projectId, hasActiveBuild) {
 async function maintainer(request, env, session, projectId, askGitHub) {
   if (!isSameOrigin(request)) return { response: bad("forbidden", 403) };
   if (!session) return { response: bad("not_signed_in", 401) };
-  const p = await env.DB.prepare("SELECT id, owner_id, repo_full_name, kind FROM projects WHERE id = ? AND hidden_at IS NULL").bind(projectId).first();
+  const p = await env.DB.prepare("SELECT id, owner_id, repo_full_name, repo_id, repo_host, kind FROM projects WHERE id = ? AND hidden_at IS NULL").bind(projectId).first();
   if (!p) return { response: bad("not_found", 404) };
   if (p.owner_id !== session.userId) return { response: bad("not_maintainer", 403) };
   if (!p.repo_full_name) return { response: bad("listing_not_verified", 409) };
   if (askGitHub) {
-    const [owner, name] = p.repo_full_name.split("/");
-    const own = await requireRepoAdmin(env, session, owner, name);
+    const own = await requireProjectAdmin(env, session, p);
     if (own.response) return { response: own.response };
     return { project: p, repo: own.repo };
   }
@@ -64,8 +63,8 @@ export async function startBuild(request, env, ctx, session, projectId) {
   // Note which commit the repo was at, so the version can say what it was probably built from.
   let commit = null;
   if (m.repo && m.repo.default_branch) {
-    const head = await githubGet(env, session, "/repos/" + m.repo.full_name + "/commits/" + encodeURIComponent(m.repo.default_branch));
-    if (head.status === 200 && head.data && typeof head.data.sha === "string" && /^[0-9a-f]{40}$/.test(head.data.sha)) commit = head.data.sha;
+    const head = await headCommit(env, session, m.repo);
+    if (head.sha) commit = head.sha;
   }
   await env.DB.batch([
     env.DB.prepare("UPDATE builds SET status = 'removed' WHERE project_id = ? AND status = 'uploading'").bind(projectId),

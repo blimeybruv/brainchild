@@ -71,3 +71,17 @@ export async function gitlabGet(env, session, path) {
   try { data = await res.json(); } catch { data = null; }
   return { status: res.status, data };
 }
+
+// GET a raw file from GitLab as bytes, up to a size limit: { status, bytes }, { tooLarge: true } or { reauth: true }.
+export async function gitlabRaw(env, session, path, maxBytes) {
+  const token = await gitlabToken(env, session);
+  if (!token) return { reauth: true };
+  const res = await fetch(gitlabApiBase(env) + path, { headers: { authorization: "Bearer " + token, "user-agent": USER_AGENT } });
+  if (res.status === 401) { await forgetTokens(env, session); return { reauth: true }; }
+  if (res.status !== 200) return { status: res.status };
+  const len = Number(res.headers.get("content-length") || 0);
+  if (len > maxBytes) return { tooLarge: true };
+  const buf = new Uint8Array(await res.arrayBuffer());
+  if (buf.length > maxBytes) return { tooLarge: true };
+  return { status: 200, bytes: buf };
+}

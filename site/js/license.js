@@ -41,7 +41,7 @@
         items.push({ title: "License changed to " + licName(r), detail: by + "from commit " + short(r.commit_sha) + " · " + BC.niceDate(r.recorded_at) });
       } else if (r.kind === "adoption" || r.kind === "relicense") {
         var l = data.lineage.filter(function (x) { return x.repo_full_name === r.repo_full_name && x.how !== "created"; })[0];
-        items.push({ title: "Adopted by @" + (r.recorded_by || "a new maintainer"), detail: (l && l.how === "transferred" ? "Repository transferred to " : "Forked to ") + "github.com/" + r.repo_full_name + " · " + BC.niceDate(r.recorded_at) });
+        items.push({ title: "Adopted by @" + (r.recorded_by || "a new maintainer"), detail: (l && l.how === "transferred" ? "Repository transferred to " : "Forked to ") + (r.repo_host === "gitlab" ? "gitlab.com/" : "github.com/") + r.repo_full_name + " · " + BC.niceDate(r.recorded_at) });
         items.push({ title: r.kind === "relicense" ? "New work relicensed " + licName(r) : "Stays under " + licName(r), detail: by + "from commit " + short(r.commit_sha) });
       } else {
         items.push({ title: "Released under " + licName(r) + (r.kind === "handoff" ? " at handoff" : " when listed"),
@@ -86,7 +86,7 @@
         h("p", { class: "muted", text: "Confirmed by " + (r.recorded_by ? "@" + r.recorded_by : "the maker") + " (verified owner) on " + BC.niceDate(r.recorded_at) + "." })
       ]) : null
     ]);
-    var rows = [["Commit", short(r.commit_sha)], ["Taken", BC.niceDate(r.recorded_at)], ["Repository", "github.com/" + r.repo_full_name],
+    var rows = [["Commit", short(r.commit_sha)], ["Taken", BC.niceDate(r.recorded_at)], ["Repository", (r.repo_host === "gitlab" ? "gitlab.com/" : "github.com/") + r.repo_full_name],
       ["By", r.recorded_by ? "@" + r.recorded_by + " ✓ verified" : "—"], ["Code", licName(r)], ["Assets", r.assets_license || "—"],
       ["Name", nameRule(r.name_rights)], ["Stored copy", "License text, kept by Brainchild"]];
     // Software Heritage: an independent public archive of the repo, requested when this version was recorded.

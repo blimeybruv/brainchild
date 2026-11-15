@@ -12,7 +12,7 @@
   // What the server's field names are called on screen, with the step they're on.
   var FIELD_LABELS = {
     repo: "Repository (step 2)", title: "Title (step 5)", kind: "Type (step 5)", genre: "Genre (step 5)",
-    base_game: "Base game (step 5)", tech: "Built with (step 5)", note: "One-line description (step 5)",
+    base_game: "Made for (step 5)", tech: "Built with (step 5)", note: "One-line description (step 5)",
     works: "What works (step 5)", broken: "What's broken (step 5)", vision: "What you were going for (step 5)",
     agent_context: "Agent context file (step 5)", provenance: "Where the parts came from (step 5)",
     assets_license: "Art, music and other assets license (step 4)", name_rights: "The project name question (step 4)",
@@ -65,7 +65,7 @@
     return el;
   }
   function select(options, value, onChange) {
-    var el = h("select", { class: "select" }, options.map(function (o) { return h("option", { value: o, text: o }); }));
+    var el = h("select", { class: "select" }, options.map(function (o) { return h("option", { value: o, text: BC.kindLabel(o) }); }));
     el.value = value;
     el.addEventListener("change", function () { onChange(el.value); });
     return el;
@@ -345,7 +345,7 @@
         field("Title", input("title", 80)),
         field("Type", select(["Game", "Mod", "App"], st.f.kind, function (v) { st.f.kind = v; st.preview = null; render(); })),
         field("Genre", select(D.genres, st.f.genre, function (v) { st.f.genre = v; })),
-        isMod ? field("Base game", input("base_game", 80, "For example: Luanti"), "Mods need their base game. Your license covers only your own files; the game's own terms still apply.") : null,
+        isMod ? field("Made for", input("base_game", 80, "For example: Darkest Hour, Firefox, VS Code"), "The game or program it runs in. Your license covers only your own files; the terms of what it's made for still apply.") : null,
         field("Built with", input("tech", 60, "For example: Godot 4"), "Optional."),
         isMod ? null : h("div", { class: "field" }, [h("label", { class: "check-list" }, [browser, h("span", { text: "It runs in a web browser" })])]),
         field("One-line description", input("note", 200, "What it is and where it stands"), "Shown on the project card. 200 characters at most.", true)

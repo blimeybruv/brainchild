@@ -24,7 +24,7 @@ window.BC.load(function () {
   var playLabel = document.getElementById("p-play-label");
   var hint = document.getElementById("p-hint");
   if (item.kind === "Mod") {
-    playLabel.textContent = "Download mod";
+    playLabel.textContent = "Download";
     hint.textContent = "[ needs " + item.game + " installed ]";
   } else if (!item.browser) {
     playLabel.textContent = "Download";
@@ -49,16 +49,16 @@ window.BC.load(function () {
 
   var meta = document.getElementById("p-meta");
   [
-    item.kind === "Mod" ? "Mod for " + item.game : item.genre,
+    item.kind === "Mod" ? "Made for " + item.game : item.genre,
     item.tech || null,
     item.kind === "Mod" ? "Source + install notes" : (item.browser ? "Built from source by Brainchild" : "Desktop or extension build")
   ].forEach(function (t) { if (t) meta.appendChild(h("span", { text: t })); });
 
   var details = document.getElementById("p-details");
   [
-    ["Type", item.kind],
+    ["Type", window.BC.kindLabel(item.kind)],
     ["License", item.license],
-    [item.kind === "Mod" ? "Base game" : "Built with", item.kind === "Mod" ? item.game : (item.tech || "—")],
+    [item.kind === "Mod" ? "Made for" : "Built with", item.kind === "Mod" ? item.game : (item.tech || "—")],
     ["AI tools", "[as tagged by maker]"],
     ["Repo", "[repo link]"]
   ].forEach(function (row) {

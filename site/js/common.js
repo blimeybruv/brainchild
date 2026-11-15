@@ -21,13 +21,13 @@
   }
 
   function metaLine(item) {
-    if (item.kind === "Mod") return "Mod for " + item.game + " · needs the base game";
+    if (item.kind === "Mod") return "Made for " + item.game + " · needs " + item.game;
     var where = item.browser ? (item.kind === "App" ? "runs in browser" : "plays in browser") : "download";
     return item.genre + " · " + (item.tech || "") + " · " + where;
   }
 
   function primaryLabel(item) {
-    if (item.kind === "Mod") return "Get mod";
+    if (item.kind === "Mod") return "Get it";
     if (item.kind === "App") return "Open app";
     return "Play";
   }
@@ -39,7 +39,7 @@
     var href = "project.html?id=" + encodeURIComponent(item.id);
     var actions = compact
       ? h("div", { class: "card-actions single" }, [
-          h("a", { class: "btn btn-ghost", href: href, text: item.kind === "Mod" ? "View mod" : item.kind === "App" ? "View and open" : "View and play" })
+          h("a", { class: "btn btn-ghost", href: href, text: item.kind === "Mod" ? "View" : item.kind === "App" ? "View and open" : "View and play" })
         ])
       : h("div", { class: "card-actions" }, [
           h("a", { class: "btn btn-ghost", href: href, text: primaryLabel(item) }),
@@ -48,7 +48,7 @@
     return h("article", { class: "card" }, [
       h("div", { class: "shot", style: "background:" + item.tone, "aria-hidden": "true" }, [
         item.shot ? h("img", { class: "shot-img", src: "/api/screenshots/" + item.shot, alt: "", loading: "lazy" }) : h("span", { text: "[ screenshot ]" }),
-        compact ? h("span", { class: "kind", text: item.kind }) : null
+        compact ? h("span", { class: "kind", text: kindLabel(item.kind) }) : null
       ]),
       h("div", { class: "card-body" }, [
         h("div", { class: "card-title-row" }, [
@@ -213,6 +213,9 @@
     ]);
   }
 
+  // The stored type "Mod" covers mods and plugins for any software (owner's decision, 14 Nov).
+  function kindLabel(kind) { return kind === "Mod" ? "Mod / plugin" : kind; }
+
   // Where a repository lives, for display: github.com/owner/name, gitlab.com/group/name or git.example.org/group/name.
   function repoWhere(host, fullName) {
     var h = typeof host === "string" && host.indexOf("selfhosted:") === 0 ? host.slice(11) : host === "gitlab" ? "gitlab.com" : "github.com";
@@ -292,5 +295,5 @@
   else initAuth();
 
   window.BC = { h: h, card: card, metaLine: metaLine, store: safeStore(), load: load, getJSON: getJSON, whoAmI: whoAmI, fromRow: fromRow,
-    api: api, errorText: errorText, repoWhere: repoWhere, niceDate: niceDate, renderSteps: renderSteps, choices: choices, rulesBlock: rulesBlock };
+    api: api, errorText: errorText, repoWhere: repoWhere, kindLabel: kindLabel, niceDate: niceDate, renderSteps: renderSteps, choices: choices, rulesBlock: rulesBlock };
 })();

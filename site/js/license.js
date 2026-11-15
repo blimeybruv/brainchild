@@ -29,7 +29,7 @@
       : "Everything up to commit " + c + " is " + lic + ", permanently. Anyone can use, change or share it, as long as the license notice stays with the code. Later changes to the project can't take that away.";
     if (r.spdx_id === "Apache-2.0") base += " Apache-2.0 grants no rights to the project's name or trademarks; the name rule alongside is what applies.";
     if (r.version > 1) base = "The project changed hands here. " + base;
-    if (data.project.kind === "Mod" && data.project.base_game) base += " This is a mod: the license covers only the mod's own files, and " + data.project.base_game + "'s own terms still apply.";
+    if (data.project.kind === "Mod" && data.project.base_game) base += " This is made for " + data.project.base_game + ": the license covers only this project's own files, and the terms of " + data.project.base_game + " still apply.";
     return base;
   }
 

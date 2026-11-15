@@ -111,7 +111,7 @@
       h("ul", null, [
         h("li", { text: "Lineage and credit: they stay as recorded." }),
         h("li", null, ["License records: earlier snapshots are kept. If your repository's license has changed, saving this page adds a new snapshot. ", h("a", { href: "license.html?id=" + pid, text: "See the license record" }), "."]),
-        h("li", { text: "The repository, the type and the base game: a different repository means a transfer or a new listing." }),
+        h("li", { text: "The repository, the type and what it's made for: a different repository means a transfer or a new listing." }),
         h("li", { text: "Screenshots are managed on the project page itself." })
       ]),
       p.status === "adopt" ? null : h("p", null, ["Moving on? ", h("a", { href: "list.html?intent=leave&repo=" + encodeURIComponent(repo), text: "Put this project up for adoption" }), ". That goes through the handoff steps, so the license and name questions are asked."])

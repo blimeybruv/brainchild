@@ -570,6 +570,13 @@ moderator confirms it's really them).
 
 ## Owner decision, 14 Nov: "Mod / plugin" and "Made for"
 
+**Done 15 Nov.** Only wording changed (`kind = 'Mod'` and `base_game` stay). `BC.kindLabel()` in
+`common.js` shows "Mod / plugin" wherever the type appears (cards, the project page, the listing form's
+type list, the blog). Browse's filter says "Mods & plugins", the side box "By what it's made for", and the
+link "Submit a mod or plugin". "Mod for X" is "Made for X" everywhere, and the "Made for" field has the
+new hint. The handoff rules block, the license record page, About, the Licensing guide and the home page's
+house rules use the same wording. (`mod.html` is the Moderation page, so it has no mod wording to change.)
+
 Widen the Mod type to cover plugins and extensions for any software (browser extensions, editor plugins
 and so on), not only game mods. **Change only the wording; keep the stored values** (`kind = 'Mod'`,
 column `base_game`), so there is no migration and the CHECK constraint stays as it is.

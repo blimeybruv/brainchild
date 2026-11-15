@@ -6,7 +6,7 @@ window.BC.load(function () {
   var posts = [
     { topic: "Community project", title: "Community project recap: Gutter Run got its missing levels", excerpt: "What the community finished in a month, what is still open, and how the original maker felt about it." },
     { topic: "Handoff story", title: "How Paper Knights found its second maintainer", excerpt: "The maker moved on, a player picked it up, and the agent context file did most of the explaining." },
-    { topic: "Site news", title: "Mods are different: how mod listings work", excerpt: "Mods need their base game, so they get source downloads, install notes and version tags instead of a browser build." },
+    { topic: "Site news", title: "Mods and plugins are different: how those listings work", excerpt: "Mods and plugins need what they're made for, so they get source downloads, install notes and version tags instead of a browser build." },
     { topic: "Guide", title: "Writing a handoff packet your successor will thank you for", excerpt: "Five sections, one license, and the one paragraph about your vision that people always skip." }
   ];
   var topics = ["All", "Community project", "Handoff story", "Guide", "Site news"];
@@ -66,7 +66,7 @@ window.BC.load(function () {
         h("p", { class: "eyebrow", text: "Community project · " + name }),
         h("h2", { id: "current-h" }, [h("a", { href: "project.html?id=" + encodeURIComponent(c.project_id), text: c.title })]),
         h("p", { text: "The goal: " + c.goal }),
-        h("p", { class: "muted", text: (c.kind === "Mod" ? "Mod for " + c.base_game + " · " : "") + "Proposed by @" + (c.proposed_by || "a member") + " · " +
+        h("p", { class: "muted", text: (c.kind === "Mod" ? "Made for " + c.base_game + " · " : "") + "Proposed by @" + (c.proposed_by || "a member") + " · " +
           c.votes + " of " + c.voters + (c.voters === 1 ? " vote" : " votes") + " across " + c.proposals + (c.proposals === 1 ? " proposal" : " proposals") +
           (c.tied ? " · a tie, won by the proposal made first" : "") }),
         h("div", { class: "actions" }, [h("a", { class: "btn btn-light", href: "project.html?id=" + encodeURIComponent(c.project_id) + "#discussion", text: "Join in on the project page" })])
@@ -112,7 +112,7 @@ window.BC.load(function () {
       wrap.appendChild(h("article", { class: "candidate" + (on ? " voted" : "") }, [
         h("div", { class: "shot", style: "background:" + (c.tone || "#4A4A52"), "aria-hidden": "true" }, [
           c.shot ? h("img", { class: "shot-img", src: "/api/screenshots/" + c.shot, alt: "", loading: "lazy" }) : h("span", { text: "[ screenshot ]" }),
-          h("span", { class: "kind", text: c.kind })
+          h("span", { class: "kind", text: BC.kindLabel(c.kind) })
         ]),
         h("h3", null, [h("a", { href: "project.html?id=" + encodeURIComponent(c.project_id), text: c.title })]),
         h("p", { class: "muted", style: "margin:0;font-size:14px", text: c.proposed_by ? "Proposed by @" + c.proposed_by : "Proposed by a member" }),
@@ -154,7 +154,7 @@ window.BC.load(function () {
   var sel = document.getElementById("proj");
   sel.appendChild(h("option", { value: "", text: "Choose a project…" }));
   D.items.filter(function (i) { return i.status === "adopt" || i.status === "help"; }).forEach(function (i) {
-    sel.appendChild(h("option", { value: i.id, text: i.kind === "Mod" ? i.title + " (mod for " + i.game + ")" : i.title }));
+    sel.appendChild(h("option", { value: i.id, text: i.kind === "Mod" ? i.title + " (made for " + i.game + ")" : i.title }));
   });
   var note = document.getElementById("propose-note");
   document.getElementById("propose").addEventListener("submit", function (e) {

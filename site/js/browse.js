@@ -74,7 +74,7 @@ window.BC.load(function () {
   function renderAll() {
     // Filters with live counts (each count respects the other active filters)
     checkboxList(el.type, "types", ["Game", "Mod", "App"],
-      function (v) { return v + "s"; },
+      function (v) { return v === "Mod" ? "Mods & plugins" : v + "s"; },
       function (v) { return items.filter(function (i) { return i.kind === v && except("type")(i); }).length; });
     checkboxList(el.genre, "genres", D.genres,
       function (v) { return v; },
@@ -84,20 +84,20 @@ window.BC.load(function () {
       function (v) { return items.filter(function (i) { return i.status === v && except("status")(i); }).length; },
       true);
 
-    // Mods by game: built from the base games mods were submitted for
+    // By what it's made for: built from the "made for" field of mods and plugins
     var games = [];
     items.forEach(function (i) { if (i.game && games.indexOf(i.game) < 0) games.push(i.game); });
     games.sort();
     el.game.textContent = "";
     var allBtn = h("button", { type: "button", id: "g-all", class: "game-btn", "aria-pressed": state.game ? "false" : "true" },
-      [h("span", { class: "grow", text: "All games and mods" })]);
+      [h("span", { class: "grow", text: "Everything" })]);
     allBtn.addEventListener("click", function () { state.game = null; render(); });
     el.game.appendChild(allBtn);
     games.forEach(function (g) {
       var n = items.filter(function (i) { return i.game === g; }).length;
       var b = h("button", { type: "button", id: "g-" + g.replace(/[^a-z0-9]+/gi, "-").toLowerCase(), class: "game-btn", "aria-pressed": state.game === g ? "true" : "false" }, [
         h("span", { class: "grow", text: g }),
-        h("span", { class: "count", text: n + (n === 1 ? " mod" : " mods") })
+        h("span", { class: "count", text: n + (n === 1 ? " mod or plugin" : " mods and plugins") })
       ]);
       b.addEventListener("click", function () { state.game = state.game === g ? null : g; render(); });
       el.game.appendChild(b);
@@ -112,7 +112,7 @@ window.BC.load(function () {
     el.chips.textContent = "";
     var chips = [];
     state.types.forEach(function (v) { chips.push([v + "s", function () { toggle("types", v); }]); });
-    if (state.game) chips.push(["Mods for " + state.game, function () { state.game = null; render(); }]);
+    if (state.game) chips.push(["Made for " + state.game, function () { state.game = null; render(); }]);
     state.genres.forEach(function (v) { chips.push([v, function () { toggle("genres", v); }]); });
     state.statuses.forEach(function (v) { chips.push([D.statuses[v].label, function () { toggle("statuses", v); }]); });
     if (state.q) chips.push(['"' + state.q + '"', function () { state.q = ""; el.q.value = ""; render(); }]);

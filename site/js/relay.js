@@ -55,7 +55,7 @@
       h("span", { class: "relay-swatch", style: "background:" + (e.tone || "#4A4A52"), "aria-hidden": "true" }),
       h("div", { class: "c-grow" }, [
         h("p", { class: "relay-title" }, [h("a", { href: "project.html?id=" + encodeURIComponent(e.project_id), text: e.title }), e.mine ? h("span", { class: "pill amber", text: "Your project" }) : null, e.carried_over ? h("span", { class: "pill", text: "Carried over" }) : null]),
-        h("p", { class: "muted", text: (e.kind === "Mod" ? "Mod for " + e.base_game : e.kind + " · " + e.genre) + " · @" + e.owner }),
+        h("p", { class: "muted", text: (e.kind === "Mod" ? "Made for " + e.base_game : e.kind + " · " + e.genre) + " · @" + e.owner }),
         h("p", { text: e.pitch })
       ]),
       extra || null

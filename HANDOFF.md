@@ -102,7 +102,8 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
    - Adopters may relicense permissive code: recorded as a new `relicense` version.
    - GPL code stays GPL: adoption is refused if a GPL, AGPL or LGPL project's new copy has a different license.
    - Apache-2.0 grants no name or trademark rights: said in the form, the rules block and the record page.
-   Not done (see "Waiting on the owner"): the R2 bucket lock and the Software Heritage archive request.
+   The R2 bucket lock and the Software Heritage archive request were added on 13 Nov (see "Waiting on the
+   owner", items 3 and 4).
 6. **Adopter flow.** *Done 13 Nov; untested against the real GitHub.* Page `site/adopt.html?id=<project>`
    (`site/js/adopt.js`), reached from the project page's Adopt button. `POST /api/projects/<id>/adopt`:
    - Only projects with status `adopt`; the adopter must be an admin of the repo they link.
@@ -191,8 +192,7 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
      One vote per person per month, enforced by the `votes` table's key; a vote can be changed or
      withdrawn until the month ends. Counts are not shown while voting is open. The hard-coded sample
      candidates are gone, so the page no longer depends on particular listings existing.
-     Not built: choosing and announcing the winner at month end, and reporting a proposal's text (the
-     report form covers projects and comments only).
+     The month's winner and reporting a proposal were added on 14 Nov (see below).
    - **Relay rounds: done 14 Nov** (rules: "Relay rules" below). Built in three parts:
      - **Part A, done 14 Nov:** rounds, entries and the ranked vote (`api/relay.js`, `site/relay.html`,
        `site/js/relay.js`, linked from the main navigation).
@@ -259,11 +259,10 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
        - A moderator can't decide a flag on their own pull request, the same as with a flag they raised.
        - Not built: an announcement or blog post for the recap, and any notification to entrants. The
          site sends no email, so people have to look at the page.
-   Not in this queue and not built: the Mature gate from the Project mockup. Ratings and content notes are
-   stored and shown in the project page's byline; the gate itself depends on the Open decision about
-   German visitors.
+   The Mature gate was built on 15 Nov, once the owner decided it (see "the Mature gate" below).
 
-**The queue above is finished (14 Nov).** What is left, for later batches:
+**The queue above is finished (14 Nov), and so are the owner's requests of 14 Nov (15 Nov), apart from
+what waits on the owner.** What is left:
 
 - **Blog vote winner: done 14 Nov.** The blog page now opens with "Community project · <month>": the
   proposal that won the vote held during the previous month, with its goal, proposer and vote count, and
@@ -286,7 +285,7 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
   lists what will go.
 - **Only if a listed game needs it:** cross-origin isolation headers on the builds Worker, for engines
   that use threads (some Godot and Unity web exports). No listed game needs them today.
-- **Blocked on an Open decision:** the Mature gate.
+- **Mature gate: done 15 Nov.** Only the German age label waits on the owner (item 12 below).
 - **Needs real people, not code:** adoption, edit page saves, discussion and moderation actions,
   screenshots, blog votes, build rollback and Relay rounds have only been exercised by tests.
 

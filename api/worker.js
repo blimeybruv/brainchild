@@ -35,6 +35,7 @@
 //   POST /api/relay/tasks, /api/relay/tasks/<id>/remove | claim | unclaim   the winner's task board (relay-board.js)
 //   POST /api/relay/contributions, /api/relay/contributions/<id>/withdraw | flag   pull requests for the winner
 //   POST /api/mod/relay-flags/<id>/resolve                moderators only
+//   GET  /api/mod/merge?from=&into=, POST /api/mod/merge  merging two accounts of one person (merge.js), moderators only
 //   POST /api/relay/badges                                the maintainer's awards (relay-badges.js)
 //   GET  /api/users/<handle>                              a person's public page, cached for 60s
 //   GET/POST /api/votes, POST /api/proposals, POST /api/proposals/<id>/delete   monthly community vote (votes.js)
@@ -42,6 +43,7 @@
 import { json, privateJson, NO_STORE, siteOrigin } from "./http.js";
 import { login, callback, gitlabLogin, gitlabCallback, logout, me, getSession } from "./auth.js";
 import { myIdentities, unlinkIdentity, saveProfile } from "./identities.js";
+import { mergePreview, mergeAccounts } from "./merge.js";
 import { repoAccessRoute } from "./github.js";
 import { myRepos, listingInfo, createListing, editProject, adoptProject, licenseRecord, licenseText } from "./listings.js";
 import { listComments, postComment, commentAction, postReport, modQueue, modResolve, modAppeal, myNotices, appealNotice } from "./community.js";
@@ -202,6 +204,7 @@ async function handlePrivate(request, env, ctx, url, path) {
   m = path.match(/^\/api\/mod\/outside\/(\d{1,12})\/resolve$/);
   if (m) return method === "POST" ? resolveOutside(request, env, session, Number(m[1])) : methodNotAllowed("POST");
   if (path === "/api/mod/reports") return method === "GET" ? modQueue(request, env, session, url) : methodNotAllowed("GET");
+  if (path === "/api/mod/merge") return method === "GET" ? mergePreview(request, env, session, url) : method === "POST" ? mergeAccounts(request, env, session) : methodNotAllowed("GET, POST");
   m = path.match(/^\/api\/mod\/reports\/(\d{1,12})\/resolve$/);
   if (m) return method === "POST" ? modResolve(request, env, session, Number(m[1])) : methodNotAllowed("POST");
   m = path.match(/^\/api\/mod\/actions\/(\d{1,12})\/appeal$/);

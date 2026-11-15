@@ -182,7 +182,7 @@ export async function tokenRequest(env, params) {
 
 // Tables that show a person has used the site. An account with none of these can be merged into
 // another automatically when its sign-in is linked there; otherwise a moderator has to do it.
-const ACTIVITY = [
+export const ACTIVITY = [
   ["projects", "owner_id"], ["lineage", "user_id"], ["license_records", "recorded_by"], ["comments", "user_id"],
   ["comment_likes", "user_id"], ["reports", "reporter_id"], ["reports", "resolved_by"], ["screenshots", "uploaded_by"],
   ["builds", "created_by"], ["project_changes", "user_id"], ["outside_reports", "resolved_by"], ["relay_entries", "user_id"],

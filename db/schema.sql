@@ -392,3 +392,15 @@ CREATE TABLE IF NOT EXISTS identities (
   UNIQUE (provider, provider_user_id)
 );
 CREATE INDEX IF NOT EXISTS idx_identities_user ON identities (user_id);
+
+-- Accounts merged by a moderator (both had been used, so they couldn't be joined automatically).
+CREATE TABLE IF NOT EXISTS account_merges (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  from_user_id  TEXT NOT NULL,                     -- the account that was folded in (it no longer exists)
+  from_handle   TEXT NOT NULL,
+  into_user_id  TEXT NOT NULL REFERENCES users(id),
+  moderator_id  TEXT NOT NULL REFERENCES users(id),
+  reason        TEXT NOT NULL,                     -- why, for example "asked through the contact page on 15 Nov"
+  moved         TEXT NOT NULL,                     -- JSON: how many rows of each kind moved
+  merged_at     TEXT NOT NULL
+);

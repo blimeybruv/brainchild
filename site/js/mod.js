@@ -103,6 +103,59 @@
         : [btn("Put it back", "btn-primary", function () { send("restore"); }), btn("Keep it removed", "btn-ghost", function () { send("uphold"); })])
     ]));
   }
+  // Merging two accounts that are the same person, when both have been used.
+  var NAMES = { github: "GitHub", gitlab: "GitLab" };
+  var LABELS = { "projects.owner_id": "projects", "lineage.user_id": "lineage entries", "license_records.recorded_by": "license records", "comments.user_id": "comments",
+    "comment_likes.user_id": "likes", "reports.reporter_id": "reports sent", "reports.resolved_by": "reports decided", "screenshots.uploaded_by": "screenshots",
+    "builds.created_by": "builds", "project_changes.user_id": "page edits", "outside_reports.resolved_by": "outside reports decided", "relay_entries.user_id": "Relay entries",
+    "relay_votes.voter_id": "Relay rankings", "proposals.user_id": "blog proposals", "votes.user_id": "blog votes", "posts.author_id": "blog posts", "relay_claims.user_id": "task claims",
+    "relay_contributions.user_id": "Relay pull requests", "relay_contributions.flagged_by": "flags raised", "relay_contributions.flag_decided_by": "flags decided",
+    "relay_badges.user_id": "badges", "relay_badges.awarded_by": "badges awarded", "moderation_actions.affected_user_id": "moderation decisions about them", "moderation_actions.moderator_id": "moderation decisions made" };
+  var CONFLICTS = { same_account: "Those are the same account.", both_entered_the_same_relay_round: "Both entered the same Relay round, which one person can't do.",
+    both_ranked_in_the_same_relay_round: "Both ranked projects in the same Relay round, which one person can't do." };
+  function mergeSection() {
+    var from = h("input", { class: "input", type: "text", "aria-label": "Account to fold in", placeholder: "@handle to fold in" });
+    var into = h("input", { class: "input", type: "text", "aria-label": "Account to keep", placeholder: "@handle to keep" });
+    var out = h("div", { class: "merge-out" });
+    function describe(a, title) {
+      var acts = Object.keys(a.activity).map(function (k) { return a.activity[k] + " " + (LABELS[k] || k); });
+      return h("div", { class: "panel queue-item" }, [h("h3", { text: title + ": @" + a.handle }),
+        h("p", { class: "muted", text: "Joined " + BC.niceDate(a.created_at) + " · sign-ins: " + (a.identities.length ? a.identities.map(function (i) { return NAMES[i.provider] + " @" + i.handle; }).join(", ") : "none") }),
+        h("p", { text: acts.length ? acts.join(" · ") : "No activity." })]);
+    }
+    function preview() {
+      out.textContent = "";
+      BC.api("GET", "/api/mod/merge?from=" + encodeURIComponent(from.value.trim()) + "&into=" + encodeURIComponent(into.value.trim())).then(function (res) {
+        if (!res.ok) { out.appendChild(h("p", { class: "form-error", role: "alert", text: res.status === 404 ? "No account called @" + (res.data.missing === "from" ? from.value : into.value).replace(/^@/, "") + "." : BC.errorText(res.data.error) })); return; }
+        var d = res.data;
+        out.appendChild(describe(d.from, "Fold in"));
+        out.appendChild(describe(d.into, "Keep"));
+        if (!d.can_merge) {
+          out.appendChild(h("p", { class: "form-error", role: "alert", text: d.conflicts.map(function (c) { return CONFLICTS[c] || (c.indexOf("both_have_") === 0 ? "Both have a " + c.slice(10).split("_and_").map(function (p) { return NAMES[p] || p; }).join(" and ") + " sign-in. Ask the person to unlink one first." : c); }).join(" ") }));
+          return;
+        }
+        var reason = h("textarea", { class: "textarea", rows: "2", maxlength: "500", "aria-label": "Reason", placeholder: "Why, e.g. asked through the contact page on 15 Nov, confirmed from both accounts" });
+        var err = h("p", { class: "form-error", role: "alert" });
+        var go = btn("Merge @" + d.from.handle + " into @" + d.into.handle, "btn-primary", function () {
+          if (!window.confirm("Merge @" + d.from.handle + " into @" + d.into.handle + "? This can't be undone.")) return;
+          BC.api("POST", "/api/mod/merge", { from: d.from.handle, into: d.into.handle, reason: reason.value }).then(function (r) {
+            if (r.ok) { out.textContent = ""; out.appendChild(h("p", { role: "status", text: "Merged. Everything @" + d.from.handle + " did now belongs to @" + r.data.into + "." })); return; }
+            err.textContent = r.data.error === "invalid_fields" ? "Write the reason (at least a sentence)." : r.data.error === "cannot_merge" ? "Something changed; preview again." : BC.errorText(r.data.error);
+          });
+        });
+        out.appendChild(h("p", { class: "muted", text: "Everything the first account did moves to the second, credit included; the first account is then removed. A blog vote in the same month, a like on the same comment or a claim on the same task is kept from the second account only." }));
+        out.appendChild(reason); out.appendChild(h("div", { class: "actions" }, [go])); out.appendChild(err);
+      });
+    }
+    return h("section", null, [
+      h("h2", { text: "Merge two accounts" }),
+      h("p", { class: "muted", text: "For one person with two accounts that have both been used. Only do this when they asked and you're sure both are theirs, for example by asking them to confirm while signed in to each." }),
+      h("div", { class: "form-grid" }, [h("div", { class: "field" }, [from]), h("div", { class: "field" }, [into])]),
+      h("div", { class: "actions" }, [btn("Preview", "btn-ghost", preview)]),
+      out
+    ]);
+  }
+
   function load() {
     BC.api("GET", "/api/mod/reports" + (view === "closed" ? "?status=closed" : "")).then(function (res) {
       if (!res.ok) return message(res.status === 401 ? "Sign in to see the moderation queue." : res.status === 403 ? "This page is for Brainchild's moderators." : BC.errorText("server_error"));
@@ -132,6 +185,7 @@
       }
       root.appendChild(h("h2", { text: view === "open" ? "Open reports" : "Closed reports" }));
       root.appendChild(d.reports.length ? h("div", { class: "queue" }, d.reports.map(reportItem)) : h("p", { class: "muted", text: view === "open" ? "Nothing waiting. Every report has been dealt with." : "No closed reports yet." }));
+      if (view === "open") root.appendChild(mergeSection());
     });
   }
   if (window.location.protocol === "file:") return message("This page only works on the live site.");

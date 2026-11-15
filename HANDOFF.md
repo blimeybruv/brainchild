@@ -472,10 +472,22 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
   - Codeberg addresses get "Codeberg isn't supported"; other self-hosted addresses get "Only projects on
     GitLab.com can be listed for now".
   - Relay rounds stay GitHub-only for now: GitLab projects aren't offered for entry ("relay_github_only").
+- **Done 15 Nov: the manual merge tool** (`api/merge.js`, migration `0017`, "Merge two accounts" at the
+  foot of the Moderation page).
+  - The moderator types the account to fold in and the account to keep, previews both (sign-ins and a
+    count of everything each has done), writes a reason and confirms. Every merge is recorded in
+    `account_merges`, and the last 20 are returned with each preview.
+  - Everything the folded-in account did moves to the kept one in a single database batch: projects,
+    lineage, license records, comments, reports, votes, Relay activity, badges, builds, screenshots and
+    moderation records. Its sign-ins move too, its sessions end and the account is removed.
+  - Refused when both accounts have a sign-in from the same site, or when both entered (or both ranked
+    in) the same Relay round. A blog vote in the same month, a like on the same comment or a claim on
+    the same task is kept from the account that stays.
+  - How to be sure both accounts are the same person is left to the moderator; the page suggests asking
+    them to confirm while signed in to each.
 - **Still to build (next batches):**
-  1. The **manual merge tool** for moderators (accounts that have both been used).
-  2. **Self-hosted GitLab** listings verified with a file ("verified: push access").
-  3. Relay contributions on a GitLab winner (merge requests, matched to the contributor's GitLab sign-in).
+  1. **Self-hosted GitLab** listings verified with a file ("verified: push access").
+  2. Relay contributions on a GitLab winner (merge requests, matched to the contributor's GitLab sign-in).
 
 **Linked accounts.**
 - **Accounts:** one Brainchild account per person (handle, badges, comments, lineage, votes), with any

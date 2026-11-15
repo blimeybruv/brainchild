@@ -38,7 +38,7 @@ Previews run the same code against the test database and bucket (the `previews` 
 | Resource | Name / ID | Notes |
 |---|---|---|
 | Worker | `royal-firefly-b80b` | Static assets plus `/api/*`, custom domain `brainchild.nexus`. Bindings: `DB` (D1), `BUILDS` (R2), `ASSETS` (the `site/` files) |
-| D1 database | `brainchild-db` · `6e241536-91de-49b7-b885-35429bd01efb` | Tables: users, sessions, projects, packets, lineage, license_records, comments, comment_likes, reports, outside_reports, moderation_actions, screenshots, builds, project_changes, archive_requests, relay_rounds, relay_entries, relay_votes, relay_tasks, relay_claims, relay_contributions, relay_badges, identities, account_merges, proposals, votes, posts. 19 sample projects, 1 sample packet |
+| D1 database | `brainchild-db` · `6e241536-91de-49b7-b885-35429bd01efb` | Tables: users, sessions, projects, packets, lineage, license_records, comments, comment_likes, reports, outside_reports, moderation_actions, screenshots, builds, project_changes, archive_requests, relay_rounds, relay_entries, relay_votes, relay_tasks, relay_claims, relay_contributions, relay_badges, identities, account_merges, verify_codes, proposals, votes, posts. 19 sample projects, 1 sample packet |
 | R2 bucket | `brainchild-builds` (ENAM, private) | Holds the stored license copies under `licenses/` screenshots under `screenshots/` and hosted builds under `builds/`. Lifecycle rule deletes unfinished uploads after 24 h |
 | Builds Worker | `brainchild-builds` | Serves `brainwave.nexus` and `*.brainwave.nexus`. Bindings: `DB` (read only), `BUILDS`. No workers.dev address |
 | Preview D1 database | `brainchild-db-preview` · `3b6e6ea2-8a4a-469c-9150-4dcbad16ab64` | Test copy used only by pull-request previews. Same tables and sample rows as the live database |
@@ -75,6 +75,7 @@ Previews run the same code against the test database and bucket (the `previews` 
 | `POST /api/relay/tasks`, `/api/relay/tasks/<id>/remove`, `/claim`, `/unclaim` | The winner's task board and "I'm working on this" |
 | `POST /api/relay/contributions`, `/api/relay/contributions/<id>/withdraw`, `/flag` | Pull requests for the winner (checked on GitHub), and the maintainer's junk flag |
 | `POST /api/mod/relay-flags/<id>/resolve` | A moderator agrees with or clears a junk flag |
+| `POST /api/verify-code` | Self-hosted GitLab: a code to commit to `brainchild-verify.txt` |
 | `GET`/`POST /api/mod/merge` | Moderators: preview and merge two accounts of one person |
 | `GET /api/listing-info?host=github\|gitlab&repo=` | What the listing form needs about one repository on either site |
 | `GET /api/auth/gitlab/login`, `/api/auth/gitlab/callback` | GitLab.com sign-in; `?link=1` (also on the GitHub login) links it to the signed-in account |

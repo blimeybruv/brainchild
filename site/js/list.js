@@ -21,7 +21,8 @@
   };
   var params = new URLSearchParams(window.location.search);
   var st = {
-    step: 1, user: null, intent: params.get("intent") === "leave" ? "leave" : "stay", host: params.get("host") === "gitlab" ? "gitlab" : "github", reauth: "",
+    step: 1, user: null, intent: params.get("intent") === "leave" ? "leave" : "stay",
+    host: ["gitlab", "selfhosted"].includes(params.get("host")) ? params.get("host") : "github", reauth: "", code: null,
     repos: null, repo: "", manual: params.get("repo") || "", info: null, error: "", busy: false,
     assets: "CC BY 4.0", nameRights: "continuation", agreed: false,
     f: { title: "", kind: "Game", genre: D.genres[0], base_game: "", tech: "", browser: false, note: "", works: "", broken: "", vision: "", agent_context: "" },
@@ -29,9 +30,9 @@
     auto: { title: "", agent: "" }, status: "help", transfer: false, rating: "everyone", notes: {}, preview: null, done: null
   };
 
-  var HOST = { github: "GitHub", gitlab: "GitLab" };
+  var HOST = { github: "GitHub", gitlab: "GitLab", selfhosted: "your GitLab" };
   function hostName() { return HOST[st.host]; }
-  function roleName() { return st.host === "gitlab" ? "the Maintainer or Owner role" : "admin rights"; }
+  function roleName() { return st.host === "gitlab" ? "the Maintainer or Owner role" : st.host === "selfhosted" ? "push access" : "admin rights"; }
   function here() { return "/list.html?intent=" + st.intent + "&host=" + st.host; }
   // Signing in, or connecting the other site to the account you're signed in with.
   function connectHref(host, link) {
@@ -75,7 +76,7 @@
   }
   function payload(dryRun) {
     return {
-      repo: st.info && st.host === "gitlab" ? String(st.info.repo.id) : st.repo, host: st.host, intent: st.intent, status: st.status, title: st.f.title, kind: st.f.kind, genre: st.f.genre,
+      repo: st.info && st.host === "gitlab" ? String(st.info.repo.id) : st.info && st.host === "selfhosted" ? st.info.repo.url : st.repo, host: st.host, intent: st.intent, status: st.status, title: st.f.title, kind: st.f.kind, genre: st.f.genre,
       base_game: st.f.base_game, tech: st.f.tech, browser: st.f.browser, note: st.f.note, rating: st.rating,
       content_notes: NOTES.filter(function (n) { return st.notes[n]; }), assets_license: st.assets,
       name_rights: st.intent === "leave" ? st.nameRights : null, open_to_transfer: st.intent === "leave" && st.transfer,
@@ -127,8 +128,9 @@
   function stepRepo() {
     var list;
     var picker = h("div", null, [h("p", { class: "muted", style: "margin:0 0 8px", text: "Where the project lives" }), BC.choices("Where the project lives", [
-      { value: "github", label: "GitHub" }, { value: "gitlab", label: "GitLab.com" }
-    ], st.host, function (v) { if (v === st.host) return; st.host = v; st.repos = null; st.repo = ""; st.manual = ""; st.info = null; st.reauth = ""; st.error = ""; render(); loadRepos(); })]);
+      { value: "github", label: "GitHub" }, { value: "gitlab", label: "GitLab.com" }, { value: "selfhosted", label: "Self-hosted GitLab" }
+    ], st.host, function (v) { if (v === st.host) return; st.host = v; st.repos = null; st.repo = ""; st.manual = ""; st.info = null; st.reauth = ""; st.code = null; st.error = ""; render(); if (v !== "selfhosted") loadRepos(); })]);
+    if (st.host === "selfhosted") return selfHostedStep(picker);
     if (st.reauth === st.host) {
       return [h("h2", { text: "Choose the project to list" }), picker,
         h("div", { class: "callout plain" }, [
@@ -158,14 +160,57 @@
     ];
   }
 
+  // Self-hosted GitLab: Brainchild can't sign in there, so the maker commits a code to the repository.
+  function selfHostedStep(picker) {
+    var addr = h("input", { class: "input", type: "url", id: "sh-url", placeholder: "https://git.example.org/your-group/your-project", maxlength: "300" });
+    addr.value = st.manual;
+    addr.addEventListener("input", function () { st.manual = addr.value; st.code = null; });
+    var out = [h("h2", { text: "Choose the project to list" }), picker,
+      h("p", { text: "On your own GitLab, you prove you can push to the project by committing a short code Brainchild gives you. The project has to be public. Its page will say \"verified: push access\"." }),
+      field("The project's address", addr, "The full address you'd open in a browser.")];
+    if (!st.code) {
+      out.push(errorLine());
+      out.push(h("div", { class: "actions" }, [btn(st.busy ? "Getting a code…" : "Get a verification code", function () {
+        st.busy = true; st.error = ""; render();
+        BC.api("POST", "/api/verify-code", { url: st.manual.trim() }).then(function (res) {
+          st.busy = false;
+          if (!res.ok) return fail(res);
+          st.code = res.data; render();
+        });
+      }, null, st.busy), back()]));
+      return out;
+    }
+    var c = st.code;
+    out.push(h("div", { class: "callout plain" }, [
+      h("p", null, [h("strong", { text: "Commit this code to " + c.path + " on " + c.host.slice(11) })]),
+      h("ol", null, [
+        h("li", null, ["Create a file called ", h("code", { text: c.file }), " at the top of the default branch."]),
+        h("li", null, ["Put this in it, and nothing else:"]),
+      ]),
+      h("pre", { class: "code-block", text: c.code }),
+      h("p", { class: "muted", text: "Use it within " + c.days + " days. Keep the file in the repository: Brainchild reads it again whenever you edit the page. Handing the project off later needs a new code." })]));
+    out.push(errorLine());
+    out.push(h("div", { class: "actions" }, [btn(st.busy ? "Checking…" : "I've committed it: check", checkRepo, null, st.busy),
+      btn("Get a different code", function () { st.code = null; render(); }, "btn-ghost"), back()]));
+    return out;
+  }
+
   function checkRepo() {
+    if (st.host === "selfhosted") {
+      st.busy = true; st.error = ""; render();
+      return BC.api("GET", "/api/listing-info?host=selfhosted&repo=" + encodeURIComponent(st.manual.trim())).then(afterInfo);
+    }
     var raw = st.manual.trim() || st.repo;
     if (/codeberg\.org/i.test(raw)) { st.error = BC.errorText("codeberg_not_supported"); return render(); }
     var name = raw.replace(/^https?:\/\/(www\.)?(github|gitlab)\.com\//i, "").replace(/\.git$/, "").replace(/\/+$/, "");
     var okName = st.host === "gitlab" ? /^[A-Za-z0-9_.-]+(\/[A-Za-z0-9_.-]+){1,5}$/.test(name) : /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(name);
     if (!okName) { st.error = "Choose a repository, or enter one as " + (st.host === "gitlab" ? "group/project" : "owner/name") + "."; return render(); }
     st.busy = true; st.error = ""; render();
-    BC.api("GET", "/api/listing-info?host=" + st.host + "&repo=" + encodeURIComponent(name)).then(function (res) {
+    BC.api("GET", "/api/listing-info?host=" + st.host + "&repo=" + encodeURIComponent(name)).then(afterInfo);
+  }
+
+  function afterInfo(res) {
+    (function () {
       if (!res.ok) return fail(res);
       st.busy = false;
       st.info = res.data;
@@ -194,11 +239,11 @@
         });
       }
       go(3);
-    });
+    })();
   }
 
   function stepOwnership() {
-    var i = st.info, where = (st.host === "gitlab" ? "gitlab.com/" : "github.com/") + i.repo.full_name;
+    var i = st.info, where = BC.repoWhere(i.repo.host, i.repo.full_name);
     if (i.listed && i.can_hand_off && st.intent !== "leave") {
       return [h("h2", { text: "Ownership check" }),
         h("div", { class: "callout plain" }, [
@@ -217,14 +262,14 @@
       return [h("h2", { text: "Ownership check" }),
         h("div", { class: "callout bad" }, [h("span", { class: "mark", "aria-hidden": "true", text: "×" }), h("div", null, [
           h("p", null, [h("strong", { text: "Not verified" })]),
-          h("p", { text: i.repo.private ? where + " is private. Only public repositories can be listed." : hostName() + " says @" + st.user.handle + " doesn't have " + roleName() + " on " + where + ". Ask an admin of the repository to list it." })])]),
+          h("p", { text: i.repo.private ? where + " is private. Only public repositories can be listed." : (i.verify_error ? BC.errorText(i.verify_error) + " (" + where + ") " : hostName() + " says @" + st.user.handle + " doesn't have " + roleName() + " on " + where + ". ") + (i.verify_error ? "" : "Ask an admin of the repository to list it.") })])]),
         h("div", { class: "actions" }, [back()])];
     }
     return [
       h("h2", { text: "Ownership check" }),
       h("div", { class: "callout" }, [h("span", { class: "mark", "aria-hidden": "true", text: "✓" }), h("div", null, [
         h("p", null, [h("strong", { text: "Verified: @" + st.user.handle + " has " + roleName() + " on " + where })]),
-        h("p", { text: hostName() + " confirmed this just now, and Brainchild asks again when you publish. You'll show as a verified owner on the project page." })])]),
+        h("p", { text: (st.host === "selfhosted" ? "Your code is in " + where + "; Brainchild read it just now" : hostName() + " confirmed this just now") + ", and Brainchild asks again when you publish. You'll show as a verified owner on the project page." })])]),
       i.listed && i.can_hand_off ? h("p", { text: "This project is already listed. Finishing these steps puts it up for adoption on the same page, with a new license snapshot; nothing is duplicated and its lineage stays." }) : null,
       i.listed && !i.can_hand_off ? h("p", { text: "This project already has a page on Brainchild from before sign-in existed. Publishing here updates that page and adds its license record; it doesn't create a second listing." }) : null,
       h("p", { class: "muted", text: "Why this matters: nobody can list your project, or claim to be you, without control of the repository." }),

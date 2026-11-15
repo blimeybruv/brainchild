@@ -12,7 +12,8 @@
 //   GET  /api/me                                          who is signed in
 //   GET  /api/repos/<owner>/<repo>/access                 repo ownership check (github.js)
 //   GET  /api/my/repos[?host=gitlab]                      the signed-in user's public repos on GitHub or GitLab.com (listings.js)
-//   GET  /api/listing-info?host=&repo=                    what the listing form needs about one repo, on either host
+//   GET  /api/listing-info?host=&repo=                    what the listing form needs about one repo, on any host
+//   POST /api/verify-code { url }                         a code to commit to brainchild-verify.txt (self-hosted GitLab)
 //   GET  /api/repos/<owner>/<repo>/listing-info           ownership, license and agent file for the listing form
 //   POST /api/projects                                    publish a listing (dry_run: true only previews it)
 //   POST /api/projects/<id>/edit                          the maintainer edits the page
@@ -40,10 +41,11 @@
 //   GET  /api/users/<handle>                              a person's public page, cached for 60s
 //   GET/POST /api/votes, POST /api/proposals, POST /api/proposals/<id>/delete   monthly community vote (votes.js)
 
-import { json, privateJson, NO_STORE, siteOrigin } from "./http.js";
+import { json, privateJson, NO_STORE, siteOrigin, isSameOrigin } from "./http.js";
 import { login, callback, gitlabLogin, gitlabCallback, logout, me, getSession } from "./auth.js";
 import { myIdentities, unlinkIdentity, saveProfile } from "./identities.js";
 import { mergePreview, mergeAccounts } from "./merge.js";
+import { issueCode } from "./forge.js";
 import { repoAccessRoute } from "./github.js";
 import { myRepos, listingInfo, createListing, editProject, adoptProject, licenseRecord, licenseText } from "./listings.js";
 import { listComments, postComment, commentAction, postReport, modQueue, modResolve, modAppeal, myNotices, appealNotice } from "./community.js";
@@ -161,10 +163,11 @@ async function handlePrivate(request, env, ctx, url, path) {
   if (path === "/api/auth/gitlab/callback") return method === "GET" ? gitlabCallback(request, env, url) : methodNotAllowed("GET");
   if (path === "/api/me") return method === "GET" ? me(request, env, url) : methodNotAllowed("GET");
   if (path === "/api/my/repos") return method === "GET" ? myRepos(env, await getSession(request, env), url) : methodNotAllowed("GET");
+  if (path === "/api/verify-code") return method === "POST" ? (isSameOrigin(request) ? issueCode(request, env, await getSession(request, env)) : json({ error: "forbidden" }, 403, NO_STORE)) : methodNotAllowed("POST");
   // The listing form's look at one repo, on either host: ?host=github|gitlab&repo=<owner/name, group/sub/name or GitLab id>
   if (path === "/api/listing-info") {
     if (method !== "GET") return methodNotAllowed("GET");
-    return listingInfo(env, await getSession(request, env), url.searchParams.get("host") === "gitlab" ? "gitlab" : "github", url.searchParams.get("repo") || "");
+    return listingInfo(env, await getSession(request, env), ["gitlab", "selfhosted"].includes(url.searchParams.get("host")) ? url.searchParams.get("host") : "github", url.searchParams.get("repo") || "");
   }
   const repo = path.match(/^\/api\/repos\/([^/]+)\/([^/]+)\/(access|listing-info)$/);
   if (repo) {
@@ -240,7 +243,7 @@ async function handlePrivate(request, env, ctx, url, path) {
 async function handleApi(request, env, ctx, url) {
   const path = url.pathname.replace(/\/+$/, "");
 
-  if (path.startsWith("/api/auth/") || path === "/api/me" || path.startsWith("/api/repos/") || path.startsWith("/api/my/") || path === "/api/listing-info" ||
+  if (path.startsWith("/api/auth/") || path === "/api/me" || path.startsWith("/api/repos/") || path.startsWith("/api/my/") || path === "/api/listing-info" || path === "/api/verify-code" ||
       (path === "/api/projects" && request.method === "POST") || /^\/api\/projects\/[^/]+\/(adopt|edit|comments|screenshots|builds)(\/.*)?$/.test(path) ||
       path.startsWith("/api/comments/") || path === "/api/reports" || path === "/api/relay" || path.startsWith("/api/relay/") || path === "/api/report-form" || path === "/api/outside-reports" || path === "/api/votes" || path.startsWith("/api/proposals") || path.startsWith("/api/mod/") || /^\/api\/screenshots\/\d+\/delete$/.test(path)) {
     try {

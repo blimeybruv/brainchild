@@ -4,7 +4,7 @@
   var body = document.getElementById("w-body");
   var STEPS = ["Sign in", "Transfer or fork", "Link your repo", "Ownership", "Done"];
   var id = new URLSearchParams(window.location.search).get("id") || "";
-  var st = { step: 1, user: null, p: null, lineage: [], method: "fork", repo: "", title: "", check: null, done: null, error: "", busy: false };
+  var st = { step: 1, user: null, p: null, lineage: [], method: "fork", repo: "", title: "", check: null, done: null, error: "", busy: false, code: null };
 
   function go(n) { st.step = n; st.error = ""; render(); window.scrollTo(0, 0); }
   function btn(label, onClick, cls, disabled) {
@@ -16,10 +16,11 @@
   function errorLine() { return st.error ? h("p", { class: "form-error", role: "alert", text: st.error }) : null; }
   function oldRepo() { return (st.p.repo_url || "").replace(/^https:\/\//, ""); }
   // Where the project lives: the adopter's copy has to be on the same site.
-  function gl() { return st.p.repo_host === "gitlab" || /^https:\/\/gitlab\.com\//.test(st.p.repo_url || ""); }
-  function site() { return gl() ? "GitLab" : "GitHub"; }
+  function sh() { return typeof st.p.repo_host === "string" && st.p.repo_host.indexOf("selfhosted:") === 0; }
+  function gl() { return sh() || st.p.repo_host === "gitlab" || /^https:\/\/gitlab\.com\//.test(st.p.repo_url || ""); }
+  function site() { return sh() ? st.p.repo_host.slice(11) : gl() ? "GitLab" : "GitHub"; }
   function back2() { return "/adopt.html?id=" + st.p.id; }
-  function signInHref(link) { return gl() ? "/api/auth/gitlab/login?" + (link ? "link=1&" : "") + "return_to=" + encodeURIComponent(back2()) : "/api/auth/login?provider=github&" + (link ? "link=1&" : "") + "return_to=" + encodeURIComponent(back2()); }
+  function signInHref(link) { if (sh()) return "/api/auth/login?return_to=" + encodeURIComponent(back2()); return gl() ? "/api/auth/gitlab/login?" + (link ? "link=1&" : "") + "return_to=" + encodeURIComponent(back2()) : "/api/auth/login?provider=github&" + (link ? "link=1&" : "") + "return_to=" + encodeURIComponent(back2()); }
   function released() {
     var r = st.p.license_record, p = st.p;
     return (r ? "Released under " + (r.spdx_id || "a custom license") + " at commit " + String(r.commit_sha).slice(0, 7) : "Listed under " + p.license) +
@@ -42,7 +43,7 @@
       out.push(h("p", { text: "Signed in as @" + st.user.handle + "." }));
       out.push(h("div", { class: "actions" }, [btn("Continue", function () { go(2); })]));
     } else {
-      out.push(h("div", { class: "actions" }, [h("a", { class: "btn btn-light", href: signInHref(false), text: "Continue with " + site() })]));
+      out.push(h("div", { class: "actions" }, [h("a", { class: "btn btn-light", href: signInHref(false), text: sh() ? "Sign in" : "Continue with " + site() })]));
     }
     return out;
   }
@@ -78,12 +79,30 @@
         ? "Ask @" + (p.owner || "the maker") + " to transfer " + oldRepo() + " to you on " + site() + (gl() ? " (project Settings, General, Advanced, Transfer project)" : " (repository Settings, then Transfer ownership)") + ". Once you've accepted it, enter its new address below."
         : "Fork " + oldRepo() + " on " + site() + ", then enter your fork's address below." }),
       h("div", { class: "form-grid" }, [
-        h("div", { class: "field" }, [h("label", { for: "a-repo", text: "Your repository" }), repo, h("span", { class: "hint", text: gl() ? "In the form group/project." : "In the form owner/name." })]),
+        h("div", { class: "field" }, [h("label", { for: "a-repo", text: "Your repository" }), repo, h("span", { class: "hint", text: sh() ? "Its full address, starting with https://" + site() + "/" : gl() ? "In the form group/project." : "In the form owner/name." })]),
         h("div", { class: "field" }, [h("label", { for: "a-title", text: "Project name" }), title, h("span", { class: "hint", text: nameHint })])
       ]),
+      sh() ? codeBox() : null,
       errorLine(),
       h("div", { class: "actions" }, [btn(st.busy ? "Checking…" : "Check ownership", function () { send(true); }, null, st.busy), back()])
     ];
+  }
+
+  // On a self-hosted GitLab the adopter proves push access to their copy with a code in brainchild-verify.txt.
+  function codeBox() {
+    if (st.code) return h("div", { class: "callout plain" }, [
+      h("p", null, ["Create ", h("code", { text: st.code.file }), " at the top of your copy's default branch, containing only:"]),
+      h("pre", { class: "code-block", text: st.code.code }),
+      h("p", { class: "muted", text: "Commit it within " + st.code.days + " days, then check ownership." })]);
+    var b = btn("Get a verification code for my copy", function () {
+      st.busy = true; st.error = ""; render();
+      BC.api("POST", "/api/verify-code", { url: st.repo.trim() }).then(function (res) {
+        st.busy = false;
+        if (res.ok) st.code = res.data; else st.error = BC.errorText(res.data && res.data.error);
+        render();
+      });
+    }, "btn-ghost", st.busy);
+    return h("div", { class: "actions" }, [b]);
   }
 
   function send(dryRun) {
@@ -100,7 +119,7 @@
             h("div", { class: "actions" }, [h("a", { class: "btn btn-light", href: signInHref(true), text: "Connect " + site() })])]));
           return;
         }
-        st.error = e.error === "invalid_fields" ? (gl() ? "Enter your repository as group/project." : "Enter your repository as owner/name.") : e.error === "wrong_host" ? "This project lives on " + site() + ", so your copy has to be on " + site() + " too." : BC.errorText(e.error);
+        st.error = e.error === "invalid_fields" ? (sh() ? "Enter your copy's full address, starting with https://." : gl() ? "Enter your repository as group/project." : "Enter your repository as owner/name.") : e.error === "wrong_host" ? "This project lives on " + site() + ", so your copy has to be on " + site() + " too." : BC.errorText(e.error);
         return render();
       }
       if (dryRun) { st.check = res.data; go(4); } else { st.done = res.data; refresh(); }
@@ -115,7 +134,7 @@
     return [
       h("h2", { text: "Ownership check" }),
       h("div", { class: "callout" }, [h("span", { class: "mark", "aria-hidden": "true", text: "✓" }), h("div", null, [
-        h("p", null, [h("strong", { text: "Verified: @" + st.user.handle + " has " + (s.host === "gitlab" ? "the Maintainer or Owner role" : "admin rights") + " on " + (s.host === "gitlab" ? "gitlab.com/" : "github.com/") + s.repo })]),
+        h("p", null, [h("strong", { text: "Verified: @" + st.user.handle + " has " + (s.host === "gitlab" ? "the Maintainer or Owner role" : sh() ? "push access (your code is in the file)" : "admin rights") + " on " + BC.repoWhere(s.host, s.repo) })]),
         h("p", { text: s.method === "transfer" ? "Transfer confirmed: this is the project's own repository, now under your account." : "Fork confirmed: " + site() + " shows it as forked from the original." }),
         h("p", { text: licLine })])]),
       h("p", { class: "muted", text: "Finishing makes you the maintainer of \"" + s.title + "\" on Brainchild. The original maker stays credited in the lineage." }),
@@ -144,7 +163,7 @@
         return h("li", null, [
           h("div", { class: "rail" }, [h("span", { class: "node", "aria-hidden": "true" }), i < rows.length - 1 ? h("span", { class: "line", "aria-hidden": "true" }) : null]),
           h("div", null, [h("p", { class: "who", text: "@" + l.handle }),
-            h("p", { class: "when", text: (l.repo_full_name ? (l.repo_host === "gitlab" ? "gitlab.com/" : "github.com/") + l.repo_full_name + " · " : "") + what + (l.ended_at ? " · handed off " + BC.niceDate(l.ended_at) : " · current maintainer") })])
+            h("p", { class: "when", text: (l.repo_full_name ? BC.repoWhere(l.repo_host, l.repo_full_name) + " · " : "") + what + (l.ended_at ? " · handed off " + BC.niceDate(l.ended_at) : " · current maintainer") })])
         ]);
       })),
       BC.rulesBlock("Paste this into your CLAUDE.md or AGENTS.md", d.rules,

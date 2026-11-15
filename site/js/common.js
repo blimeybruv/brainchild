@@ -125,6 +125,12 @@
     codeberg_not_supported: "Codeberg isn't supported. Brainchild lists projects on GitHub and GitLab.com.",
     gitlab_com_only: "Only projects on GitLab.com can be listed for now, not self-hosted GitLab.",
     wrong_host: "Your copy has to be on the same site as the project.",
+    selfhosted_address: "Enter the project's full address on your GitLab, starting with https://, for example https://git.example.org/your-group/your-project.",
+    selfhosted_unreachable: "Brainchild couldn't read that project from your GitLab. It has to be public, and the instance reachable from the internet.",
+    not_selfhosted: "That address is on GitHub or GitLab.com. Choose that site instead; it uses sign-in rather than a code.",
+    verify_file_missing: "Brainchild couldn't find your code in brainchild-verify.txt at the top of the default branch. Commit the file, then check again.",
+    verify_code_not_yours: "The code in brainchild-verify.txt wasn't issued to you for this project. Get a new code and commit that.",
+    verify_code_stale: "The code in brainchild-verify.txt has already been used or is more than a week old. Get a new code and commit that.",
     relay_github_only: "For now only projects on GitHub can enter Relay rounds, because contributions are checked as GitHub pull requests.",
     forbidden: "That request wasn't allowed. Reload the page and try again.",
     repo_not_found: "GitHub can't find that repository. Check the address; private repositories can't be listed.",
@@ -207,6 +213,12 @@
     ]);
   }
 
+  // Where a repository lives, for display: github.com/owner/name, gitlab.com/group/name or git.example.org/group/name.
+  function repoWhere(host, fullName) {
+    var h = typeof host === "string" && host.indexOf("selfhosted:") === 0 ? host.slice(11) : host === "gitlab" ? "gitlab.com" : "github.com";
+    return h + "/" + (fullName || "");
+  }
+
   // ---------- Sign-in ----------
   var SIGNIN_NOTICES = {
     unavailable: "Sign-in isn't available here right now.",
@@ -280,5 +292,5 @@
   else initAuth();
 
   window.BC = { h: h, card: card, metaLine: metaLine, store: safeStore(), load: load, getJSON: getJSON, whoAmI: whoAmI, fromRow: fromRow,
-    api: api, errorText: errorText, niceDate: niceDate, renderSteps: renderSteps, choices: choices, rulesBlock: rulesBlock };
+    api: api, errorText: errorText, repoWhere: repoWhere, niceDate: niceDate, renderSteps: renderSteps, choices: choices, rulesBlock: rulesBlock };
 })();

@@ -485,9 +485,24 @@ Secrets, such as the OAuth client secret, are set by the owner in the dashboard;
     the same task is kept from the account that stays.
   - How to be sure both accounts are the same person is left to the moderator; the page suggests asking
     them to confirm while signed in to each.
+- **Done 15 Nov: self-hosted GitLab** (`api/forge.js`, migration `0018`, "Self-hosted GitLab" in the
+  listing form).
+  - The maker enters the project's https address and presses "Get a verification code". They commit the
+    code to `brainchild-verify.txt` at the top of the default branch, then press "check". Brainchild reads
+    the instance's public API with no token, so the project must be public and the instance reachable.
+  - Codes belong to one person and one repository, last 7 days, and are used up by a listing, a handoff or
+    an adoption, so each of those needs a new one. Edits, builds and screenshots accept any code issued to
+    the current maintainer for that repository, so the file must stay in the repo.
+  - The project page says "✓ verified: push access" instead of "verified owner".
+  - Each instance is its own host (`repo_host = 'selfhosted:<hostname>'`), so ids can't collide between
+    instances. An adopter's copy must be on the same instance, with their own code in it.
+  - **Safety:** Brainchild's server only fetches `https://<public host name>`: no IP addresses, no
+    ports, no user names in the address, no `localhost`, `.internal`, `.local` and similar names, and it
+    doesn't follow redirects. Answers are size-capped. Links come from Brainchild, never from the
+    instance's own `web_url`.
+  - Self-hosted projects can't enter Relay rounds (Relay is GitHub-only for now).
 - **Still to build (next batches):**
-  1. **Self-hosted GitLab** listings verified with a file ("verified: push access").
-  2. Relay contributions on a GitLab winner (merge requests, matched to the contributor's GitLab sign-in).
+  1. Relay contributions on a GitLab winner (merge requests, matched to the contributor's GitLab sign-in).
 
 **Linked accounts.**
 - **Accounts:** one Brainchild account per person (handle, badges, comments, lineage, votes), with any

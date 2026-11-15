@@ -88,7 +88,9 @@ window.BC.load(function () {
     // GitLab, or in the discussion when there is no repository to point to.
     var cta = document.getElementById("p-cta");
     var gh = p.repo_url && /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/?$/.test(p.repo_url);
-    var glab = p.repo_url && /^https:\/\/gitlab\.com\/[A-Za-z0-9_.-]+(\/[A-Za-z0-9_.-]+){1,5}\/?$/.test(p.repo_url);
+    var selfHosted = typeof p.repo_host === "string" && p.repo_host.indexOf("selfhosted:") === 0;
+    var glab = p.repo_url && (selfHosted ? p.repo_url.indexOf("https://" + p.repo_host.slice(11) + "/") === 0 && /^https:\/\/[a-z0-9.-]+\/[A-Za-z0-9_.-]+(\/[A-Za-z0-9_.-]+){1,5}\/?$/.test(p.repo_url)
+      : /^https:\/\/gitlab\.com\/[A-Za-z0-9_.-]+(\/[A-Za-z0-9_.-]+){1,5}\/?$/.test(p.repo_url));
     var repo = gh || glab ? p.repo_url.replace(/\/$/, "") : null;
     var forkUrl = repo ? repo + (glab ? "/-/forks/new" : "/fork") : null, issuesUrl = repo ? repo + (glab ? "/-/issues" : "/issues") : null;
     if (p.status === "adopt") cta.setAttribute("href", "adopt.html?id=" + pid);
@@ -104,7 +106,7 @@ window.BC.load(function () {
     var by = document.getElementById("p-byline");
     if (by && p.owner) {
       by.textContent = (p.handed_off_at ? "Handed off " + window.BC.niceDate(p.handed_off_at) : "Listed " + window.BC.niceDate(p.created_at)) +
-        " by @" + p.owner + (p.owner_verified ? " · ✓ verified owner" : "") +
+        " by @" + p.owner + (p.owner_verified ? (typeof p.repo_host === "string" && p.repo_host.indexOf("selfhosted:") === 0 ? " · ✓ verified: push access" : " · ✓ verified owner") : "") +
         (p.rating && p.rating !== "everyone" ? " · Rated " + (p.rating === "mature" ? "Mature" : "Teen") : "") +
         (p.content_notes && p.content_notes.length ? " (" + p.content_notes.join(", ").toLowerCase() + ")" : "");
     }

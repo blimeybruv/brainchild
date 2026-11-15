@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS projects (
   name_rights   TEXT,                           -- keep | continuation | rename (only when leaving)
   open_to_transfer INTEGER NOT NULL DEFAULT 0,
   hidden_at     TEXT,                           -- set when a moderator removes the project; lineage and records are kept
-  repo_host     TEXT,                           -- github | gitlab: repo_id is that site's number for the repo
+  repo_host     TEXT,                           -- github | gitlab | selfhosted:<hostname>: repo_id is that site's number for the repo
   CHECK (kind <> 'Mod' OR base_game IS NOT NULL)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_projects_repo ON projects (repo_host, repo_id);   -- a repo id is unique per host
@@ -404,3 +404,14 @@ CREATE TABLE IF NOT EXISTS account_merges (
   moved         TEXT NOT NULL,                     -- JSON: how many rows of each kind moved
   merged_at     TEXT NOT NULL
 );
+
+-- Self-hosted GitLab: codes committed to brainchild-verify.txt to prove push access.
+CREATE TABLE IF NOT EXISTS verify_codes (
+  code       TEXT PRIMARY KEY,                    -- what the person commits to brainchild-verify.txt
+  user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  repo_host  TEXT NOT NULL,                       -- selfhosted:<hostname>
+  repo_path  TEXT NOT NULL,                       -- group/project, lower case
+  created_at INTEGER NOT NULL,                    -- Unix seconds; a code must be committed within 7 days
+  used_at    INTEGER                              -- set when a listing, handoff or adoption used it
+);
+CREATE INDEX IF NOT EXISTS idx_verify_codes_user ON verify_codes (user_id, created_at);

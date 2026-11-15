@@ -14,7 +14,7 @@
 //   - Credit is never removed from lineage: adoption closes the old entry and adds a new one.
 
 import { json, privateJson, NO_STORE, isSameOrigin } from "./http.js";
-import { HOSTS, access, requireAdmin, requireProjectAdmin, headCommit, fetchLicense, fetchAgentFile, listRepos, parseRepoRef, repoUrl } from "./forge.js";
+import { HOSTS, access, requireAdmin, requireProjectAdmin, headCommit, fetchLicense, fetchAgentFile, listRepos, parseRepoRef, repoUrl, isSelfHosted, useCode } from "./forge.js";
 import { queueArchive, refreshArchives, archiveStatus } from "./archive.js";
 
 const GENRES = ["Puzzle", "Platformer", "Racing", "Roguelite", "Narrative", "Sandbox", "Simulation", "Strategy", "Tactics", "Productivity", "Utility", "Creative tools"];
@@ -113,7 +113,7 @@ function licenseLabel(spdx, assetsLicense) {
 
 export async function myRepos(env, session, url) {
   if (!session) return bad("not_signed_in", 401);
-  const host = url && url.searchParams.get("host") === "gitlab" ? "gitlab" : "github";
+  const host = url && HOSTS.includes(url.searchParams.get("host")) ? url.searchParams.get("host") : "github";
   const r = await listRepos(env, session, host);
   if (r.error) return bad(r.error, r.status);
   const repos = r.repos.map((x) => ({ ...x, listed: null }));
@@ -148,9 +148,11 @@ export async function listingInfo(env, session, host, ref) {
   if (!session) return bad("not_signed_in", 401);
   const parsed = parseRepoRef(host, ref);
   if (parsed.error) return bad(parsed.error, 400);
-  const a = await access(env, session, parsed.host, parsed.ref);
+  // A self-hosted listing needs a new code in the file (the same rule publish applies).
+  const a = await access(env, session, parsed.host, parsed.ref, { fresh: true });
   if (!a.ok) return bad(a.error, a.status);
-  const out = { admin: a.admin, can_list: a.admin && !a.repo.private, repo: a.repo, license: null, agent_file: null, listed: null };
+  const out = { admin: a.admin, can_list: a.admin && !a.repo.private, repo: a.repo, license: null, agent_file: null, listed: null,
+    verification: a.verification || "account", verify_error: a.verifyError || null };
   const existing = await findListing(env, a.repo);
   if (existing) {
     out.listed = existing.id;
@@ -175,7 +177,7 @@ function validateListing(b) {
 
   const parsed = parseRepoRef(HOSTS.includes(b.host) ? b.host : "github", b.repo);
   const repo = parsed.error ? null : parsed;
-  if (!repo) errors.push(parsed.error === "codeberg_not_supported" || parsed.error === "gitlab_com_only" ? parsed.error : "repo");
+  if (!repo) errors.push(["codeberg_not_supported", "gitlab_com_only", "selfhosted_address", "wrong_host"].includes(parsed.error) ? parsed.error : "repo");
   f.intent = b.intent === "leave" ? "leave" : b.intent === "stay" ? "stay" : null;
   if (!f.intent) errors.push("intent");
   // Someone stepping away puts the project up for adoption; someone staying asks for help or testers.
@@ -257,11 +259,11 @@ export async function createListing(request, env, ctx, session) {
   const body = await readJson(request);
   if (!body) return bad("bad_request");
   const { errors, f, repo } = validateListing(body);
-  for (const e of ["codeberg_not_supported", "gitlab_com_only"]) if (errors.includes(e)) return bad(e, 400);
+  for (const e of ["codeberg_not_supported", "gitlab_com_only", "selfhosted_address", "wrong_host"]) if (errors.includes(e)) return bad(e, 400);
   if (errors.length) return bad("invalid_fields", 400, { fields: errors });
 
   // Ownership is checked now, at the moment of publishing, never from an earlier answer.
-  const own = await requireAdmin(env, session, repo.host, repo.ref);
+  const own = await requireAdmin(env, session, repo.host, repo.ref, { fresh: true });
   if (own.response) return own.response;
   const r = own.repo;
   if (!r.default_branch) return bad("no_commits", 409);
@@ -348,6 +350,7 @@ export async function createListing(request, env, ctx, session) {
   ).bind(id, (last ? last.version : 0) + 1, f.intent === "leave" ? "handoff" : "listing", r.full_name, head.sha, lic.license.spdx, lic.license.sha256, licenseKey,
     lic.license.path, f.assets_license, f.name_rights, session.userId, now, r.host));
   if (handoff) statements.push(changeRow(env, id, session.userId, now, ["status", "handed off"], null));
+  if (own.code) statements.push(useCode(env, own.code)); // a self-hosted code works for one listing or handoff
   // Ask Software Heritage to archive the repo. Sent after the response; never holds up a listing.
   statements.push(queueArchive(env, id, (last ? last.version : 0) + 1, webUrl, now));
   try {
@@ -562,9 +565,10 @@ export async function adoptProject(request, env, ctx, session, id) {
   if (p.status !== "adopt") return bad("not_up_for_adoption", 409);
   // The adopter's copy lives where the project lives: a GitLab project is forked on GitLab.
   const host = p.repo_host || (/^https:\/\/gitlab\.com\//.test(p.repo_url || "") ? "gitlab" : "github");
+  const selfHosted = isSelfHosted(host);
   const parsed = parseRepoRef(host, body.repo);
   if (parsed.error === "codeberg_not_supported") return bad("codeberg_not_supported", 400);
-  if (!parsed.error && parsed.host !== host) return bad("wrong_host", 409, { host });
+  if (parsed.error === "wrong_host" || (!parsed.error && parsed.host !== host)) return bad("wrong_host", 409, { host });
   if (parsed.error || !method) return bad("invalid_fields", 400, { fields: [parsed.error ? "repo" : "method"] });
   if (p.owner_id && p.owner_id === session.userId) return bad("already_yours", 409);
   if (method === "transfer" && !p.open_to_transfer) return bad("transfer_not_offered", 409);
@@ -582,7 +586,7 @@ export async function adoptProject(request, env, ctx, session, id) {
   }
 
   // The adopter must control the repo they are linking, checked right now.
-  const own = await requireAdmin(env, session, parsed.host, parsed.ref);
+  const own = await requireAdmin(env, session, parsed.host, parsed.ref, { fresh: selfHosted });
   if (own.response) return own.response;
   const r = own.repo;
   if (!r.default_branch) return bad("no_commits", 409);
@@ -657,7 +661,8 @@ export async function adoptProject(request, env, ctx, session, id) {
                                     license_path, assets_license, name_rights, recorded_by, recorded_at, repo_host)
        SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM projects WHERE id = ? AND owner_id = ? AND updated_at = ?)`
     ).bind(id, version, relicensed ? "relicense" : "adoption", r.full_name, head.sha, lic.license.spdx, lic.license.sha256, licenseKey,
-      lic.license.path, p.assets_license, p.name_rights, session.userId, now, r.host, id, session.userId, now)
+      lic.license.path, p.assets_license, p.name_rights, session.userId, now, r.host, id, session.userId, now),
+    ...(own.code ? [useCode(env, own.code)] : [])
   ]);
   if (!result[0].meta || result[0].meta.changes !== 1) return bad("not_up_for_adoption", 409);
   // The adopter's repo is archived too (queued only if the license record above was written).

@@ -99,6 +99,17 @@
       signIns(ids);
       root.appendChild(h("h2", { text: "Decisions about things you posted" }));
       root.appendChild(d.decisions.length ? h("div", { class: "queue" }, d.decisions.map(decision)) : h("p", { class: "muted", text: "No decisions have been made about anything of yours." }));
+      if (d.pitches && d.pitches.length) {
+        var PS = { open: "Waiting for a moderator", drafted: "A moderator is editing it", published: "Published", declined: "Not taken up" };
+        root.appendChild(h("h2", { text: "Your blog pitches" }));
+        root.appendChild(h("div", { class: "queue" }, d.pitches.map(function (p) {
+          return h("div", { class: "panel queue-item" }, [
+            h("h3", null, [p.post_slug ? h("a", { href: "post.html?slug=" + encodeURIComponent(p.post_slug), text: p.title }) : p.title]),
+            h("p", { class: "muted", text: "Sent " + BC.niceDate(p.created_at) + " · " + (PS[p.status] || p.status) + (p.resolved_at ? " · " + BC.niceDate(p.resolved_at) : "") }),
+            p.note ? h("p", null, [h("strong", { text: "Note from the moderator: " }), p.note]) : null
+          ]);
+        })));
+      }
       root.appendChild(h("h2", { text: "Your reports" }));
       root.appendChild(d.reports.length ? h("div", { class: "queue" }, d.reports.map(function (r) {
         return h("div", { class: "panel queue-item" }, [

@@ -213,6 +213,32 @@
     ]);
   }
 
+  // A blog post's text, turned into page elements (never HTML). The subset: paragraphs separated by a
+  // blank line, "# " and "## " headings, "- " list items, `code`, and [links](https://...) to http(s) only.
+  function inline(text) {
+    var out = [], re = /`([^`\n]{1,300})`|\[([^\]\n]{1,200})\]\((https?:\/\/[^\s)]{1,500})\)/g, last = 0, m;
+    while ((m = re.exec(text))) {
+      if (m.index > last) out.push(document.createTextNode(text.slice(last, m.index)));
+      out.push(m[1] !== undefined ? h("code", { text: m[1] }) : h("a", { href: m[3], rel: "nofollow noopener noreferrer", target: "_blank", text: m[2] }));
+      last = re.lastIndex;
+    }
+    if (last < text.length) out.push(document.createTextNode(text.slice(last)));
+    return out;
+  }
+  function renderPost(text) {
+    var box = h("div", { class: "post-body" });
+    String(text || "").replace(/\r\n?/g, "\n").split(/\n\s*\n/).forEach(function (block) {
+      var b = block.trim();
+      if (!b) return;
+      var lines = b.split("\n");
+      if (/^## /.test(b) && lines.length === 1) box.appendChild(h("h3", null, inline(b.slice(3))));
+      else if (/^# /.test(b) && lines.length === 1) box.appendChild(h("h2", null, inline(b.slice(2))));
+      else if (lines.every(function (l) { return /^\s*[-*] /.test(l); })) box.appendChild(h("ul", null, lines.map(function (l) { return h("li", null, inline(l.replace(/^\s*[-*] /, ""))); })));
+      else box.appendChild(h("p", null, inline(lines.join(" "))));
+    });
+    return box;
+  }
+
   // The stored type "Mod" covers mods and plugins for any software (owner's decision, 14 Nov).
   function kindLabel(kind) { return kind === "Mod" ? "Mod / plugin" : kind; }
 
@@ -295,5 +321,5 @@
   else initAuth();
 
   window.BC = { h: h, card: card, metaLine: metaLine, store: safeStore(), load: load, getJSON: getJSON, whoAmI: whoAmI, fromRow: fromRow,
-    api: api, errorText: errorText, repoWhere: repoWhere, kindLabel: kindLabel, niceDate: niceDate, renderSteps: renderSteps, choices: choices, rulesBlock: rulesBlock };
+    api: api, errorText: errorText, repoWhere: repoWhere, kindLabel: kindLabel, renderPost: renderPost, niceDate: niceDate, renderSteps: renderSteps, choices: choices, rulesBlock: rulesBlock };
 })();

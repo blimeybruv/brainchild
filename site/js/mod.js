@@ -19,6 +19,13 @@
       ? [h("p", null, ["Comment by @" + (r.comment_author || r.affected || "someone") + " on ", link, r.comment_removed ? " (already removed)" : ""]), h("blockquote", { class: "quote", text: r.comment_body || "[ no longer available ]" })]
       : [h("p", null, ["Project: ", link, r.project_owner ? " by @" + r.project_owner : "", r.project_hidden ? " (already removed)" : ""])];
   }
+  // A report that is really a submission: copy its text into a draft post and open the editor.
+  function toDraft(url, err) {
+    BC.api("POST", url, {}).then(function (res) {
+      if (res.ok) { window.location.href = "mod-posts.html?edit=" + res.data.post_id; return; }
+      err.textContent = BC.errorText(res.data && res.data.error);
+    });
+  }
   function reportItem(r) {
     var reasons = h("textarea", { class: "textarea", rows: "3", maxlength: "2000", "aria-label": "Reasons", placeholder: "For a removal: what it is, and which rule or law it breaks. The person affected will read this." });
     var ground = h("select", { class: "select", "aria-label": "Ground" }, [h("option", { value: "terms", text: "Breaks Brainchild's house rules" }), h("option", { value: "illegal", text: "Illegal content" })]);
@@ -35,7 +42,8 @@
     ].concat(target(r)).concat([
       r.details ? h("p", null, [h("strong", { text: "Reporter's details: " }), r.details]) : null,
       view === "open" ? h("div", { class: "form-grid" }, [h("div", { class: "field wide" }, [reasons]), h("div", { class: "field" }, [ground])]) : null,
-      view === "open" ? h("div", { class: "actions" }, [btn("Remove it", "btn-primary", function () { send("remove"); }), btn("Dismiss the report", "btn-ghost", function () { send("dismiss"); })]) : h("p", { class: "muted", text: "Outcome: " + r.status + (r.resolved_at ? " on " + BC.niceDate(r.resolved_at) : "") + (r.resolution_note ? " · " + r.resolution_note : "") }),
+      view === "open" ? h("div", { class: "actions" }, [btn("Remove it", "btn-primary", function () { send("remove"); }), btn("Dismiss the report", "btn-ghost", function () { send("dismiss"); }),
+        r.details ? btn("Turn into a draft post", "btn-ghost", function () { toDraft("/api/mod/reports/" + r.id + "/draft", err); }) : null]) : h("p", { class: "muted", text: "Outcome: " + r.status + (r.resolved_at ? " on " + BC.niceDate(r.resolved_at) : "") + (r.resolution_note ? " · " + r.resolution_note : "") }),
       err
     ]));
   }
@@ -62,6 +70,7 @@
       view === "open" ? h("div", { class: "actions" }, [
         canRemove ? btn("Remove the project", "btn-primary", function () { send("remove"); }) : null,
         btn("Dealt with another way", "btn-ghost", function () { send("handled"); }),
+        btn("Turn into a draft post", "btn-ghost", function () { toDraft("/api/mod/outside/" + r.id + "/draft", err); }),
         btn("Dismiss the report", "btn-ghost", function () { send("dismiss"); })
       ]) : h("p", { class: "muted", text: "Outcome: " + r.status + (r.resolved_at ? " on " + BC.niceDate(r.resolved_at) : "") + (r.resolution_note ? " · " + r.resolution_note : "") }),
       err
@@ -185,6 +194,7 @@
       var d = res.data;
       root.textContent = "";
       root.appendChild(h("div", { class: "actions" }, [
+        h("a", { class: "btn btn-ghost", href: "mod-posts.html", text: "Blog posts and pitches" }),
         btn("Open reports", view === "open" ? "btn-light" : "btn-ghost", function () { view = "open"; load(); }),
         btn("Closed reports", view === "closed" ? "btn-light" : "btn-ghost", function () { view = "closed"; load(); })]));
       var sigs = view === "open" ? signalsSection(d.signals) : null;

@@ -596,6 +596,28 @@ column `base_game`), so there is no migration and the CHECK constraint stays as 
 
 ## Owner request, 14 Nov: moderator blog posts, and "Pitch a post"
 
+**Done 15 Nov** (`api/posts.js`, migration `0020`, `site/mod-posts.html`, `site/post.html`).
+- **Editor:** Moderation page → "Blog posts and pitches". Write, edit, publish, unpublish and delete posts,
+  with topic, title, excerpt, body and author. A live preview uses the same renderer as the public page.
+- **Formatting:** blank line between paragraphs, `# ` and `## ` headings, `- ` list items, `` `code` ``
+  and `[text](https://...)` links (http and https only, `rel="nofollow noopener noreferrer"`). The text is
+  stored as typed and turned into page elements in the browser (`BC.renderPost` in `common.js`), never
+  HTML: a `<script>` in a post shows as text.
+- **Author:** a member's handle, or empty for a site post shown as "Brainchild". Naming someone is refused
+  unless they are the person whose pitch or report the post came from, or the moderator ticks "The named
+  author submitted this or agreed to be named". The editor shows that reminder.
+- **Audit:** every create, edit, author change, publish, unpublish and delete is logged with the
+  moderator and time (`post_edits`), listed at the foot of the editor page and never shown on posts.
+- **Pitch a post:** the blog sidebar has a signed-in form (topic, title, draft; three a day). Pitches
+  wait on the editor page; "Make it a draft" copies the text as written, with the pitcher as author,
+  and "Decline" sends an optional note. Members see their pitches on their account page (waiting, being
+  edited, published with a link, or not taken up with the note). The contact page now points there.
+- **Reports into drafts:** reports and outside reports with text have "Turn into a draft post", which
+  opens the new draft in the editor. A signed-in reporter, who submitted the text, becomes the author;
+  outside reports start as site posts. The report itself stays open.
+- **The blog page** lists published posts, each linking to `post.html?slug=…`. The sample posts show only
+  while there are no real ones (they go in the launch clean-up).
+
 - **Post editor (moderators only):** a page in the moderation area to create, edit, publish, unpublish
   and delete blog posts.
   - **Fields:** topic (the four existing topics), title, excerpt and body.

@@ -39,6 +39,10 @@
 //   GET  /api/mod/merge?from=&into=, POST /api/mod/merge  merging two accounts of one person (merge.js), moderators only
 //   POST /api/relay/badges                                the maintainer's awards (relay-badges.js)
 //   GET  /api/users/<handle>                              a person's public page, cached for 60s
+//   GET  /api/posts, /api/posts/<slug>                    published blog posts, cached for 60s (posts.js)
+//   POST /api/pitches                                     a member pitches a post
+//   GET  /api/mod/posts, POST /api/mod/posts, /api/mod/posts/<id>/publish|unpublish|delete,
+//        /api/mod/pitches/<id>/draft|decline, /api/mod/reports/<id>/draft, /api/mod/outside/<id>/draft   moderators only
 //   GET/POST /api/votes, POST /api/proposals, POST /api/proposals/<id>/delete   monthly community vote (votes.js)
 
 import { json, privateJson, NO_STORE, siteOrigin, isSameOrigin } from "./http.js";
@@ -46,6 +50,7 @@ import { login, callback, gitlabLogin, gitlabCallback, logout, me, getSession } 
 import { myIdentities, unlinkIdentity, saveProfile } from "./identities.js";
 import { mergePreview, mergeAccounts } from "./merge.js";
 import { issueCode } from "./forge.js";
+import { listPosts, getPost, modPosts, savePost, postAction, pitch, pitchAction, draftFromReport } from "./posts.js";
 import { repoAccessRoute } from "./github.js";
 import { myRepos, listingInfo, createListing, editProject, adoptProject, licenseRecord, licenseText } from "./listings.js";
 import { listComments, postComment, commentAction, postReport, modQueue, modResolve, modAppeal, myNotices, appealNotice } from "./community.js";
@@ -207,6 +212,14 @@ async function handlePrivate(request, env, ctx, url, path) {
   m = path.match(/^\/api\/mod\/outside\/(\d{1,12})\/resolve$/);
   if (m) return method === "POST" ? resolveOutside(request, env, session, Number(m[1])) : methodNotAllowed("POST");
   if (path === "/api/mod/reports") return method === "GET" ? modQueue(request, env, session, url) : methodNotAllowed("GET");
+  if (path === "/api/pitches") return method === "POST" ? pitch(request, env, session) : methodNotAllowed("POST");
+  if (path === "/api/mod/posts") return method === "GET" ? modPosts(request, env, session) : method === "POST" ? savePost(request, env, session) : methodNotAllowed("GET, POST");
+  m = path.match(/^\/api\/mod\/posts\/(\d{1,12})\/(publish|unpublish|delete)$/);
+  if (m) return method === "POST" ? postAction(request, env, session, Number(m[1]), m[2]) : methodNotAllowed("POST");
+  m = path.match(/^\/api\/mod\/pitches\/(\d{1,12})\/(draft|decline)$/);
+  if (m) return method === "POST" ? pitchAction(request, env, session, Number(m[1]), m[2]) : methodNotAllowed("POST");
+  m = path.match(/^\/api\/mod\/(reports|outside)\/(\d{1,12})\/draft$/);
+  if (m) return method === "POST" ? draftFromReport(request, env, session, Number(m[2]), m[1] === "outside") : methodNotAllowed("POST");
   if (path === "/api/mod/merge") return method === "GET" ? mergePreview(request, env, session, url) : method === "POST" ? mergeAccounts(request, env, session) : methodNotAllowed("GET, POST");
   m = path.match(/^\/api\/mod\/reports\/(\d{1,12})\/resolve$/);
   if (m) return method === "POST" ? modResolve(request, env, session, Number(m[1])) : methodNotAllowed("POST");
@@ -245,7 +258,7 @@ async function handleApi(request, env, ctx, url) {
 
   if (path.startsWith("/api/auth/") || path === "/api/me" || path.startsWith("/api/repos/") || path.startsWith("/api/my/") || path === "/api/listing-info" || path === "/api/verify-code" ||
       (path === "/api/projects" && request.method === "POST") || /^\/api\/projects\/[^/]+\/(adopt|edit|comments|screenshots|builds)(\/.*)?$/.test(path) ||
-      path.startsWith("/api/comments/") || path === "/api/reports" || path === "/api/relay" || path.startsWith("/api/relay/") || path === "/api/report-form" || path === "/api/outside-reports" || path === "/api/votes" || path.startsWith("/api/proposals") || path.startsWith("/api/mod/") || /^\/api\/screenshots\/\d+\/delete$/.test(path)) {
+      path.startsWith("/api/comments/") || path === "/api/reports" || path === "/api/relay" || path.startsWith("/api/relay/") || path === "/api/report-form" || path === "/api/outside-reports" || path === "/api/votes" || path.startsWith("/api/proposals") || path.startsWith("/api/mod/") || path === "/api/pitches" || /^\/api\/screenshots\/\d+\/delete$/.test(path)) {
     try {
       return (await handlePrivate(request, env, ctx, url, path)) || notFound();
     } catch (err) {
@@ -276,6 +289,10 @@ async function handleApi(request, env, ctx, url) {
       response = await licenseRecord(env, ctx, path.split("/")[3]);
     } else if (/^\/api\/screenshots\/\d{1,12}$/.test(path)) {
       response = await serveScreenshot(env, Number(path.split("/")[3]));
+    } else if (path === "/api/posts") {
+      response = await listPosts(env);
+    } else if (/^\/api\/posts\/[a-z0-9-]{1,80}$/.test(path)) {
+      response = await getPost(env, path.split("/")[3]);
     } else if (/^\/api\/users\/[^/]+$/.test(path)) {
       let handle;
       try { handle = decodeURIComponent(path.slice("/api/users/".length)); } catch { handle = ""; }

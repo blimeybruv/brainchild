@@ -472,3 +472,12 @@ blockquote.agree { margin: 0; padding-left: 14px; border-left: 3px solid var(--a
 .signin-choices .btn[hidden] { display: none; }
 .check { display: flex; gap: 10px; align-items: center; font-size: 15px; margin-top: 12px; }
 .check input { width: 18px; height: 18px; accent-color: var(--accent); }
+.post-page { max-width: 760px; }
+.post-page h1 { margin: 6px 0 8px; }
+.post-body { font-size: 17px; line-height: 1.65; }
+.post-body h2 { font-size: 26px; margin: 28px 0 8px; }
+.post-body h3 { font-size: 21px; margin: 22px 0 6px; }
+.post-body code { font-family: var(--font-mono); font-size: 0.9em; background: var(--panel); padding: 1px 5px; border-radius: 4px; }
+.post-preview { padding: 18px 22px; margin-top: 14px; }
+.queue-item h3 .pill { margin-left: 8px; vertical-align: middle; }
+.pitch-box { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }

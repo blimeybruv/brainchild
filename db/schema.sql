@@ -316,8 +316,12 @@ CREATE TABLE IF NOT EXISTS posts (
   title        TEXT NOT NULL,
   excerpt      TEXT NOT NULL,
   body         TEXT NOT NULL DEFAULT '',
-  author_id    TEXT REFERENCES users(id),
-  published_at TEXT
+  author_id    TEXT REFERENCES users(id),    -- NULL = a site post, shown as "Brainchild"
+  published_at TEXT,                         -- NULL = draft
+  created_at   TEXT,
+  updated_at   TEXT,
+  source_kind  TEXT,                         -- pitch | report | outside_report
+  source_id    INTEGER
 );
 
 -- Relay rounds, part B: task board, claims, contributions and junk flags.
@@ -429,3 +433,30 @@ CREATE TABLE IF NOT EXISTS net_flags (
   PRIMARY KEY (kind, scope, user_id)
 );
 CREATE INDEX IF NOT EXISTS idx_net_flags_expiry ON net_flags (expires_at);
+
+-- Who really created or changed a post, and when. Private: shown in the moderation area only.
+CREATE TABLE IF NOT EXISTS post_edits (
+  id       INTEGER PRIMARY KEY AUTOINCREMENT,
+  post_id  INTEGER NOT NULL,                      -- no foreign key: the log outlives a deleted post
+  title    TEXT NOT NULL,                         -- the title at the time, so the log still reads after a delete
+  user_id  TEXT REFERENCES users(id),
+  action   TEXT NOT NULL,                         -- create | edit | author | publish | unpublish | delete
+  at       TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_post_edits_post ON post_edits (post_id, id);
+
+-- "Pitch a post": a member's draft, waiting for a moderator.
+CREATE TABLE IF NOT EXISTS pitches (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id     TEXT NOT NULL REFERENCES users(id),
+  topic       TEXT NOT NULL CHECK (topic IN ('Community project','Handoff story','Guide','Site news')),
+  title       TEXT NOT NULL,
+  body        TEXT NOT NULL,
+  status      TEXT NOT NULL DEFAULT 'open',       -- open | drafted (a moderator made it a draft post) | declined
+  note        TEXT,                               -- the moderator's note to the pitcher
+  post_id     INTEGER,
+  created_at  TEXT NOT NULL,
+  resolved_at TEXT,
+  resolved_by TEXT REFERENCES users(id)
+);
+CREATE INDEX IF NOT EXISTS idx_pitches_status ON pitches (status, created_at);

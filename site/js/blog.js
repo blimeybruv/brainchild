@@ -137,18 +137,52 @@ window.BC.load(function () {
     });
     var list = document.getElementById("posts");
     list.textContent = "";
-    posts.filter(function (p) { return topic === "All" || p.topic === topic; }).forEach(function (p) {
+    var shown = (realPosts && realPosts.length ? realPosts : posts).filter(function (p) { return topic === "All" || p.topic === topic; });
+    if (!shown.length) list.appendChild(h("p", { class: "muted", text: "No posts on this topic yet." }));
+    shown.forEach(function (p) {
+      var real = !!p.slug;
       list.appendChild(h("article", { class: "panel post" }, [
         h("div", { class: "byline" }, [
           h("span", { class: "topic", "data-topic": p.topic, text: p.topic }),
-          h("span", { text: "by @[author] · [DATE]" })
+          h("span", { text: real ? "by " + (p.author ? "@" + p.author : "Brainchild") + " · " + BC.niceDate(p.published_at) : "by @[author] · [DATE]" })
         ]),
-        h("h3", { text: p.title }),
+        h("h3", null, [real ? h("a", { href: "post.html?slug=" + encodeURIComponent(p.slug), text: p.title }) : p.title]),
         h("p", { text: p.excerpt }),
-        h("span", { class: "muted", style: "font-size:14px", text: "Sample post: real posts come at launch." }) // no post pages yet; these samples go before launch
+        real ? h("a", { href: "post.html?slug=" + encodeURIComponent(p.slug), style: "align-self:flex-start;font-size:15px;font-weight:500", text: "Read the post" })
+          : h("span", { class: "muted", style: "font-size:14px", text: "Sample post: real posts come at launch." }) // shown only until the first real post; removed before launch
       ]));
     });
   }
+
+  // Published posts from the database. The sample posts above show only while there are none.
+  var realPosts = null;
+  if (window.location.protocol !== "file:") BC.getJSON("/api/posts").then(function (j) { realPosts = j && Array.isArray(j.posts) ? j.posts : []; renderPosts(); }, function () {});
+
+  // "Pitch a post": a signed-in member sends a draft; a moderator edits and publishes it.
+  function pitchBox() {
+    var box = document.getElementById("pitch-box");
+    if (!box) return;
+    BC.whoAmI().then(function (user) {
+      box.textContent = "";
+      if (!user) { box.appendChild(h("p", null, [signIn("Sign in"), " to pitch a post."])); return; }
+      var t = h("select", { class: "select", id: "pitch-topic", "aria-label": "Topic" }, topics.slice(1).map(function (x) { return h("option", { value: x, text: x }); }));
+      var title = h("input", { class: "input", id: "pitch-title", maxlength: "140", placeholder: "Title", "aria-label": "Title" });
+      var text = h("textarea", { class: "textarea", id: "pitch-body", rows: "6", maxlength: "20000", placeholder: "Your draft. A moderator edits it before it goes up, with you as the author.", "aria-label": "Your draft" });
+      var note = h("p", { class: "form-note", role: "status" });
+      var send = h("button", { class: "btn btn-primary btn-block", type: "button", text: "Send pitch" });
+      send.addEventListener("click", function () {
+        send.disabled = true; note.textContent = "";
+        BC.api("POST", "/api/pitches", { topic: t.value, title: title.value, body: text.value }).then(function (res) {
+          send.disabled = false;
+          if (res.ok) { title.value = ""; text.value = ""; note.textContent = "Thanks. A moderator will look at it; you'll see what happened on your account page."; return; }
+          var e = res.data && res.data.error;
+          note.textContent = e === "invalid_fields" ? "Give it a title and a draft of at least a few sentences." : e === "slow_down" ? "That's three pitches today. Try again tomorrow." : BC.errorText(e);
+        });
+      });
+      [t, title, text, send, note].forEach(function (el) { box.appendChild(el); });
+    });
+  }
+  pitchBox();
 
   // Proposal form: projects up for adoption or open for collaboration.
   var sel = document.getElementById("proj");

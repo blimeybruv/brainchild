@@ -14,6 +14,7 @@ import { listOutside } from "./outside.js";
 import { listFlags } from "./relay-board.js";
 import { commentBadges } from "./relay-badges.js";
 import { moderatorSignals } from "./signals.js";
+import { myPitches } from "./posts.js";
 
 export const REPORT_CATEGORIES = ["sexual", "rating", "malware", "license", "harass", "spam", "other"];
 const MAX_COMMENT = 2000;
@@ -356,7 +357,7 @@ export async function myNotices(env, session) {
        FROM reports r LEFT JOIN projects p ON p.id = r.project_id WHERE r.reporter_id = ? ORDER BY r.created_at DESC LIMIT 100`
   ).bind(session.userId).all();
   for (const d of decisions) d.automated = !!d.automated;
-  return privateJson({ decisions, reports });
+  return privateJson({ decisions, reports, pitches: await myPitches(env, session.userId) });
 }
 
 // POST /api/my/notices/<action id>/appeal  { text } : ask for a removal to be looked at again (once).

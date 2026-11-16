@@ -26,9 +26,14 @@
       "bucket_name": "brainchild-builds"
     }
   ],
-  // Keeps the error logs the separate API Worker used to have.
+  // Keeps the error logs the separate API Worker used to have. The log line Cloudflare would otherwise
+  // keep for every request (its address and details of the visitor's connection) is turned off, so the
+  // privacy page's "no IP address is stored" holds. Errors and the Worker's own messages are still kept.
   "observability": {
-    "enabled": true
+    "enabled": true,
+    "logs": {
+      "invocation_logs": false
+    }
   },
   // Pull-request previews (built for every branch other than main) use their own test
   // database and bucket, so nothing tried out in a preview can touch the live data.

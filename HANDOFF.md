@@ -718,7 +718,8 @@ column `base_game`), so there is no migration and the CHECK constraint stays as 
 One pass over every route, looking at how the separately built pieces interact. Each fix below was
 reproduced first and then checked against a local copy of the Worker with a stand-in for GitHub, GitLab
 and a self-hosted GitLab. Nothing here has run against the real services yet. The checks are kept in
-`tests/review/` (how to run them is at the top of `rig.mjs`); they are not part of any deploy.
+`tests/review/` (`holes.mjs` for the site, `builds.mjs` for the game Worker; how to run them is at the
+top of `rig.mjs`); they are not part of any deploy.
 
 **Fixed (branch `claude/trusting-hypatia-js9nvz`):**
 - **A moderator's rating now holds.** The Edit page and the handoff flow both let the maintainer set the
@@ -756,21 +757,28 @@ and a self-hosted GitLab. Nothing here has run against the real services yet. Th
   GitLab sign-in; the privacy page says the GitLab permission could read private projects and that
   profile pictures load from GitHub or GitLab.
 
-**Waiting on the owner (decisions, not code yet):**
-1. **Service workers on game addresses.** A game can install a service worker, which keeps answering for
-   people who already opened the game after a moderator removes it, a new version goes live, or the
-   project is adopted by someone else. Refusing service-worker scripts in `builds-worker/worker.js` closes
-   this; a game exported as an installable web app would lose that feature but should still play.
-2. **GitLab permission.** `read_api` is the narrowest scope that shows a person's role, but it also
-   covers private projects. The alternative is to ask GitLab without the person's token (public projects
-   show their members), which may be rate-limited.
-3. **Cloudflare request logs.** `observability` is on for both Workers, so Cloudflare keeps a log line per
-   request for a few days. Either turn request logs off (`"logs": { "invocation_logs": false }`, errors
-   are still kept) or say so on the privacy page, which currently says no IP address is stored.
-4. **GitLab app:** remove the `…workers.dev/api/auth/gitlab/callback` address from the app's redirect
-   URIs (GitLab → your picture → Preferences → Applications → Brainchild → Edit).
-5. **Launch clean-up** (already listed above) also removes the six `sample-*` accounts.
-6. **Erasure and the license lock.** A license copy can be hidden but not deleted while the bucket lock is
+**Decided by the owner, 16 Nov, and done:**
+- **Games can't install a service worker.** One would keep answering at the game's address for people
+  who had already opened it, after a moderator removed the game, a new version went live or the project
+  was adopted by someone else. `builds-worker/worker.js` refuses any request a browser marks as a
+  service worker's script. A game exported as an installable web app loses that feature; say so if a
+  maker asks. The owner's Zombie Outbreak Simulator doesn't use one.
+- **Per-request logs are off** on both Workers (`"logs": { "invocation_logs": false }` in both
+  `wrangler.jsonc` files), so Cloudflare no longer keeps a log line for every request and the privacy
+  page's "no IP address is stored" holds. Errors and the Workers' own `console.error` lines are still
+  kept. Turn it back on only for a short debugging session, and tell the owner.
+
+**Waiting on the owner:**
+1. **GitLab permission (explained to the owner 16 Nov; no change made).** `read_api` is the narrowest
+   GitLab scope that shows a person's role on a project, but it also covers their private projects, so
+   the stored GitLab token is worth more to a thief than the GitHub one (which sees only public
+   things). The privacy page now says so. The alternative is to ask GitLab without the person's token
+   (public projects show their members) and request only `read_user`; GitLab may rate-limit that.
+2. **GitLab app:** remove the line
+   `https://claude-handoff-step-1-hhjfyd-royal-firefly-b80b.blimeybruv.workers.dev/api/auth/gitlab/callback`
+   from the app's redirect URIs and keep `https://brainchild.nexus/api/auth/gitlab/callback`.
+3. **Launch clean-up** (already listed above) also removes the six `sample-*` accounts.
+4. **Erasure and the license lock.** A license copy can be hidden but not deleted while the bucket lock is
    on. If someone asks for a text to be erased, the lock rule has to be lifted for that one object.
 
 **Known and left as they are:**

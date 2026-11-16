@@ -4,6 +4,7 @@
 // Why a separate Worker on a separate domain: a build is someone else's JavaScript. On its own
 // origin it can't read Brainchild's session cookie or pages, and each game is also kept apart
 // from every other game. This Worker never reads or sets cookies and has no sign-in code.
+// A game can't install a service worker, so what runs here is always what this Worker serves now.
 //
 // Bindings: DB -> D1 "brainchild-db" (read only here), BUILDS -> R2 "brainchild-builds".
 
@@ -57,6 +58,16 @@ export default {
     }
     const projectId = host.slice(0, -(BUILD_HOST.length + 1));
     if (!/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(projectId)) return page(404, "Not found", "There is no game at this address.");
+
+    // A game can't install a service worker. One would keep answering at this address for people who
+    // had already opened the game, after a moderator removed it, a new version went live or the project
+    // passed to another maintainer. Browsers mark the request for a service worker's script with this
+    // header, and without the script nothing can be installed or updated.
+    if (request.headers.has("service-worker")) {
+      return new Response("Service workers aren't available for hosted games.", {
+        status: 403, headers: { "content-type": "text/plain; charset=utf-8", "x-content-type-options": "nosniff", "cache-control": "no-store" }
+      });
+    }
 
     // The age label for German youth-protection software, for this game's own address (each game is a
     // separate FQDN). It follows the project's rating on Brainchild: 18 for Mature, otherwise 0. A game

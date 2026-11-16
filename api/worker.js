@@ -62,6 +62,7 @@ import { enterRelay, withdrawRelay, rankRelay } from "./relay.js";
 import { awardBadge, userPage } from "./relay-badges.js";
 import { relayState, addTask, taskAction, addContribution, contributionAction, resolveFlag } from "./relay-board.js";
 import { startBuild, putBuildFile, activateBuild, rollbackBuild, removeBuild, buildInfo, playUrl } from "./builds.js";
+import { sweepExpired } from "./signals.js";
 
 const PROJECT_FIELDS =
   "p.id, p.title, p.kind, p.genre, p.status, p.base_game, p.tech, p.browser, p.license, p.note, p.tone, p.featured, p.repo_url, " +
@@ -167,7 +168,11 @@ async function handlePrivate(request, env, ctx, url, path) {
   if (path === "/api/auth/logout") return method === "POST" ? logout(request, env, ctx) : methodNotAllowed("POST");
   if (path === "/api/auth/gitlab/login") return method === "GET" ? gitlabLogin(request, env, url) : methodNotAllowed("GET");
   if (path === "/api/auth/gitlab/callback") return method === "GET" ? gitlabCallback(request, env, url) : methodNotAllowed("GET");
-  if (path === "/api/me") return method === "GET" ? me(request, env, url) : methodNotAllowed("GET");
+  if (path === "/api/me") {
+    if (method !== "GET") return methodNotAllowed("GET");
+    ctx.waitUntil(sweepExpired(env)); // expired network codes and sessions go, after the answer is sent
+    return me(request, env, url);
+  }
   if (path === "/api/my/repos") return method === "GET" ? myRepos(env, await getSession(request, env), url) : methodNotAllowed("GET");
   if (path === "/api/verify-code") return method === "POST" ? (isSameOrigin(request) ? issueCode(request, env, await getSession(request, env)) : json({ error: "forbidden" }, 403, NO_STORE)) : methodNotAllowed("POST");
   // The listing form's look at one repo, on either host: ?host=github|gitlab&repo=<owner/name, group/sub/name or GitLab id>

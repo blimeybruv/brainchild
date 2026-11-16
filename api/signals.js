@@ -69,12 +69,28 @@ export async function recordFlag(env, request, kind, scope, userId, closes) {
   } catch (e) { console.error("signals: could not record a flag"); }
 }
 
+// Deletes network codes past their date and sign-in sessions that have run out, so the retention
+// times on the privacy page hold without waiting for a moderator to open the queue or for the next
+// sign-in. It runs when any page asks who is signed in, at most once every ten minutes per running
+// copy of the Worker; nothing here runs on a timer.
+let lastSweep = 0;
+export async function sweepExpired(env, force = false) {
+  const now = Date.now();
+  if (!force && now - lastSweep < 10 * 60 * 1000) return;
+  lastSweep = now;
+  try {
+    await env.DB.batch([
+      env.DB.prepare("DELETE FROM net_flags WHERE expires_at < ?").bind(new Date(now).toISOString().slice(0, 10)),
+      env.DB.prepare("DELETE FROM sessions WHERE expires_at <= ?").bind(Math.floor(now / 1000))
+    ]);
+  } catch { console.error("signals: could not delete expired rows"); }
+}
+
 const daysSince = (t) => (t ? Math.floor((Date.now() - new Date(String(t).replace(" ", "T") + (String(t).endsWith("Z") ? "" : "Z")).getTime()) / 86400000) : null);
 
 // For the moderation queue: shared networks (counts only) and new or empty accounts that voted or entered.
 export async function moderatorSignals(env) {
-  const today = new Date().toISOString().slice(0, 10);
-  await env.DB.prepare("DELETE FROM net_flags WHERE expires_at < ?").bind(today).run();
+  await sweepExpired(env, true);
   const { results: shared } = await env.DB.prepare(
     "SELECT kind, scope, COUNT(*) AS n FROM net_flags GROUP BY kind, scope, net_hash HAVING COUNT(*) >= 2 ORDER BY scope DESC, n DESC LIMIT 50"
   ).all();

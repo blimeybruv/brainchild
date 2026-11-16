@@ -23,7 +23,11 @@
       "bucket_name": "brainchild-builds"
     }
   ],
+  // Errors are kept; the per-request log line is off, as on the site Worker (see the privacy page).
   "observability": {
-    "enabled": true
+    "enabled": true,
+    "logs": {
+      "invocation_logs": false
+    }
   }
 }

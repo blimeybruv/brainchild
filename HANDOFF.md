@@ -713,6 +713,87 @@ column `base_game`), so there is no migration and the CHECK constraint stays as 
   and `edit.js` and from the About page's house rules. `api/listings.js` still accepts the old value so
   existing rows stay valid; don't show it anywhere.
 
+## Security and privacy review, 16 Nov
+
+One pass over every route, looking at how the separately built pieces interact. Each fix below was
+reproduced first and then checked against a local copy of the Worker with a stand-in for GitHub, GitLab
+and a self-hosted GitLab. Nothing here has run against the real services yet. The checks are kept in
+`tests/review/` (`holes.mjs` for the site, `builds.mjs` for the game Worker; how to run them is at the
+top of `rig.mjs`); they are not part of any deploy.
+
+**Fixed (branch `claude/trusting-hypatia-js9nvz`):**
+- **A moderator's rating now holds.** The Edit page and the handoff flow both let the maintainer set the
+  rating back after a moderator's "Change rating", which dropped the Mature notice and the 18 age label.
+  Until an appeal restores the maker's rating, the maintainer can raise the rating or add content notes
+  but not lower it or remove the moderator's notes (`belowModeratorRating` in `api/listings.js`, error
+  `rating_set_by_moderator`).
+- **A removed project's license copy is taken down.** `/api/license-text/<fingerprint>` served the text
+  whatever happened to the project, cached for a year, and the bucket lock means a copy can't be
+  deleted. It is now served only while a listed project's record points at it, cached for 5 minutes.
+- **Accounts with no sign-in can't be claimed by name.** A GitHub sign-in used to take over any account
+  record that had no sign-in and a matching handle (today the six `sample-*` accounts; later, any account
+  whose sign-ins were removed on deletion). That path is gone from `accountFor` in `api/auth.js`.
+  **Keep it gone:** an account-deletion tool must not leave a claimable record behind.
+- **Linking must start on this site.** `?link=1` is a plain link, so another site or a hosted game could
+  send a signed-in visitor's browser to it and have their GitHub or GitLab account linked without asking.
+  The start of linking now requires the navigation to come from a Brainchild page (`startedOnThisSite`).
+- **Ownership re-checks are about the same repository.** GitHub and self-hosted GitLab were asked by
+  name only. A maintainer who had transferred the repo away could create a new one under the old name
+  and keep passing the check. `requireProjectAdmin` now also compares the host's permanent id (error
+  `repo_changed`). A maintainer who deletes and re-creates their repo is stopped by this too; a moderator
+  has to fix that listing by hand.
+- **Self-hosted GitLab answers** are read only up to the size limit (they were read in full and measured
+  afterwards) and each request is given up on after 8 seconds. Brainchild's own addresses can't be
+  entered as an instance.
+- **The sign-in page** no longer sends an already signed-in visitor to another site when `return_to`
+  starts with a slash and a backslash.
+- **Project ids** that read like part of the site (`login`, `admin`, `www`, anything starting with
+  `brainchild`) get the owner's name added, since the id is also the game's sub-address.
+- **Expired network codes and sessions** are deleted on ordinary page views (`sweepExpired`, at most
+  every ten minutes), not only when a moderator opens the queue or someone signs in.
+- **Headers:** HSTS (180 days), `object-src 'none'` and `frame-ancestors 'none'` added in `site/_headers`.
+- **Smaller:** merging or auto-joining an account that had only pitched a post or edited one failed with
+  a server error (those tables are now in `ACTIVITY`); the old preview address is no longer accepted for
+  GitLab sign-in; the privacy page says the GitLab permission could read private projects and that
+  profile pictures load from GitHub or GitLab.
+
+**Decided by the owner, 16 Nov, and done:**
+- **Games can't install a service worker.** One would keep answering at the game's address for people
+  who had already opened it, after a moderator removed the game, a new version went live or the project
+  was adopted by someone else. `builds-worker/worker.js` refuses any request a browser marks as a
+  service worker's script. A game exported as an installable web app loses that feature; say so if a
+  maker asks. The owner's Zombie Outbreak Simulator doesn't use one.
+- **Per-request logs are off** on both Workers (`"logs": { "invocation_logs": false }` in both
+  `wrangler.jsonc` files), so Cloudflare no longer keeps a log line for every request and the privacy
+  page's "no IP address is stored" holds. Errors and the Workers' own `console.error` lines are still
+  kept. Turn it back on only for a short debugging session, and tell the owner.
+
+**Waiting on the owner:**
+1. **GitLab permission (explained to the owner 16 Nov; no change made).** `read_api` is the narrowest
+   GitLab scope that shows a person's role on a project, but it also covers their private projects, so
+   the stored GitLab token is worth more to a thief than the GitHub one (which sees only public
+   things). The privacy page now says so. The alternative is to ask GitLab without the person's token
+   (public projects show their members) and request only `read_user`; GitLab may rate-limit that.
+2. **GitLab app:** remove the line
+   `https://claude-handoff-step-1-hhjfyd-royal-firefly-b80b.blimeybruv.workers.dev/api/auth/gitlab/callback`
+   from the app's redirect URIs and keep `https://brainchild.nexus/api/auth/gitlab/callback`.
+3. **Launch clean-up** (already listed above) also removes the six `sample-*` accounts.
+4. **Erasure and the license lock.** A license copy can be hidden but not deleted while the bucket lock is
+   on. If someone asks for a text to be erased, the lock rule has to be lifted for that one object.
+
+**Known and left as they are:**
+- Adopting by fork is first come, has no undo and no per-person limit; a moderator can't reverse one
+  without editing the database.
+- Games share one cookie jar across `*.brainwave.nexus`. Adding `brainwave.nexus` to the Public Suffix List
+  would separate them.
+- Build storage (9 GB in all) can be filled by two or three accounts; license copies are permanent.
+- The 40-an-hour cap on signed-out reports is shared by everyone, so a flood can close the form for an hour.
+- Screenshots are stored as uploaded, including any location data inside a photo.
+- License texts and packets are the maker's own text and can contain an email address.
+- A removed project's title still shows on the Relay round it won and on badges earned for it.
+- `caches.default.delete` only clears the copy in the data centre that handled the request; others
+  expire by themselves within 60 seconds (5 minutes for screenshots and license copies).
+
 ## Relay rules (decided by the owner, 13 Nov; confirmed again in chat the same evening)
 
 A round lasts one calendar month. The Relay mockup shows the stages.

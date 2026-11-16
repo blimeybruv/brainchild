@@ -37,28 +37,53 @@ function instanceApi(env, host) {
 export function publicHostname(h) {
   return typeof h === "string" && h.length <= 253 && /^(?=.{4,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(h)
     && !/^\d+(\.\d+){3}$/.test(h) && !/(^|\.)(localhost|local|internal|lan|home|corp|localdomain|example|invalid|test)$/.test(h)
-    && !["github.com", "gitlab.com", "codeberg.org"].some((x) => h === x || h.endsWith("." + x));
+    && !["github.com", "gitlab.com", "codeberg.org", "brainchild.nexus", "brainwave.nexus", "workers.dev", "pages.dev", "r2.dev"].some((x) => h === x || h.endsWith("." + x));
+}
+
+// A self-hosted instance is somebody else's server, so it gets a deadline, and its answer is read only
+// up to the size limit: reading stops there instead of taking in whatever it sends.
+const INSTANCE_TIMEOUT_MS = 8000;
+function instanceFetch(env, host, path, headers) {
+  return fetch(instanceApi(env, host) + path, { headers: { "user-agent": "brainchild.nexus", ...headers }, redirect: "manual", signal: AbortSignal.timeout(INSTANCE_TIMEOUT_MS) });
+}
+function drop(res) { try { if (res.body) res.body.cancel().catch(() => {}); } catch { /* nothing to drop */ } }
+// The body as bytes, or null when it is larger than maxBytes.
+async function readCapped(res, maxBytes) {
+  if (Number(res.headers.get("content-length") || 0) > maxBytes) { drop(res); return null; }
+  if (!res.body) return new Uint8Array(0);
+  const reader = res.body.getReader(), chunks = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > maxBytes) { reader.cancel().catch(() => {}); return null; }
+    chunks.push(value);
+  }
+  const out = new Uint8Array(size);
+  let at = 0;
+  for (const c of chunks) { out.set(c, at); at += c.byteLength; }
+  return out;
 }
 
 // GET from GitLab.com (with the person's token) or a self-hosted instance (no token): { status, data } or { reauth: true }.
 async function glGet(env, session, host, path) {
   if (host === "gitlab") return gitlabGet(env, session, path);
   try {
-    const res = await fetch(instanceApi(env, host) + path, { headers: { accept: "application/json", "user-agent": "brainchild.nexus" }, redirect: "manual" });
-    if (res.status !== 200) return { status: res.status === 401 || res.status === 403 ? 404 : res.status, data: null };
-    const text = await res.text();
-    if (text.length > MAX_JSON_BYTES) return { status: 502, data: null };
-    try { return { status: 200, data: JSON.parse(text) }; } catch { return { status: 502, data: null }; }
+    const res = await instanceFetch(env, host, path, { accept: "application/json" });
+    if (res.status !== 200) { drop(res); return { status: res.status === 401 || res.status === 403 ? 404 : res.status, data: null }; }
+    const bytes = await readCapped(res, MAX_JSON_BYTES);
+    if (!bytes) return { status: 502, data: null };
+    try { return { status: 200, data: JSON.parse(new TextDecoder().decode(bytes)) }; } catch { return { status: 502, data: null }; }
   } catch { return { status: 502, data: null }; }
 }
 async function glRaw(env, session, host, path, maxBytes) {
   if (host === "gitlab") return gitlabRaw(env, session, path, maxBytes);
   try {
-    const res = await fetch(instanceApi(env, host) + path, { headers: { "user-agent": "brainchild.nexus" }, redirect: "manual" });
-    if (res.status !== 200) return { status: res.status };
-    if (Number(res.headers.get("content-length") || 0) > maxBytes) return { tooLarge: true };
-    const buf = new Uint8Array(await res.arrayBuffer());
-    return buf.length > maxBytes ? { tooLarge: true } : { status: 200, bytes: buf };
+    const res = await instanceFetch(env, host, path, {});
+    if (res.status !== 200) { drop(res); return { status: res.status }; }
+    const bytes = await readCapped(res, maxBytes);
+    return bytes ? { status: 200, bytes } : { tooLarge: true };
   } catch { return { status: 502 }; }
 }
 const MAX_LICENSE_BYTES = 200 * 1024;
@@ -217,7 +242,14 @@ async function selfHostedAccess(env, session, host, ref, opts) {
 // The same check for a listed project (a row with repo_host, repo_id and repo_full_name).
 export async function requireProjectAdmin(env, session, p) {
   const host = p.repo_host || "github";
-  return requireAdmin(env, session, host, host === "gitlab" ? String(p.repo_id) : p.repo_full_name);
+  const r = await requireAdmin(env, session, host, host === "gitlab" ? String(p.repo_id) : p.repo_full_name);
+  // GitHub and self-hosted GitLab are asked by name, and a name can pass to a different repository
+  // (the listed one is renamed or transferred, and a new one is created under the old name). Managing
+  // that other repository proves nothing about the listed one, so the host's permanent id must match.
+  if (r.repo && p.repo_id !== null && p.repo_id !== undefined && r.repo.id !== p.repo_id) {
+    return { response: privateJson({ error: "repo_changed" }, 409) };
+  }
+  return r;
 }
 
 // The latest commit on a branch: { sha } or { error, status }.

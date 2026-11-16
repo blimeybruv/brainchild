@@ -2,7 +2,12 @@
 (function () {
   var params = new URLSearchParams(window.location.search);
   var back = params.get("return_to") || "/";
-  if (back.charAt(0) !== "/" || back.indexOf("//") === 0) back = "/";
+  // Only ever a page on this site. The address is parsed the way the browser will read it, because
+  // a backslash after the first slash, or a tab between two slashes, leads to another site.
+  try {
+    var target = new URL(back, window.location.origin);
+    back = back.charAt(0) === "/" && target.origin === window.location.origin ? target.pathname + target.search + target.hash : "/";
+  } catch (e) { back = "/"; }
   var gh = document.getElementById("signin-github"), gl = document.getElementById("signin-gitlab");
   gh.setAttribute("href", "/api/auth/login?provider=github&return_to=" + encodeURIComponent(back));
   gl.setAttribute("href", "/api/auth/gitlab/login?return_to=" + encodeURIComponent(back));

@@ -491,9 +491,17 @@ blockquote.agree { margin: 0; padding-left: 14px; border-left: 3px solid var(--a
 /* ---------- Hero background: Neon Julia (trial, 16 Nov) ---------- */
 .hero-band { position: relative; overflow: hidden; isolation: isolate; }
 .hero-fx { position: absolute; inset: -8%; z-index: -2; background: #0E0F12 url(/img/hero-julia.webp) center / cover no-repeat;
-  animation: hero-turn 90s ease-in-out infinite alternate; will-change: transform;
+  animation: hero-turn 20s ease-in-out infinite alternate; will-change: transform;
   -webkit-mask-image: linear-gradient(to bottom, #000 75%, transparent); mask-image: linear-gradient(to bottom, #000 75%, transparent); }
 .hero-band::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  background: linear-gradient(90deg, rgba(14,15,18,0.9) 0%, rgba(14,15,18,0.72) 42%, rgba(14,15,18,0.2) 80%); }
-@keyframes hero-turn { from { transform: scale(1.02) rotate(0deg); } to { transform: scale(1.12) rotate(5deg); } }
+  background: linear-gradient(90deg, rgba(14,15,18,0.9) 0%, rgba(14,15,18,0.72) 42%, rgba(14,15,18,0.35) 62%, rgba(14,15,18,0.7) 100%); }
+@keyframes hero-turn { from { transform: scale(1.05) rotate(-4deg); } to { transform: scale(1.2) rotate(6deg); } }
 @media (prefers-reduced-motion: reduce) { .hero-fx { animation: none; } }
+
+/* ---------- Project page header: Vibe smoke (trial, 16 Nov) ---------- */
+.project-head { position: relative; isolation: isolate; overflow: hidden; margin-top: 32px; padding: 36px 32px; border: 1px solid var(--line-strong); border-radius: 12px; }
+.project-head::before { content: ""; position: absolute; inset: -10%; z-index: -2; background: #0E0F12 url(/img/smoke.webp) center / cover no-repeat;
+  animation: smoke-drift 20s ease-in-out infinite alternate; will-change: transform; }
+.project-head::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(90deg, rgba(14,15,18,0.55), rgba(14,15,18,0.15)); }
+@keyframes smoke-drift { from { transform: scale(1.08) translate(3%,-2%); } to { transform: scale(1.2) translate(-4%,3%); } }
+@media (prefers-reduced-motion: reduce) { .project-head::before { animation: none; } }

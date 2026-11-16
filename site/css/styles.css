@@ -42,10 +42,8 @@ body {
   font-family: var(--font-body);
   font-size: 16px;
   line-height: 1.55;
-  background:
-    url(../img/pattern-chip.png) repeat,
-    var(--bg) url(../img/brushed-metal.png) repeat;
-  background-size: 280px 280px, 512px 512px;
+  background: var(--bg) url(../img/brushed-metal.png) repeat;
+  background-size: 512px 512px;
   min-height: 100vh;
 }
 a { color: var(--accent); }
@@ -518,3 +516,11 @@ blockquote.agree { margin: 0; padding-left: 14px; border-left: 3px solid var(--a
 .retype .caret[hidden] { display: none; }
 @keyframes caret-blink { 50% { opacity: 0; } }
 .hero-band .hero-copy .btn { text-shadow: none; }
+
+/* The chip lattice drifts slowly over the metal, like the hero fractals. It moves by exactly one
+   tile per loop, so the loop is seamless. Still for visitors who prefer reduced motion. */
+body::before { content: ""; position: fixed; inset: -280px; z-index: -1; pointer-events: none;
+  background: url(../img/pattern-chip.png) repeat; background-size: 280px 280px;
+  animation: lattice-drift 120s linear infinite; will-change: transform; }
+@keyframes lattice-drift { from { transform: translate(0, 0); } to { transform: translate(280px, 280px); } }
+@media (prefers-reduced-motion: reduce) { body::before { animation: none; } }

@@ -225,10 +225,20 @@ function validateListing(b) {
   return { errors: [...new Set(errors)], f, repo };
 }
 
+// A project's id is also its game's sub-address (<id>.brainwave.nexus) and part of its page address, so a
+// repository's name can't claim one that reads like part of the site or a sign-in page.
+const RESERVED_IDS = new Set(("www api app apps admin administrator root login logout signin sign-in signup sign-up auth oauth sso account accounts " +
+  "secure security verify verification support help contact status mail email smtp ftp cdn static assets ns ns1 ns2 mx " +
+  "brainchild brainwave moderator moderators moderation mod mods staff official team blog browse relay report privacy about " +
+  "github gitlab cloudflare billing payment payments pay wallet password project").split(" "));
+function reservedId(id) { return RESERVED_IDS.has(id) || /^(brainchild|brainwave)/.test(id); }
+
 async function uniqueSlug(env, repoName, owner) {
   const base = (repoName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "project").slice(0, 60);
-  const withOwner = (base + "-" + owner.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")).slice(0, 76);
-  for (const candidate of [base, withOwner]) {
+  const withOwner = (base + "-" + owner.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")).slice(0, 76).replace(/-+$/, "");
+  // A reserved name is never used on its own: the owner's name is added to it.
+  const first = reservedId(base) ? (withOwner !== base ? [withOwner] : []) : [base, withOwner];
+  for (const candidate of first) {
     if (!(await env.DB.prepare("SELECT 1 FROM projects WHERE id = ?").bind(candidate).first())) return candidate;
   }
   for (let i = 2; i < 50; i++) {
@@ -273,6 +283,11 @@ export async function createListing(request, env, ctx, session) {
   // for adoption in place, so the license and name questions are asked.
   const handoff = !!existing && !upgrade && existing.owner_id === session.userId && existing.status !== "adopt" && f.intent === "leave";
   if (existing && !upgrade && !handoff) return bad("already_listed", 409, { id: existing.id });
+  // Handing off rewrites the listing, rating included, so a moderator's rating is checked here too.
+  if (existing) {
+    const held = await belowModeratorRating(env, existing.id, f.rating, f.content_notes);
+    if (held) return held;
+  }
 
   const head = await headCommit(env, session, r);
   if (head.error) return bad(head.error, head.status);
@@ -373,6 +388,30 @@ async function licenseChangeAllowed(env, projectId, last, newSpdx) {
   return n.n <= 1; // only the original maker, who holds the rights, may relicense it
 }
 
+// A rating a moderator set stands until an appeal restores the maker's own. Until then the maintainer
+// may raise the rating or add content notes, but not lower it or drop the notes the moderator chose:
+// the Mature notice and the age label follow this field. Returns { rating, notes } or null.
+const RATING_ORDER = ["everyone", "teen", "mature"];
+async function moderatorRating(env, projectId) {
+  const a = await env.DB.prepare(
+    `SELECT new_value FROM moderation_actions
+      WHERE project_id = ? AND target_type = 'project' AND action = 'rerate' AND (appeal_outcome IS NULL OR appeal_outcome <> 'restored')
+      ORDER BY id DESC LIMIT 1`
+  ).bind(projectId).first();
+  if (!a) return null;
+  let v = null;
+  try { v = JSON.parse(a.new_value || "null"); } catch { v = null; }
+  if (!v || !RATING_ORDER.includes(v.rating)) return null;
+  return { rating: v.rating, notes: Array.isArray(v.content_notes) ? v.content_notes.filter((n) => CONTENT_NOTES.includes(n)) : [] };
+}
+// The error to send when a save would go below the moderator's rating, or null when it is fine.
+async function belowModeratorRating(env, projectId, rating, notes) {
+  const m = await moderatorRating(env, projectId);
+  if (!m) return null;
+  if (RATING_ORDER.indexOf(rating) >= RATING_ORDER.indexOf(m.rating) && m.notes.every((n) => notes.includes(n))) return null;
+  return bad("rating_set_by_moderator", 409, { rating: m.rating, content_notes: m.notes });
+}
+
 // One line of the public change log: which fields changed and when, never the old text.
 // Rating changes also keep their old and new values, for moderators.
 function changeRow(env, projectId, userId, now, fields, rating) {
@@ -433,6 +472,8 @@ export async function editProject(request, env, ctx, session, id) {
   }
   f.provenance = JSON.stringify(provenance);
   if (errors.length) return bad("invalid_fields", 400, { fields: [...new Set(errors)] });
+  const held = await belowModeratorRating(env, id, f.rating, CONTENT_NOTES.filter((n) => notes.includes(n)));
+  if (held) return held;
 
   // GitHub or GitLab is asked on every save whether this person still manages the repo.
   const own = await requireProjectAdmin(env, session, p);
@@ -534,13 +575,20 @@ export async function licenseRecord(env, ctx, id) {
 
 export async function licenseText(env, url, sha) {
   if (!/^[0-9a-f]{64}$/.test(sha)) return json({ error: "not_found" }, 404, NO_STORE);
+  // A copy is public only while a listed project's record points at it. The stored copies can't be
+  // deleted (the bucket is locked), so this is what takes one down when a moderator removes a project.
+  const listed = await env.DB.prepare(
+    "SELECT 1 AS x FROM license_records r JOIN projects p ON p.id = r.project_id WHERE r.license_sha256 = ? AND p.hidden_at IS NULL LIMIT 1"
+  ).bind(sha).first();
+  if (!listed) return json({ error: "not_found" }, 404, NO_STORE);
   const obj = await env.BUILDS.get("licenses/" + sha);
   if (!obj) return json({ error: "not_found" }, 404, NO_STORE);
   const headers = {
     "content-type": "text/plain; charset=utf-8",
     "x-content-type-options": "nosniff",
     "content-security-policy": "default-src 'none'; sandbox",
-    "cache-control": "public, max-age=31536000, immutable" // the address is the content's fingerprint
+    // Kept short, like screenshots, so a copy disappears everywhere within five minutes of a removal.
+    "cache-control": "public, max-age=300"
   };
   if (url.searchParams.get("download") === "1") headers["content-disposition"] = 'attachment; filename="LICENSE-' + sha.slice(0, 8) + '.txt"';
   return new Response(obj.body, { status: 200, headers });

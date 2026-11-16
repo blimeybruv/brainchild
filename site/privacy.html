@@ -49,7 +49,7 @@
         <li>when your account there was created, and whether it has any public repositories or projects. Moderators use these two to spot throwaway accounts made to rig a vote.</li>
       </ul>
       <p>It never asks for or stores your email address. If your GitLab picture comes from Gravatar, it isn't kept, because that address is made from your email.</p>
-      <p>To check that you manage a project, Brainchild holds a sign-in token from GitHub or GitLab. It's encrypted, it never leaves the server, it can only read (never change) anything there, and it ends when you sign out.</p>
+      <p>To check that you manage a project, Brainchild holds a sign-in token from GitHub or GitLab. It's encrypted, it never leaves the server, it can only read (never change) anything there, and it ends when you sign out. The GitHub token sees only what is already public. GitLab has no permission limited to public projects, so the one Brainchild has to ask for could also read your private ones; Brainchild only ever looks at public projects.</p>
       <p>Your public profile shows your Brainchild handle, your projects and your badges. It shows your linked GitHub and GitLab usernames only if you turn that on in your account.</p>
     </section>
     <section class="panel wizard">
@@ -83,7 +83,7 @@
       <h2>Who else is involved</h2>
       <ul>
         <li><strong>Cloudflare</strong> runs the site, its database and its file storage.</li>
-        <li><strong>GitHub and GitLab</strong> handle signing in. Brainchild asks them about the projects you list.</li>
+        <li><strong>GitHub and GitLab</strong> handle signing in. Brainchild asks them about the projects you list. Members' profile pictures are loaded from GitHub or GitLab by your browser, so those sites see that a picture was fetched, though not which page you were on.</li>
         <li><strong>Software Heritage</strong> is asked to archive the public repository of each listed project. Brainchild sends only the repository's public address.</li>
       </ul>
     </section>
@@ -119,6 +119,6 @@
 </footer>
 
 <script src="js/data.js"></script>
-<script src="js/common.js?v=24"></script>
+<script src="js/common.js?v=25"></script>
 </body>
 </html>

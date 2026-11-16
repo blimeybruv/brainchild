@@ -34,9 +34,9 @@ const OAUTH_TTL = 600;              // 10 minutes to finish signing in
 const CALLBACK_PATH = "/api/auth/callback";
 const GITLAB_CALLBACK_PATH = "/api/auth/gitlab/callback";
 export const USER_AGENT = "brainchild.nexus";
-// The branch preview is registered as a second return address in the GitLab app, so GitLab
-// sign-in can be tried there before it goes live. GitHub returns only to the real site.
-const GITLAB_EXTRA_ORIGINS = ["https://claude-handoff-step-1-hhjfyd-royal-firefly-b80b.blimeybruv.workers.dev"];
+// Other addresses GitLab sign-in may start and finish on. None: a branch preview was listed here
+// while GitLab sign-in was being built, and was removed once it went live on the real site.
+const GITLAB_EXTRA_ORIGINS = [];
 
 function webBase(env) { return env.GITHUB_WEB_BASE || "https://github.com"; }
 export function apiBase(env) { return env.GITHUB_API_BASE || "https://api.github.com"; }
@@ -188,7 +188,8 @@ export const ACTIVITY = [
   ["builds", "created_by"], ["project_changes", "user_id"], ["outside_reports", "resolved_by"], ["relay_entries", "user_id"],
   ["relay_votes", "voter_id"], ["proposals", "user_id"], ["votes", "user_id"], ["posts", "author_id"], ["relay_claims", "user_id"],
   ["relay_contributions", "user_id"], ["relay_contributions", "flagged_by"], ["relay_contributions", "flag_decided_by"],
-  ["relay_badges", "user_id"], ["relay_badges", "awarded_by"], ["moderation_actions", "affected_user_id"], ["moderation_actions", "moderator_id"]
+  ["relay_badges", "user_id"], ["relay_badges", "awarded_by"], ["moderation_actions", "affected_user_id"], ["moderation_actions", "moderator_id"],
+  ["pitches", "user_id"], ["pitches", "resolved_by"], ["post_edits", "user_id"], ["account_merges", "into_user_id"], ["account_merges", "moderator_id"]
 ];
 export async function hasActivity(env, userId) {
   // D1 limits how many SELECTs one UNION may join, so ask in a few small groups.
@@ -245,14 +246,9 @@ async function accountFor(env, p) {
     // Accounts from before linked sign-ins existed.
     const known = await env.DB.prepare("SELECT id FROM users WHERE github_id = ?").bind(p.id).first();
     if (known) userId = known.id;
-    // A record created before sign-in existed (for example the maker of a seeded listing). Only a
-    // record with no sign-in of any kind can be claimed this way, never another person's account.
-    if (!userId) {
-      const seeded = await env.DB.prepare(
-        "SELECT u.id FROM users u WHERE u.handle = ? COLLATE NOCASE AND u.github_id IS NULL AND NOT EXISTS (SELECT 1 FROM identities i WHERE i.user_id = u.id)"
-      ).bind(p.handle).first();
-      if (seeded) userId = seeded.id;
-    }
+    // A record with no sign-in at all (a sample account, or one whose sign-ins were removed) is never
+    // handed to whoever holds a matching username: usernames on GitHub can be registered by anyone.
+    // The one record that needed claiming this way, the site owner's, was claimed on 13 Nov.
   }
   if (userId) {
     // The handle follows GitHub when the account has a GitHub sign-in, otherwise GitLab.
@@ -322,9 +318,20 @@ function readAttempt(request, origin) {
   return parts.length === 5 ? { state: parts[0], verifier: parts[1], returnTo, provider: parts[3], linkTo: parts[4] === "-" ? null : parts[4] } : { returnTo };
 }
 
+// Linking changes the account, so it must be started from one of this site's own pages. The session
+// cookie is sent when another site (or a hosted game) sends the browser to this address, so the
+// cookie alone doesn't show the person asked for it; where the navigation came from does.
+function startedOnThisSite(request, url) {
+  const site = request.headers.get("sec-fetch-site");
+  if (site) return site === "same-origin";
+  // Browsers too old to send that header: fall back to the page the link was on.
+  try { return new URL(request.headers.get("referer") || "").origin === url.origin; } catch { return false; }
+}
+
 // Linking starts only from a signed-in session; the callback must come back to the same one.
 async function linkTarget(request, env, url) {
   if (url.searchParams.get("link") !== "1") return { ok: true, linkTo: null };
+  if (!startedOnThisSite(request, url)) return { ok: false };
   const session = await getSession(request, env);
   if (!session) return { ok: false };
   return { ok: true, linkTo: await sha256Hex("link|" + session.idHash) };

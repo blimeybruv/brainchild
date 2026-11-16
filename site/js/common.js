@@ -151,6 +151,8 @@
     license_must_stay: "This project was released under a GPL-family license, so your copy has to stay under the same license. Restore the original LICENSE file in your repository, then try again.",
     must_rename: "The maker asked adopters to pick a new name. Enter a different name.",
     must_keep_original_name: "The maker asked adopters to keep the original name, with a subtitle of your own if you like.",
+    rating_set_by_moderator: "A moderator set this project's rating and content notes. You can raise the rating or add notes, but not lower it or remove theirs. If the project has changed, ask for a review from your account page.",
+    repo_changed: "The repository at this project's address isn't the one that was listed: it may have been renamed or moved and the name used again. Ask a moderator through the contact page.",
     github_error: "GitHub didn't answer properly. Try again in a minute.",
     server_error: "Something went wrong on our side. Try again in a minute."
   };

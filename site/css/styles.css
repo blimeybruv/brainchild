@@ -494,8 +494,9 @@ blockquote.agree { margin: 0; padding-left: 14px; border-left: 3px solid var(--a
   animation: hero-turn 20s ease-in-out infinite alternate; will-change: transform;
   -webkit-mask-image: linear-gradient(to bottom, #000 75%, transparent); mask-image: linear-gradient(to bottom, #000 75%, transparent); }
 .hero-band::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  background: linear-gradient(90deg, rgba(14,15,18,0.85) 0%, rgba(14,15,18,0.55) 30%, rgba(14,15,18,0) 50%); }
+  background: linear-gradient(90deg, rgba(14,15,18,0.88) 0%, rgba(14,15,18,0.68) 35%, rgba(14,15,18,0.35) 55%, rgba(14,15,18,0) 78%); }
 @keyframes hero-turn { from { transform: scale(1.05) rotate(-4deg); } to { transform: scale(1.2) rotate(6deg); } }
 @media (prefers-reduced-motion: reduce) { .hero-fx { animation: none; } }
 
 .hero-band .hero-copy { text-shadow: 0 1px 12px rgba(14,15,18,0.85), 0 0 2px rgba(14,15,18,0.6); }
+.hero-band .hero-lede { color: #D3D6DB; }

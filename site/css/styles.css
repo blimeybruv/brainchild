@@ -2,6 +2,7 @@
 /* Self-hosted fonts (SIL Open Font License, see /fonts/LICENSE-*.txt). Nothing is loaded from third parties. */
 @font-face { font-family: "Atkinson Hyperlegible"; src: url(../fonts/atkinson-hyperlegible-latin-400-normal.woff2) format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
 @font-face { font-family: "Atkinson Hyperlegible"; src: url(../fonts/atkinson-hyperlegible-latin-700-normal.woff2) format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Chakra Petch"; src: url(../fonts/chakra-petch-latin-700-normal.woff2) format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
 @font-face { font-family: "Bricolage Grotesque"; src: url(../fonts/bricolage-grotesque-latin-opsz-normal.woff2) format("woff2"); font-weight: 200 800; font-style: normal; font-display: swap; }
 @font-face { font-family: "Martian Mono"; src: url(../fonts/martian-mono-latin-400-normal.woff2) format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
 @font-face { font-family: "Martian Mono"; src: url(../fonts/martian-mono-latin-700-normal.woff2) format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
@@ -509,3 +510,11 @@ blockquote.agree { margin: 0; padding-left: 14px; border-left: 3px solid var(--a
 .hx4 { background-image: url(/img/hero-marble.webp); animation-delay: 0s, 57s; }
 @keyframes hero-cycle { 0% { opacity: 0; } 3.75% { opacity: 1; } 25% { opacity: 1; } 28.75% { opacity: 0; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .hero-fx { animation: none; opacity: 0; } .hx1 { opacity: 1; } }
+
+/* Typed headline: switches to Chakra Petch while Spectral contours is showing (js/hero.js). */
+.hero h1 .typed { white-space: pre-line; }
+.hero h1.mono { font-family: "Chakra Petch", var(--font-head); letter-spacing: -0.01em; }
+.hero h1 .caret { display: inline-block; width: 0.08em; height: 0.85em; margin-left: 0.06em; vertical-align: -0.05em; background: #F5B83D; animation: caret-blink 1s steps(1) infinite; }
+.hero h1 .caret[hidden] { display: none; }
+@keyframes caret-blink { 50% { opacity: 0; } }
+.hero-band .hero-copy .btn { text-shadow: none; }

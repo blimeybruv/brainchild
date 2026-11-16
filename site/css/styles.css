@@ -520,7 +520,7 @@ blockquote.agree { margin: 0; padding-left: 14px; border-left: 3px solid var(--a
 /* The chip lattice drifts slowly over the metal, like the hero fractals. It moves by exactly one
    tile per loop, so the loop is seamless. Still for visitors who prefer reduced motion. */
 body::before { content: ""; position: fixed; inset: -280px; z-index: -1; pointer-events: none;
-  background: url(../img/pattern-chip.png) repeat; background-size: 280px 280px;
+  background: url(../img/pattern-loop.png) repeat; background-size: 280px 280px;
   animation: lattice-drift 120s linear infinite; will-change: transform; }
 @keyframes lattice-drift { from { transform: translate(0, 0); } to { transform: translate(280px, 280px); } }
 @media (prefers-reduced-motion: reduce) { body::before { animation: none; } }

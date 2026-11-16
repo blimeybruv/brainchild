@@ -500,3 +500,12 @@ blockquote.agree { margin: 0; padding-left: 14px; border-left: 3px solid var(--a
 
 .hero-band .hero-copy { text-shadow: 0 1px 12px rgba(14,15,18,0.85), 0 0 2px rgba(14,15,18,0.6); }
 .hero-band .hero-lede { color: #D3D6DB; }
+
+/* Cycling hero backgrounds: four layers, each shown for about 20 s with a 3 s crossfade (80 s loop). */
+.hero-fx { animation: hero-turn 20s ease-in-out infinite alternate, hero-cycle 80s linear infinite both; opacity: 0; }
+.hx1 { background-image: url(/img/hero-julia.webp); animation-delay: 0s, -3s; }
+.hx2 { background-image: url(/img/hero-smoke.webp); animation-delay: 0s, 17s; }
+.hx3 { background-image: url(/img/hero-contours.webp); animation-delay: 0s, 37s; }
+.hx4 { background-image: url(/img/hero-marble.webp); animation-delay: 0s, 57s; }
+@keyframes hero-cycle { 0% { opacity: 0; } 3.75% { opacity: 1; } 25% { opacity: 1; } 28.75% { opacity: 0; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .hero-fx { animation: none; opacity: 0; } .hx1 { opacity: 1; } }

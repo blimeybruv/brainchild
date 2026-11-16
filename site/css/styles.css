@@ -487,3 +487,13 @@ blockquote.agree { margin: 0; padding-left: 14px; border-left: 3px solid var(--a
 .mature-gate .gate-title { font-size: 20px; font-weight: 700; }
 .badge[data-status="mature"] { background: #FF9A7A; }
 .rerate { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+
+/* ---------- Hero background: Neon Julia (trial, 16 Nov) ---------- */
+.hero-band { position: relative; overflow: hidden; isolation: isolate; }
+.hero-fx { position: absolute; inset: -8%; z-index: -2; background: #0E0F12 url(/img/hero-julia.webp) center / cover no-repeat;
+  animation: hero-turn 90s ease-in-out infinite alternate; will-change: transform;
+  -webkit-mask-image: linear-gradient(to bottom, #000 75%, transparent); mask-image: linear-gradient(to bottom, #000 75%, transparent); }
+.hero-band::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(90deg, rgba(14,15,18,0.9) 0%, rgba(14,15,18,0.72) 42%, rgba(14,15,18,0.2) 80%); }
+@keyframes hero-turn { from { transform: scale(1.02) rotate(0deg); } to { transform: scale(1.12) rotate(5deg); } }
+@media (prefers-reduced-motion: reduce) { .hero-fx { animation: none; } }

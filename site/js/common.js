@@ -148,6 +148,7 @@
     not_a_fork_of_original: "GitHub doesn't show that repository as a fork of this project.",
     not_the_transferred_repo: "That isn't this project's repository. Enter its new address after the transfer.",
     original_repo_unknown: "Brainchild can't find this project's original repository on GitHub.",
+    license_question: "Your LICENSE file has a standard license's text plus some extra wording. Say what that wording does, then try again.",
     license_must_stay: "This project was released under a GPL-family license, so your copy has to stay under the same license. Restore the original LICENSE file in your repository, then try again.",
     must_rename: "The maker asked adopters to pick a new name. Enter a different name.",
     must_keep_original_name: "The maker asked adopters to keep the original name, with a subtitle of your own if you like.",
@@ -212,6 +213,23 @@
       h("div", { class: "rules-head" }, [h("span", { text: title }), copy]),
       h("pre", { class: "code-block", text: rules, tabindex: "0" }),
       h("p", { class: "muted", style: "font-size:14px", text: hint })
+    ]);
+  }
+
+  // Brainchild found a standard license's full text in the LICENSE file, plus other wording. The
+  // maker (or adopter) says what that wording does. q: { found, path, extra: [paragraphs], fingerprint }.
+  // answer: the current answer for this file, or null. onPick(answer) is called with "explains" or "conditions".
+  function licenseQuestion(q, answer, onPick) {
+    var name = q.found;
+    return h("div", { class: "callout plain license-question" }, [
+      h("p", null, [h("strong", { text: "Your " + (q.path || "LICENSE") + " file has the full " + name + " text, plus this wording:" })]),
+      h("div", null, (q.extra || []).map(function (para) { return h("pre", { class: "code-block extra-wording", tabindex: "0", text: para }); })),
+      h("p", { text: "Does this text only explain what the license covers, or does it add conditions?" }),
+      choices("What the extra wording does", [
+        { value: "explains", label: "It only explains", desc: "For example, which folders the license covers. Listed as " + name + ", with a note; the wording is kept on the License record." },
+        { value: "conditions", label: "It adds conditions", desc: "For example, no commercial use. Listed as a custom license, and the wording is shown clearly on the project page and License record." }
+      ], answer, onPick),
+      h("p", { class: "muted", style: "font-size:14px", text: "A changed license is never treated as the standard one. If you'd rather it were plain " + name + ", move the wording into your README and check again." })
     ]);
   }
 
@@ -335,5 +353,5 @@
 
   window.BC = { h: h, card: card, metaLine: metaLine, store: safeStore(), load: load, getJSON: getJSON, whoAmI: whoAmI, fromRow: fromRow,
     api: api, errorText: errorText, repoWhere: repoWhere, kindLabel: kindLabel, renderPost: renderPost,
-    matureOk: matureOk, setMatureOk: setMatureOk, RATINGS: RATINGS, niceDate: niceDate, renderSteps: renderSteps, choices: choices, rulesBlock: rulesBlock };
+    matureOk: matureOk, setMatureOk: setMatureOk, RATINGS: RATINGS, niceDate: niceDate, renderSteps: renderSteps, choices: choices, rulesBlock: rulesBlock, licenseQuestion: licenseQuestion };
 })();

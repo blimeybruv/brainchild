@@ -108,12 +108,31 @@ window.BC.load(function () {
       var k = packet || {}, filled = ["works", "broken", "vision", "agent_context"].filter(function (f) { return k[f] && String(k[f]).trim(); }).length + (Array.isArray(k.provenance) && k.provenance.length ? 1 : 0);
       var selfHosted = typeof p.repo_host === "string" && p.repo_host.indexOf("selfhosted:") === 0;
       [
-        [!!p.license_record, p.license_record ? "License recorded: " + (p.license_record.spdx_id || "custom license") : "No license record yet"],
+        [!!p.license_record, p.license_record ? "License recorded: " + (p.license_record.spdx_id ? p.license_record.spdx_id + (p.license_record.detection === "with_note" ? ", with a note" : "")
+          : p.license_record.detection === "conditions" ? "custom (" + p.license_record.base_spdx + " with added conditions)" : "custom license") : "No license record yet"],
         [!!p.play_url, p.play_url ? "Playable build hosted on Brainchild" : "No hosted build"],
         [filled === 5, "Handoff packet: " + (filled === 5 ? "all five sections filled" : filled + " of 5 sections filled")],
         [Array.isArray(k.provenance) && k.provenance.length > 0, Array.isArray(k.provenance) && k.provenance.length ? "Asset provenance noted" : "Asset provenance not noted"],
         [!!p.owner_verified, p.owner_verified ? (selfHosted ? "Maintainer verified: push access" : "Maintainer verified on " + (p.repo_host === "gitlab" ? "GitLab" : "GitHub")) : "Maintainer not verified"]
       ].forEach(function (c) { checks.appendChild(h("li", { class: c[0] ? null : "pending", text: c[1] })); });
+    }
+    // A custom license built on a standard one: the added conditions are shown where nobody can miss them.
+    var lr = p.license_record, ln = document.getElementById("p-license-note");
+    if (ln && lr && (lr.detection === "conditions" || lr.detection === "several")) {
+      ln.textContent = "";
+      ln.appendChild(h("div", { class: "callout bad license-note" }, [
+        h("span", { class: "mark", "aria-hidden": "true", text: "!" }),
+        h("div", null, lr.detection === "conditions" ? [
+          h("p", null, [h("strong", { text: "Custom license: the " + lr.base_spdx + " text, with added conditions" })]),
+          h("p", { text: "The maker says this wording in the license file adds to the standard " + lr.base_spdx + " terms. Read it before you use, change or adopt the project:" }),
+          h("pre", { class: "code-block extra-wording", tabindex: "0", text: lr.extra_text || "" }),
+          h("p", null, [h("a", { href: "license.html?id=" + pid, text: "Read the full license record" })])
+        ] : [
+          h("p", null, [h("strong", { text: "Custom license: more than one license text in one file (" + (lr.base_spdx || "") + ")" })]),
+          h("p", null, ["Read which parts each covers in the ", h("a", { href: "license.html?id=" + pid, text: "license record" }), " before you use, change or adopt the project."])
+        ])
+      ]));
+      ln.hidden = false;
     }
     // How fresh the packet is, and what has changed lately (field names only).
     if (packet && packet.updated_at) document.getElementById("p-packet-date").textContent = "· updated " + window.BC.niceDate(packet.updated_at);

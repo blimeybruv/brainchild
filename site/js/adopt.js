@@ -4,7 +4,7 @@
   var body = document.getElementById("w-body");
   var STEPS = ["Sign in", "Transfer or fork", "Link your repo", "Ownership", "Done"];
   var id = new URLSearchParams(window.location.search).get("id") || "";
-  var st = { step: 1, user: null, p: null, lineage: [], method: "fork", repo: "", title: "", check: null, done: null, error: "", busy: false, code: null };
+  var st = { step: 1, user: null, p: null, lineage: [], method: "fork", repo: "", title: "", check: null, done: null, error: "", busy: false, code: null, licQ: null, licAnswer: null };
 
   function go(n) { st.step = n; st.error = ""; render(); window.scrollTo(0, 0); }
   function btn(label, onClick, cls, disabled) {
@@ -107,10 +107,28 @@
 
   function send(dryRun) {
     st.busy = true; st.error = ""; render();
-    BC.api("POST", "/api/projects/" + encodeURIComponent(st.p.id) + "/adopt", { repo: st.repo, method: st.method, title: st.title, dry_run: dryRun }).then(function (res) {
+    BC.api("POST", "/api/projects/" + encodeURIComponent(st.p.id) + "/adopt", { repo: st.repo, method: st.method, title: st.title, dry_run: dryRun,
+      license_answer: st.licQ && st.licAnswer ? { fingerprint: st.licQ.fingerprint, answer: st.licAnswer } : null }).then(function (res) {
       st.busy = false;
       if (!res.ok) {
         var e = res.data || {};
+        if (e.error === "license_question" && e.license) {
+          // Your copy's LICENSE file has a standard text plus other wording: say what it does, then check again.
+          st.licQ = e.license; st.licAnswer = null; st.error = "";
+          render();
+          var qbox = document.getElementById("w-body");
+          var again = h("button", { class: "btn btn-primary", type: "button", text: "Check again with this answer", disabled: true });
+          again.addEventListener("click", function () { send(dryRun); });
+          var q = BC.licenseQuestion(st.licQ, null, function pick(v) {
+            st.licAnswer = v;
+            var fresh = BC.licenseQuestion(st.licQ, v, pick);
+            q.replaceWith(fresh); q = fresh;
+            again.disabled = false;
+          });
+          qbox.appendChild(q);
+          qbox.appendChild(h("div", { class: "actions" }, [again]));
+          return;
+        }
         if (e.error === "github_sign_in_again" || e.error === "gitlab_sign_in_again") {
           st.error = "";
           render();

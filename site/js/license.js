@@ -7,7 +7,19 @@
   var data = null, current = null, texts = {}, checked = {};
 
   function copyleft(s) { return /^(GPL|AGPL|LGPL)-/.test(s || ""); }
-  function licName(r) { return r.spdx_id || "Custom license"; }
+  function licName(r) {
+    if (r.spdx_id) return r.spdx_id + (r.detection === "with_note" ? " (with a note)" : "");
+    return r.detection === "conditions" && r.base_spdx ? "Custom license (" + r.base_spdx + " with added conditions)" : "Custom license";
+  }
+  // How Brainchild knows what the license is, when the host didn't name it.
+  function detected(r) {
+    if (r.detection === "matched") return " " + hostName(r) + " didn't name this license; Brainchild recognised the standard " + r.spdx_id + " text in the file.";
+    if (r.detection === "with_note") return " The file also has wording from the maker about what the license covers, shown below. They confirmed it only explains and adds no conditions.";
+    if (r.detection === "conditions") return " The file has the standard " + r.base_spdx + " text plus wording the maker said adds conditions, shown below. Those conditions are part of the license.";
+    if (r.detection === "several") return " The file holds more than one license text (" + (r.base_spdx || "") + "); read it to see which parts each covers.";
+    return "";
+  }
+  function hostName(r) { return r.repo_host === "gitlab" || String(r.repo_host || "").indexOf("selfhosted:") === 0 ? "GitLab" : "GitHub"; }
   function short(sha) { return String(sha || "").slice(0, 7); }
   function kicker(r) { return { handoff: "At handoff", listing: "When listed", adoption: "After adoption", relicense: "Relicensed", license_change: "License changed" }[r.kind] || "Version " + r.version; }
   function nameRule(n) { return { keep: "Adopters may keep it", continuation: "Keep it, as a continuation", rename: "Adopters must rename" }[n] || "Stays with the maintainer"; }
@@ -23,12 +35,13 @@
       return "The new maintainer releases their version under " + lic + ". That's allowed because " + licName(first) + " permits it, but only for their version. " +
         "The original code up to commit " + short(first.commit_sha) + " is still " + licName(first) + ", and that can't be taken back.";
     }
-    if (!r.spdx_id) return "Everything up to commit " + c + " was released under the license text below, permanently. It isn't a standard license, so read it to see what it allows.";
+    if (!r.spdx_id) return "Everything up to commit " + c + " was released under the license text below, permanently. It isn't a standard license, so read it to see what it allows." + detected(r);
     var base = copyleft(r.spdx_id)
       ? "Everything up to commit " + c + " is " + lic + ", permanently. Anyone can use and change it, but anyone sharing a changed copy must keep it open under the same license. Later versions of this project stay " + lic + " too."
       : "Everything up to commit " + c + " is " + lic + ", permanently. Anyone can use, change or share it, as long as the license notice stays with the code. Later changes to the project can't take that away.";
     if (r.spdx_id === "Apache-2.0") base += " Apache-2.0 grants no rights to the project's name or trademarks; the name rule alongside is what applies.";
     if (r.version > 1) base = "The project changed hands here. " + base;
+    base += detected(r);
     if (data.project.kind === "Mod" && data.project.base_game) base += " This is made for " + data.project.base_game + ": the license covers only this project's own files, and the terms of " + data.project.base_game + " still apply.";
     return base;
   }
@@ -71,6 +84,9 @@
         return { value: v.version, label: kicker(v) + " · " + licName(v), desc: "commit " + short(v.commit_sha) + " · " + (v.recorded_by ? "@" + v.recorded_by + " · " : "") + BC.niceDate(v.recorded_at) };
       }), r.version, function (v) { current = data.records.filter(function (x) { return x.version === v; })[0]; load(); }),
       h("div", { class: "callout plain" }, [h("p", null, [h("strong", { text: "What this means" })]), h("p", { text: meaning(r) })]),
+      r.extra_text ? h("div", { class: r.detection === "conditions" ? "callout bad" : "callout plain" }, [h("div", null, [
+        h("p", null, [h("strong", { text: r.detection === "conditions" ? "Added conditions (part of the license)" : "Maker's note in the license file (adds no conditions)" })]),
+        h("pre", { class: "code-block extra-wording", tabindex: "0", text: r.extra_text })])]) : null,
       h("div", { class: "panel license-file" }, [
         h("div", { class: "rules-head" }, [
           h("span", { text: (r.license_path || "LICENSE") + "  (stored copy, commit " + short(r.commit_sha) + ")" }),

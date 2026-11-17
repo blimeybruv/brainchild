@@ -5,7 +5,7 @@
   var NOTES = ["Violence", "Blood", "Horror", "Strong language", "Drug references", "Gambling-style mechanics"];
   var LABELS = { title: "Title", note: "One-line description", genre: "Genre", tech: "Built with", status: "Status", rating: "Content rating",
     content_notes: "Content notes", works: "What works", broken: "What's broken", vision: "What you were going for", agent_context: "Agent context file", provenance: "Where each part came from" };
-  var f = null, p = null, msg = null, busy = false;
+  var f = null, p = null, msg = null, busy = false, licQ = null, licAnswer = null;
 
   function message(parts) { root.textContent = ""; root.appendChild(h("p", { class: "muted" }, parts)); }
   function field(label, control, hint, wide) {
@@ -24,8 +24,18 @@
 
   function save() {
     busy = true; msg = null; render();
-    BC.api("POST", "/api/projects/" + encodeURIComponent(id) + "/edit", f).then(function (res) {
+    var body = Object.assign({}, f, { license_answer: licQ && licAnswer ? { fingerprint: licQ.fingerprint, answer: licAnswer } : null });
+    BC.api("POST", "/api/projects/" + encodeURIComponent(id) + "/edit", body).then(function (res) {
       busy = false;
+      var e0 = res.data || {};
+      if (!res.ok && e0.error === "license_question" && e0.license) {
+        // The repository's LICENSE file is new to the record and has wording around a standard text.
+        licQ = e0.license; licAnswer = null;
+        msg = { ok: false, text: "Nothing was saved yet: your LICENSE file has changed. Say below what its extra wording does, then save again." };
+        render(); window.scrollTo(0, 0);
+        return;
+      }
+      if (res.ok) { licQ = null; licAnswer = null; }
       if (res.ok) {
         msg = { ok: true, text: res.data.changed.length ? "Saved. Changed: " + res.data.changed.join(", ") + "." : "Nothing was different, so nothing was saved." };
       } else {
@@ -64,6 +74,12 @@
 
     root.textContent = "";
     if (msg) root.appendChild(h("p", { class: msg.ok ? "callout plain" : "form-error", role: msg.ok ? "status" : "alert", text: msg.text }));
+    if (licQ) {
+      root.appendChild(BC.licenseQuestion(licQ, licAnswer, function (v) { licAnswer = v; render(); }));
+      var again = h("button", { class: "btn btn-primary", type: "button", text: busy ? "Saving…" : "Save with this answer", disabled: busy || !licAnswer ? true : null });
+      again.addEventListener("click", save);
+      root.appendChild(h("div", { class: "actions" }, [again]));
+    }
     root.appendChild(h("section", { class: "panel wizard" }, [
       h("h2", { text: "About the project" }),
       h("div", { class: "form-grid" }, [

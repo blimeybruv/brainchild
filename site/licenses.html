@@ -7,7 +7,7 @@
 <title>Licensing guide · Brainchild</title>
 <meta name="description" content="A plain guide to the licenses used on Brainchild, and how licenses are recorded when projects change hands.">
 <link rel="icon" href="img/favicon-32.png" sizes="32x32" type="image/png"><link rel="icon" href="img/favicon-512.png" sizes="512x512" type="image/png"><link rel="apple-touch-icon" href="img/favicon-180.png">
-<link rel="stylesheet" href="css/styles.css?v=25L">
+<link rel="stylesheet" href="css/styles.css?v=26L">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -78,6 +78,18 @@
         <li><strong>The project's name is separate from its code.</strong> Apache-2.0 says outright that it gives no right to a name or trademark, and the other licenses don't give one either. When you hand a project off, the listing asks whether the next maintainer may keep the name, call theirs a continuation, or should rename it.</li>
       </ul>
     </section>
+    <section class="panel wizard" id="custom">
+      <h2>Why does my license show as Custom?</h2>
+      <p>GitHub and GitLab name a license only when the LICENSE file is its standard text. When they can't, Brainchild looks for the full text of a standard license inside the file itself.</p>
+      <ul>
+        <li><strong>The usual cause is extra text inside LICENSE:</strong> a note about which folders it covers, a second license for the art, or changed wording. Sometimes the file just isn't a standard license.</li>
+        <li><strong>The fix:</strong> keep LICENSE as the plain, unchanged text of one standard license, and put notes about what it covers in your README. Then press Check again on the listing page, or save the project's Edit page.</li>
+        <li><strong>Different licenses for code and art?</strong> Put the code license in LICENSE and the art license in a separate file, for example LICENSE-ART.md, and choose the art license in the listing's license step.</li>
+        <li><strong>If you keep the extra wording,</strong> Brainchild shows it to you and asks whether it only explains what the license covers or adds conditions. If it only explains, the project is listed under the standard license, and the wording is kept on the License record as a note. If it adds conditions, the project is listed as Custom, and the conditions are shown clearly on the project page and License record. A changed license is never treated as the standard one.</li>
+        <li><strong>Standard texts to copy</strong> (put your name and the year in the copyright line): <a href="/license-texts/MIT.txt">MIT</a>, <a href="/license-texts/Apache-2.0.txt">Apache 2.0</a>, <a href="/license-texts/GPL-3.0.txt">GPL 3.0</a>, <a href="/license-texts/MPL-2.0.txt">MPL 2.0</a>, and for art <a href="/license-texts/CC-BY-4.0.txt">CC BY 4.0</a> or <a href="/license-texts/CC-BY-SA-4.0.txt">CC BY-SA 4.0</a>. These are the texts from choosealicense.com.</li>
+      </ul>
+      <p class="muted">Brainchild never gets write access to your repository, so it can't change the file for you.</p>
+    </section>
     <section class="panel wizard">
       <h2>Mods and plugins</h2>
       <p>A mod's or plugin's license covers only its maker's own files. It gives no rights to what it's made for (a game, a browser, an editor), which keeps its own license and terms. Every mod and plugin on Brainchild says what it's made for, so people can check what they need.</p>
@@ -104,6 +116,6 @@
 </footer>
 
 <script src="js/data.js?v=25"></script>
-<script src="js/common.js?v=25"></script>
+<script src="js/common.js?v=26"></script>
 </body>
 </html>

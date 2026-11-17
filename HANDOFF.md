@@ -849,6 +849,62 @@ the top of LICENSE. GitHub returned NOASSERTION, so the listing showed "Custom".
    - Brainchild never gets write access, so it can't commit the fix for them.
 3. **Licensing guide:** add a short "Why does my license show as Custom?" section with the same advice.
 
+**Done 17 Nov** (all three parts; migration `0022`, applied to both databases).
+- **The matcher** is `api/license-match.js`. The standard texts are in `site/license-texts/` (from
+  choosealicense.com, the texts GitHub's own detection uses). The Worker bundles them, so nothing is fetched
+  at runtime, and the same files serve the copy buttons. Supported: MIT, MIT-0, 0BSD, BSD-2/3-Clause, ISC,
+  Zlib, Apache-2.0, MPL-2.0, GPL-2.0/3.0, LGPL-2.1/3.0, AGPL-3.0, Unlicense, CC0-1.0, CC-BY-4.0 and
+  CC-BY-SA-4.0.
+  - **How it matches:** both texts are normalised: lower case, no punctuation, quote styles or markup,
+    "licence" read as "license", http and https treated alike. List markers ("2.", "(a)", "iv.") and single
+    letters are dropped everywhere, because they move when a text is rewrapped. Copyright lines ("Copyright
+    (c) 2026 …", "© 2026 …", "All rights reserved") and the Free Software Foundation's address are set
+    aside.
+  - **What counts as a match:** the license's whole standard text must appear in order. The only gaps
+    allowed are a few known varying phrases, such as BSD-3's "the copyright holder" and an old FSF address.
+    A changed or missing sentence means no match.
+  - **What isn't extra wording:** the title (e.g. "The MIT License (MIT)"), the license's own heading, its
+    "How to apply" appendix (GNU, Apache), the CC preamble and a matching SPDX line. Anything else outside
+    the match is extra wording, kept as written, in paragraphs.
+  - **Tests:** 46 cases on canonical, rewrapped and modified texts. The owner's original
+    `resistance-dh-mod` LICENSE (commit d38560b) comes out as MIT plus the one scope paragraph.
+- **Where it runs:** `fetchLicense` in `api/forge.js` calls it whenever GitHub or GitLab gives no license
+  name (`NOASSERTION`/other). When GitHub finds no license, LICENSE, LICENSE.md, LICENSE.txt and COPYING are
+  looked for by name first. `settleLicense` in `api/listings.js` then decides what is recorded, at listing,
+  handoff, every Edit save (the re-snapshot logic) and adoption:
+  - **Standard text alone:** recorded as that license, `detection = 'matched'`.
+  - **Standard text plus wording:** the request is refused with `license_question` (409), carrying the
+    paragraphs, until the form sends `license_answer: { fingerprint, answer }`. The answer is tied to the
+    file's fingerprint, so a changed file is asked about again.
+    - "explains": that license, `with_note`, wording kept in `extra_text`.
+    - "conditions": Custom (`spdx_id` NULL), `detection = 'conditions'`, `base_spdx` = the license found.
+  - **More than one standard text in the file** (say MIT and CC BY together): Custom,
+    `detection = 'several'`. *Choice the agent made:* it isn't asked about; the fix-it panel recommends
+    splitting the files. An LGPL file that also carries the GPL text counts as LGPL.
+  - **Older Custom records:** an Edit save whose unchanged file the matcher now recognises adds one new
+    snapshot recording that. Earlier records are never changed.
+- **The listing form, step 4:** the question shows the wording and two choices ("It only explains" /
+  "It adds conditions"). Continue stays off until it's answered.
+  - **Fix-it panel:** shown when nothing is recognised, or there's no LICENSE. It explains the usual cause
+    (or names the licenses when there are several), the fix, copy buttons (MIT, Apache 2.0, GPL 3.0, MPL 2.0,
+    with this year and the maker's handle filled in), the split-file advice with CC BY / CC BY-SA copy
+    buttons, and "Check again". Check again re-reads the license without leaving the step, and a changed file
+    clears the answer and the agreement tick.
+  - **Elsewhere:** the Edit page and the adoption flow ask the same question when the server returns
+    `license_question`.
+- **Shown afterwards:**
+  - **Project page:** "conditions" and "several" get a red-edged box above the handoff packet, with the
+    added wording in full. The "Before you adopt" line says "custom (MIT with added conditions)" or
+    "MIT, with a note".
+  - **License record:** the license is named that way too. "What this means" says how Brainchild knows,
+    and the wording is shown in its own box: "Added conditions (part of the license)" or "Maker's note in
+    the license file (adds no conditions)".
+- **Licensing guide:** the new section is `licenses.html#custom`, with links to the standard texts.
+- **Local tests:** `test23` (39 checks) covers the owner's case, the wrong-fingerprint answer, plain
+  matches, two licenses, the file found by name, unrecognised text and no file. It also covers the edit
+  question and re-asking, re-recognising an old record, and the adopter's question. The older listing, edit,
+  discussion and self-hosted suites still pass.
+
 ## Relay rules (decided by the owner, 13 Nov; confirmed again in chat the same evening)
 
 A round lasts one calendar month. The Relay mockup shows the stages.

@@ -112,6 +112,9 @@ CREATE TABLE IF NOT EXISTS license_records (
   recorded_by    TEXT REFERENCES users(id),
   recorded_at    TEXT NOT NULL DEFAULT (datetime('now')),
   repo_host      TEXT NOT NULL DEFAULT 'github',   -- github | gitlab
+  detection      TEXT,   -- NULL = named by the host; matched | with_note | conditions | several (migration 0022)
+  base_spdx      TEXT,   -- the license text found inside a custom file
+  extra_text     TEXT,   -- wording around the standard text, as written
   UNIQUE (project_id, version)
 );
 

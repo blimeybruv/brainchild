@@ -18,6 +18,7 @@
 //   { host, id, full_name, owner, name, url, private, fork, parent, parent_id, archived, default_branch, license }
 
 import { privateJson, nowSeconds, randomToken } from "./http.js";
+import { matchLicense } from "./license-match.js";
 import { githubGet, repoAccess as githubAccess } from "./github.js";
 import { gitlabGet, gitlabRaw } from "./gitlab.js";
 
@@ -276,8 +277,9 @@ function fromBase64(text) {
   return bytes;
 }
 
-// The license file in the repo at a commit: { license: { spdx, path, bytes, sha256 } }, { license: null } or { error, status }.
-// spdx null means a license file the host doesn't recognise as a standard one.
+// The license file in the repo at a commit: { license: { spdx, path, bytes, sha256, found } }, { license: null } or { error, status }.
+// spdx null means a license file the host doesn't recognise as a standard one; then Brainchild's own
+// matcher looks at it, and found is its answer ({ spdx, extra } or { spdx: null, several }).
 export async function fetchLicense(env, session, repo, ref) {
   let bytes, spdx, path;
   if (gitlabLike(repo.host)) {
@@ -293,9 +295,18 @@ export async function fetchLicense(env, session, repo, ref) {
     if (raw.status !== 200 || !raw.bytes) return { error: repo.host === "gitlab" ? "gitlab_error" : "selfhosted_unreachable", status: 502 };
     bytes = raw.bytes; path = file.name; spdx = repo.license;
   } else {
-    const r = await githubGet(env, session, "/repos/" + repo.full_name + "/license" + (ref ? "?ref=" + encodeURIComponent(ref) : ""));
+    let r = await githubGet(env, session, "/repos/" + repo.full_name + "/license" + (ref ? "?ref=" + encodeURIComponent(ref) : ""));
     if (r.reauth) return { error: "github_sign_in_again", status: 401 };
-    if (r.status === 404) return { license: null };
+    if (r.status === 404) {
+      // GitHub finds no license. Look for the usual file names ourselves before saying there is none.
+      for (const name of ["LICENSE", "LICENSE.md", "LICENSE.txt", "COPYING"]) {
+        r = await githubGet(env, session, "/repos/" + repo.full_name + "/contents/" + name + (ref ? "?ref=" + encodeURIComponent(ref) : ""));
+        if (r.reauth) return { error: "github_sign_in_again", status: 401 };
+        if (r.status === 200 && r.data && r.data.type === "file" && typeof r.data.content === "string") break;
+        r = null;
+      }
+      if (!r) return { license: null };
+    }
     const d = r.data;
     if (r.status !== 200 || !d || typeof d.content !== "string") return { error: "github_error", status: 502 };
     try { bytes = fromBase64(d.content); } catch { return { error: "github_error", status: 502 }; }
@@ -305,7 +316,7 @@ export async function fetchLicense(env, session, repo, ref) {
   if (!bytes.length) return { license: null };
   if (bytes.length > MAX_LICENSE_BYTES) return { error: "license_too_large", status: 409 };
   if (spdx && !/^[A-Za-z0-9.+-]{1,60}$/.test(spdx)) spdx = null;
-  return { license: { spdx, path, bytes, sha256: await fingerprint(bytes) } };
+  return { license: { spdx, path, bytes, sha256: await fingerprint(bytes), found: spdx ? null : matchLicense(bytes) } };
 }
 
 // The repo's CLAUDE.md or AGENTS.md, to prefill the packet: { path, text } or null.

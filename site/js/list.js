@@ -27,7 +27,7 @@
     assets: "CC BY 4.0", nameRights: "continuation", agreed: false,
     f: { title: "", kind: "Game", genre: D.genres[0], base_game: "", tech: "", browser: false, note: "", works: "", broken: "", vision: "", agent_context: "" },
     prov: [{ part: "Code", how: "" }, { part: "Art", how: "" }, { part: "Audio", how: "" }],
-    auto: { title: "", agent: "" }, status: "help", transfer: false, rating: "everyone", notes: {}, preview: null, done: null
+    auto: { title: "", agent: "" }, licAnswer: null, copied: "", status: "help", transfer: false, rating: "everyone", notes: {}, preview: null, done: null
   };
 
   var HOST = { github: "GitHub", gitlab: "GitLab", selfhosted: "your GitLab" };
@@ -70,10 +70,17 @@
     el.addEventListener("change", function () { onChange(el.value); });
     return el;
   }
+  // The license as it will be listed: the host's name for it, Brainchild's match, or custom.
   function licenseName() {
     var l = st.info && st.info.license;
-    return !l ? "None found" : l.spdx || "Custom license";
+    if (!l) return "None found";
+    if (l.spdx) return l.spdx;
+    if (l.found && !(l.extra || []).length) return l.found;
+    if (l.found && st.licAnswer === "explains") return l.found + ", with a note";
+    if (l.found && !st.licAnswer) return l.found + " text, plus extra wording";
+    return "Custom license";
   }
+  function needsAnswer() { var l = st.info && st.info.license; return !!(l && !l.spdx && l.found && (l.extra || []).length && !st.licAnswer); }
   function payload(dryRun) {
     return {
       repo: st.info && st.host === "gitlab" ? String(st.info.repo.id) : st.info && st.host === "selfhosted" ? st.info.repo.url : st.repo, host: st.host, intent: st.intent, status: st.status, title: st.f.title, kind: st.f.kind, genre: st.f.genre,
@@ -81,12 +88,15 @@
       content_notes: NOTES.filter(function (n) { return st.notes[n]; }), assets_license: st.assets,
       name_rights: st.intent === "leave" ? st.nameRights : null, open_to_transfer: st.intent === "leave" && st.transfer,
       works: st.f.works, broken: st.f.broken, vision: st.f.vision, agent_context: st.f.agent_context,
-      provenance: st.prov, agreed: st.agreed, dry_run: !!dryRun
+      provenance: st.prov, agreed: st.agreed, dry_run: !!dryRun,
+      license_answer: st.licAnswer && st.info && st.info.license ? { fingerprint: st.info.license.fingerprint, answer: st.licAnswer } : null
     };
   }
   function fail(res) {
     var e = res.data || {};
     if (e.error === "github_sign_in_again" || e.error === "gitlab_sign_in_again") { st.reauth = e.error === "gitlab_sign_in_again" ? "gitlab" : "github"; st.busy = false; return render(); }
+    // The LICENSE file changed since step 4 and has wording to ask about: back to the license step.
+    if (e.error === "license_question" && e.license && st.info) { st.info.license = e.license; st.licAnswer = null; st.agreed = false; st.busy = false; return go(4); }
     st.error = e.error === "invalid_fields" && e.fields
       ? "Please fill in or fix: " + e.fields.map(function (k) { return FIELD_LABELS[k] || k.replace(/_/g, " "); }).join(", ") + "."
       : BC.errorText(e.error);
@@ -279,8 +289,13 @@
 
   function stepLicense() {
     var lic = st.info.license, name = licenseName(), leaving = st.intent === "leave";
+    var extra = lic && !lic.spdx && lic.found && (lic.extra || []).length;
+    var known = lic && (lic.spdx || (lic.found && (!extra || st.licAnswer === "explains")) ? lic.spdx || lic.found : null);
     var note = !lic ? ["bad", "No license: nobody can legally continue this project. Add a LICENSE file to your repo, then check again."]
-      : !lic.spdx ? ["amber", hostName() + " found a license file but doesn't recognise it as a standard license. It will be listed as a custom license; people will need to read it."]
+      : extra && !st.licAnswer ? ["amber", "Brainchild found the standard " + lic.found + " text in " + lic.path + ", with extra wording around it. Say below what that wording does."]
+      : extra && st.licAnswer === "conditions" ? ["amber", "Listed as a custom license: the " + lic.found + " text with added conditions. The conditions will be shown on the project page and License record."]
+      : !known ? ["amber", "Neither " + hostName() + " nor Brainchild recognises this as a standard license. You can still list it as a custom license, but people will need to read it; see below for the usual fix."]
+      : !lic.spdx ? ["good", "Brainchild recognised the standard " + lic.found + " text, though " + hostName() + " didn't name it." + (st.licAnswer === "explains" ? " Your extra wording is kept on the License record as a note." : "")]
       : LICENSE_NOTES[lic.spdx] || (/^(GPL|AGPL|LGPL)-/.test(lic.spdx) ? ["good", "Accepted. Future versions must stay under this license."] : ["good", "Accepted."]);
     var out = [
       h("h2", { text: "License and handoff snapshot" }),
@@ -294,9 +309,13 @@
           "CC BY 4.0 is recommended: others may reuse the assets if they credit you.")
       ])
     ];
+    if (extra) {
+      out.push(BC.licenseQuestion({ found: lic.found, path: lic.path, extra: lic.extra }, st.licAnswer, function (v) { st.licAnswer = v; st.preview = null; render(); }));
+    }
+    if (!lic || !known && !extra) out.push(fixIt(lic));
     if (!lic) {
       out.push(errorLine());
-      out.push(h("div", { class: "actions" }, [btn(st.busy ? "Checking…" : "Check again", checkRepo, null, st.busy), back()]));
+      out.push(h("div", { class: "actions" }, [back()]));
       return out;
     }
     out.push(h("div", { class: "callout plain" }, [
@@ -322,8 +341,61 @@
     agree.checked = st.agreed;
     agree.addEventListener("change", function () { st.agreed = agree.checked; render(); });
     out.push(h("label", { class: "check-row" }, [agree, h("span", { text: "I own this project, and I release this version under the licenses above so that others can continue it. I understand this can't be withdrawn for this version." })]));
-    out.push(h("div", { class: "actions" }, [btn("Continue", function () { go(5); }, null, !st.agreed), back()]));
+    out.push(errorLine());
+    out.push(h("div", { class: "actions" }, [btn("Continue", function () { go(5); }, null, !st.agreed || needsAnswer()), back()]));
     return out;
+  }
+
+  // When no standard license is recognised: what usually causes it, how to fix it in the repository,
+  // and the standard texts to copy. Brainchild has no write access, so the maker makes the change.
+  var COPY_TEXTS = [["MIT", "MIT"], ["Apache-2.0", "Apache 2.0"], ["GPL-3.0", "GPL 3.0"], ["MPL-2.0", "MPL 2.0"]];
+  function copyButton(spdx, label) {
+    var b = h("button", { class: "btn btn-ghost", type: "button", text: "Copy " + label });
+    b.addEventListener("click", function () {
+      fetch("/license-texts/" + spdx + ".txt").then(function (r) { return r.ok ? r.text() : null; }, function () { return null; }).then(function (t) {
+        if (!t) { st.copied = "That text couldn't be loaded. Try again in a minute."; return render(); }
+        t = t.replace(/\[year\]/g, String(new Date().getFullYear())).replace(/\[fullname\]/g, st.user ? st.user.handle : "Your name");
+        var done = function (ok) {
+          st.copied = ok ? "Copied the " + label + " text, with this year and your name filled in. Paste it into the file, commit it, then press Check again."
+            : "Your browser didn't allow copying. Open /license-texts/" + spdx + ".txt and copy it from there.";
+          render();
+        };
+        try { if (navigator.clipboard) navigator.clipboard.writeText(t).then(function () { done(true); }, function () { done(false); }); else done(false); } catch (e) { done(false); }
+      });
+    });
+    return b;
+  }
+  function fixIt(lic) {
+    var several = lic && lic.several && lic.several.length;
+    var cause = !lic ? "There's no LICENSE file in the repository, so nobody may legally continue the project."
+      : several ? "Your " + lic.path + " file holds more than one license text (" + lic.several.join(" and ") + "). Each file should hold one."
+      : "The usual cause is extra text inside the " + lic.path + " file, such as a note about what it covers or changed wording, or a file that isn't a standard license at all.";
+    return h("div", { class: "callout plain fix-it" }, [
+      h("p", null, [h("strong", { text: !lic ? "How to add a license" : "Why it isn't recognised, and how to fix it" })]),
+      h("p", { text: cause }),
+      h("p", { text: "The fix: keep LICENSE as the plain, unchanged text of one standard license. Put notes about what it covers in your README instead." }),
+      h("p", { text: (lic ? "To replace" : "To add") + " it, copy a standard text below into a file called LICENSE in your repository:" }),
+      h("div", { class: "actions" }, COPY_TEXTS.map(function (x) { return copyButton(x[0], x[1]); })),
+      h("p", { text: "Different licenses for code and art? Put the code license in LICENSE and the art license in a separate file (for example LICENSE-ART.md), then choose the art license under \"Art, music and other assets\" on this step." }),
+      h("div", { class: "actions" }, [copyButton("CC-BY-4.0", "CC BY 4.0 (for the art)"), copyButton("CC-BY-SA-4.0", "CC BY-SA 4.0 (for the art)")]),
+      st.copied ? h("p", { role: "status", text: st.copied }) : null,
+      h("p", { class: "muted", style: "font-size:14px", text: "Brainchild never gets write access to your repository, so it can't make this change for you. " }, [h("a", { href: "licenses.html#custom", text: "More in the licensing guide" })]),
+      h("div", { class: "actions" }, [btn(st.busy ? "Checking…" : "Check again", recheckLicense, null, st.busy)])
+    ]);
+  }
+  // Look at the repository's license again without leaving this step.
+  function recheckLicense() {
+    var ref = st.host === "gitlab" ? st.info.repo.full_name : st.host === "selfhosted" ? st.info.repo.url : st.repo;
+    st.busy = true; st.error = ""; st.copied = ""; render();
+    BC.api("GET", "/api/listing-info?host=" + st.host + "&repo=" + encodeURIComponent(ref)).then(function (res) {
+      st.busy = false;
+      if (!res.ok) return fail(res);
+      var before = st.info.license && st.info.license.fingerprint;
+      st.info = res.data;
+      if (!st.info.license || st.info.license.fingerprint !== before) { st.licAnswer = null; st.agreed = false; }
+      st.preview = null;
+      render();
+    });
   }
 
   function stepDetails() {

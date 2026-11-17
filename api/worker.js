@@ -143,7 +143,7 @@ async function getProject(env, id) {
       WHERE l.project_id = ? ORDER BY l.started_at, l.id`
   ).bind(id).all();
   const record = await env.DB.prepare(
-    "SELECT version, spdx_id, commit_sha, recorded_at FROM license_records WHERE project_id = ? ORDER BY version DESC LIMIT 1"
+    "SELECT version, spdx_id, commit_sha, recorded_at, detection, base_spdx, extra_text FROM license_records WHERE project_id = ? ORDER BY version DESC LIMIT 1"
   ).bind(id).first();
   project.license_record = record || null;
   const { results: shots } = await env.DB.prepare("SELECT id FROM screenshots WHERE project_id = ? ORDER BY id").bind(id).all();

@@ -104,6 +104,29 @@ export function handoffRules(p) {
   return lines.join("\n");
 }
 
+// What the license is, for the record. The host's answer when it named one; otherwise Brainchild's
+// matcher, with the maker's answer about any wording around the standard text. Returns
+// { spdx, detection, base, extra }, or { question } while the maker still has to say whether that
+// wording only explains what the license covers or adds conditions. The answer belongs to one
+// version of the file (its fingerprint), so a changed file is asked about again.
+function settleLicense(license, answer) {
+  const f = license.found;
+  const plain = { spdx: license.spdx, detection: null, base: null, extra: null };
+  if (license.spdx || !f) return plain;
+  if (!f.spdx) return f.several ? { ...plain, detection: "several", base: f.several.join(", ") } : plain;
+  if (!f.extra || !f.extra.length) return { ...plain, spdx: f.spdx, detection: "matched" };
+  const extra = f.extra.join("\n\n");
+  const a = answer && typeof answer === "object" && answer.fingerprint === license.sha256 ? answer.answer : null;
+  if (a === "explains") return { spdx: f.spdx, detection: "with_note", base: null, extra };
+  if (a === "conditions") return { spdx: null, detection: "conditions", base: f.spdx, extra };
+  return { question: licenseView(license) };
+}
+// The license as the forms see it: the host's name for it, and what Brainchild's matcher found.
+function licenseView(license) {
+  const f = license.found || {};
+  return { spdx: license.spdx, path: license.path, fingerprint: license.sha256, found: f.spdx || null, extra: f.extra || [], several: f.several || null };
+}
+
 function licenseLabel(spdx, assetsLicense) {
   const code = spdx || "Custom license";
   return assetsLicense && assetsLicense !== "Same as the code" ? code + " + " + assetsLicense.replace(/ 4\.0$/, "") : code;
@@ -163,7 +186,7 @@ export async function listingInfo(env, session, host, ref) {
   if (!out.can_list) return privateJson(out);
   const lic = await fetchLicense(env, session, a.repo, null);
   if (lic.error) return bad(lic.error, lic.status);
-  if (lic.license) out.license = { spdx: lic.license.spdx, path: lic.license.path, fingerprint: lic.license.sha256 };
+  if (lic.license) out.license = licenseView(lic.license);
   out.agent_file = await fetchAgentFile(env, session, a.repo);
   return privateJson(out);
 }
@@ -294,18 +317,20 @@ export async function createListing(request, env, ctx, session) {
   const lic = await fetchLicense(env, session, r, head.sha);
   if (lic.error) return bad(lic.error, lic.status);
   if (!lic.license) return bad("no_license", 409);
+  const set = settleLicense(lic.license, body.license_answer);
+  if (set.question) return bad("license_question", 409, { license: set.question });
   const last = existing ? await env.DB.prepare(
     "SELECT version, spdx_id FROM license_records WHERE project_id = ? ORDER BY version DESC LIMIT 1"
   ).bind(existing.id).first() : null;
-  if (last && !(await licenseChangeAllowed(env, existing.id, last, lic.license.spdx))) return bad("license_must_stay", 409, { license: last.spdx_id });
+  if (last && !(await licenseChangeAllowed(env, existing.id, last, set.spdx))) return bad("license_must_stay", 409, { license: last.spdx_id });
 
   const date = today();
   const rules = handoffRules({
-    spdx: lic.license.spdx, assetsLicense: f.assets_license, title: f.title, intent: f.intent, nameRights: f.name_rights,
+    spdx: set.spdx, assetsLicense: f.assets_license, title: f.title, intent: f.intent, nameRights: f.name_rights,
     kind: f.kind, baseGame: f.base_game, handle: session.handle, repoFullName: r.full_name, repoUrl: repoUrl(r.host, r.full_name), commit: head.sha, date
   });
   const summary = {
-    title: f.title, owner: session.handle, license: lic.license.spdx, license_path: lic.license.path,
+    title: f.title, owner: session.handle, license: set.spdx, license_detection: set.detection, license_path: lic.license.path,
     fingerprint: lic.license.sha256, commit: head.sha, date, repo: r.full_name, host: r.host
   };
   if (body.dry_run === true) return privateJson({ ok: true, dry_run: true, summary, rules });
@@ -318,7 +343,7 @@ export async function createListing(request, env, ctx, session) {
   const now = new Date().toISOString().replace("T", " ").slice(0, 19);
   const handedOff = f.intent === "leave" ? now : null;
 
-  const label = licenseLabel(lic.license.spdx, f.assets_license);
+  const label = licenseLabel(set.spdx, f.assets_license);
   const webUrl = repoUrl(r.host, r.full_name);
   const statements = existing ? [
     env.DB.prepare(
@@ -360,10 +385,10 @@ export async function createListing(request, env, ctx, session) {
   // The license record. If two publishes race, the second fails here (version 1 exists) and nothing is saved twice.
   statements.push(env.DB.prepare(
     `INSERT INTO license_records (project_id, version, kind, repo_full_name, commit_sha, spdx_id, license_sha256, license_key,
-                                  license_path, assets_license, name_rights, recorded_by, recorded_at, repo_host)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  ).bind(id, (last ? last.version : 0) + 1, f.intent === "leave" ? "handoff" : "listing", r.full_name, head.sha, lic.license.spdx, lic.license.sha256, licenseKey,
-    lic.license.path, f.assets_license, f.name_rights, session.userId, now, r.host));
+                                  license_path, assets_license, name_rights, recorded_by, recorded_at, repo_host, detection, base_spdx, extra_text)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(id, (last ? last.version : 0) + 1, f.intent === "leave" ? "handoff" : "listing", r.full_name, head.sha, set.spdx, lic.license.sha256, licenseKey,
+    lic.license.path, f.assets_license, f.name_rights, session.userId, now, r.host, set.detection, set.base, set.extra));
   if (handoff) statements.push(changeRow(env, id, session.userId, now, ["status", "handed off"], null));
   if (own.code) statements.push(useCode(env, own.code)); // a self-hosted code works for one listing or handoff
   // Ask Software Heritage to archive the repo. Sent after the response; never holds up a listing.
@@ -483,7 +508,7 @@ export async function editProject(request, env, ctx, session, id) {
   // If the repo's license has changed since the last snapshot, a new snapshot is added to the
   // record. The earlier ones stay exactly as they were.
   const last = await env.DB.prepare(
-    "SELECT version, spdx_id, license_sha256 FROM license_records WHERE project_id = ? ORDER BY version DESC LIMIT 1"
+    "SELECT version, spdx_id, license_sha256, detection FROM license_records WHERE project_id = ? ORDER BY version DESC LIMIT 1"
   ).bind(id).first();
   let snapshot = null;
   if (r.default_branch) {
@@ -492,9 +517,14 @@ export async function editProject(request, env, ctx, session, id) {
     const lic = await fetchLicense(env, session, r, head.sha);
     if (lic.error) return bad(lic.error, lic.status);
     if (!lic.license) return bad("no_license", 409);
-    if (!last || last.license_sha256 !== lic.license.sha256) {
-      if (!(await licenseChangeAllowed(env, id, last, lic.license.spdx))) return bad("license_must_stay", 409, { license: last.spdx_id });
-      snapshot = { head, license: lic.license, key: await storeLicense(env, lic.license) };
+    // A file recorded as custom before Brainchild's matcher existed is looked at again: if the matcher
+    // recognises it now, a new snapshot records that (the earlier one stays as it was).
+    const recognisedNow = !!(last && !last.spdx_id && !last.detection && last.license_sha256 === lic.license.sha256 && lic.license.found && lic.license.found.spdx);
+    if (!last || last.license_sha256 !== lic.license.sha256 || recognisedNow) {
+      const set = settleLicense(lic.license, body.license_answer);
+      if (set.question) return bad("license_question", 409, { license: set.question });
+      if (!(await licenseChangeAllowed(env, id, last, set.spdx))) return bad("license_must_stay", 409, { license: last.spdx_id });
+      snapshot = { head, license: lic.license, set, key: await storeLicense(env, lic.license) };
     }
   }
 
@@ -517,7 +547,7 @@ export async function editProject(request, env, ctx, session, id) {
 
   const now = new Date().toISOString().replace("T", " ").slice(0, 19);
   const leavingAdoption = p.status === "adopt" && f.status !== "adopt"; // the maker is staying after all
-  const label = snapshot ? licenseLabel(snapshot.license.spdx, p.assets_license) : null;
+  const label = snapshot ? licenseLabel(snapshot.set.spdx, p.assets_license) : null;
   const statements = [
     env.DB.prepare(
       `UPDATE projects SET title = ?, note = ?, genre = ?, tech = ?, browser = ?, status = ?, rating = ?, content_notes = ?, updated_at = ?,
@@ -537,10 +567,10 @@ export async function editProject(request, env, ctx, session, id) {
   if (snapshot) {
     statements.push(env.DB.prepare(
       `INSERT INTO license_records (project_id, version, kind, repo_full_name, commit_sha, spdx_id, license_sha256, license_key,
-                                    license_path, assets_license, name_rights, recorded_by, recorded_at, repo_host)
-       SELECT ?, ?, 'license_change', ?, ?, ?, ?, ?, ?, assets_license, name_rights, ?, ?, ? FROM projects WHERE id = ?`
-    ).bind(id, (last ? last.version : 0) + 1, r.full_name, snapshot.head.sha, snapshot.license.spdx, snapshot.license.sha256, snapshot.key,
-      snapshot.license.path, session.userId, now, r.host, id));
+                                    license_path, assets_license, name_rights, recorded_by, recorded_at, repo_host, detection, base_spdx, extra_text)
+       SELECT ?, ?, 'license_change', ?, ?, ?, ?, ?, ?, assets_license, name_rights, ?, ?, ?, ?, ?, ? FROM projects WHERE id = ?`
+    ).bind(id, (last ? last.version : 0) + 1, r.full_name, snapshot.head.sha, snapshot.set.spdx, snapshot.license.sha256, snapshot.key,
+      snapshot.license.path, session.userId, now, r.host, snapshot.set.detection, snapshot.set.base, snapshot.set.extra, id));
   }
   await env.DB.batch(statements);
   ctx.waitUntil(forgetCached(request, ["/api/projects", "/api/projects/" + id, "/api/projects/" + id + "/license", "/api/projects/" + id + "/packet.md"]));
@@ -558,7 +588,7 @@ export async function licenseRecord(env, ctx, id) {
   if (!project) return json({ error: "not_found" }, 404, NO_STORE);
   const { results: records } = await env.DB.prepare(
     `SELECT r.version, r.kind, r.repo_full_name, r.repo_host, r.commit_sha, r.spdx_id, r.license_sha256, r.license_path,
-            r.assets_license, r.name_rights, r.recorded_at, u.handle AS recorded_by
+            r.assets_license, r.name_rights, r.recorded_at, r.detection, r.base_spdx, r.extra_text, u.handle AS recorded_by
        FROM license_records r LEFT JOIN users u ON u.id = r.recorded_by
       WHERE r.project_id = ? ORDER BY r.version`
   ).bind(id).all();
@@ -662,24 +692,26 @@ export async function adoptProject(request, env, ctx, session, id) {
   const lic = await fetchLicense(env, session, r, head.sha);
   if (lic.error) return bad(lic.error, lic.status);
   if (!lic.license) return bad("no_license", 409);
+  const set = settleLicense(lic.license, body.license_answer);
+  if (set.question) return bad("license_question", 409, { license: set.question });
   const last = await env.DB.prepare(
     "SELECT version, spdx_id, license_sha256 FROM license_records WHERE project_id = ? ORDER BY version DESC LIMIT 1"
   ).bind(id).first();
   // Permissive code may be relicensed by the adopter. GPL-family code stays as it was released.
-  if (last && isCopyleft(last.spdx_id) && lic.license.spdx !== last.spdx_id) {
+  if (last && isCopyleft(last.spdx_id) && set.spdx !== last.spdx_id) {
     return bad("license_must_stay", 409, { license: last.spdx_id });
   }
-  const relicensed = !!(last && (last.spdx_id || null) !== (lic.license.spdx || null));
+  const relicensed = !!(last && (last.spdx_id || null) !== (set.spdx || null));
 
   const summary = {
-    title, repo: r.full_name, host: r.host, method, license: lic.license.spdx, previous_license: last ? last.spdx_id : null, relicensed,
+    title, repo: r.full_name, host: r.host, method, license: set.spdx, license_detection: set.detection, previous_license: last ? last.spdx_id : null, relicensed,
     commit: head.sha, fingerprint: lic.license.sha256, date: today()
   };
   const packet = await env.DB.prepare("SELECT handoff_rules FROM packets WHERE project_id = ?").bind(id).first();
   // The rules the adopter pastes into CLAUDE.md / AGENTS.md: the maker's rules if they were
   // recorded, otherwise rules written from what the listing says.
   const rules = (packet && packet.handoff_rules) || handoffRules({
-    spdx: last ? last.spdx_id : lic.license.spdx, assetsLicense: p.assets_license || "Same as the code", title: p.title,
+    spdx: last ? last.spdx_id : set.spdx, assetsLicense: p.assets_license || "Same as the code", title: p.title,
     intent: "leave", nameRights: p.name_rights || "continuation", kind: p.kind, baseGame: p.base_game,
     handle: p.owner || "the original maker", repoFullName: oldName || r.full_name, repoUrl: repoUrl(host, oldName || r.full_name), commit: head.sha, date: today()
   });
@@ -695,7 +727,7 @@ export async function adoptProject(request, env, ctx, session, id) {
               open_to_transfer = 0, handed_off_at = ?, updated_at = ?, license = ?
         WHERE id = ? AND status = 'adopt'`
     ).bind(session.userId, title, repoUrl(r.host, r.full_name), r.id, r.full_name, r.host, now, now,
-      licenseLabel(lic.license.spdx, p.assets_license), id),
+      licenseLabel(set.spdx, p.assets_license), id),
     // Earlier maintainers stay in the lineage; their entry is closed, never deleted.
     env.DB.prepare(
       "UPDATE lineage SET ended_at = ? WHERE project_id = ? AND ended_at IS NULL AND EXISTS (SELECT 1 FROM projects WHERE id = ? AND owner_id = ? AND updated_at = ?)"
@@ -706,10 +738,10 @@ export async function adoptProject(request, env, ctx, session, id) {
     ).bind(id, session.userId, now, method === "transfer" ? "transferred" : "forked", r.full_name, r.host, id, session.userId, now),
     env.DB.prepare(
       `INSERT INTO license_records (project_id, version, kind, repo_full_name, commit_sha, spdx_id, license_sha256, license_key,
-                                    license_path, assets_license, name_rights, recorded_by, recorded_at, repo_host)
-       SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM projects WHERE id = ? AND owner_id = ? AND updated_at = ?)`
-    ).bind(id, version, relicensed ? "relicense" : "adoption", r.full_name, head.sha, lic.license.spdx, lic.license.sha256, licenseKey,
-      lic.license.path, p.assets_license, p.name_rights, session.userId, now, r.host, id, session.userId, now),
+                                    license_path, assets_license, name_rights, recorded_by, recorded_at, repo_host, detection, base_spdx, extra_text)
+       SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM projects WHERE id = ? AND owner_id = ? AND updated_at = ?)`
+    ).bind(id, version, relicensed ? "relicense" : "adoption", r.full_name, head.sha, set.spdx, lic.license.sha256, licenseKey,
+      lic.license.path, p.assets_license, p.name_rights, session.userId, now, r.host, set.detection, set.base, set.extra, id, session.userId, now),
     ...(own.code ? [useCode(env, own.code)] : [])
   ]);
   if (!result[0].meta || result[0].meta.changes !== 1) return bad("not_up_for_adoption", 409);

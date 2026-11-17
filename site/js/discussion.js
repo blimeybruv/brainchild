@@ -1,7 +1,7 @@
 /* Project page extras: discussion, reporting, screenshots. All text goes in with textContent. */
 (function () {
   var BC = window.BC, h = BC.h;
-  var id = new URLSearchParams(window.location.search).get("id") || "moss-keeper";
+  var id = new URLSearchParams(window.location.search).get("id") || "";
   var root = document.getElementById("discussion");
   if (!root || window.location.protocol === "file:") return;
   var st = { data: null, user: null, sort: "top", draft: "", replyTo: null, replyDraft: "", error: "", busy: false };

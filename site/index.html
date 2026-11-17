@@ -7,7 +7,7 @@
 <title>Brainchild: hand it off, or take it on</title>
 <meta name="description" content="Free AI-assisted games, mods and vibe-coded apps. When their makers move on, they leave a handoff packet so anyone can pick the project back up.">
 <link rel="icon" href="img/favicon-32.png" sizes="32x32" type="image/png"><link rel="icon" href="img/favicon-512.png" sizes="512x512" type="image/png"><link rel="apple-touch-icon" href="img/favicon-180.png">
-<link rel="stylesheet" href="css/styles.css?v=24hsbmtdckwL">
+<link rel="stylesheet" href="css/styles.css?v=25hsbmtdckwL">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -51,21 +51,17 @@ or take it on.</span><span class="caret" aria-hidden="true" hidden></span></h1>
       </div>
     </div>
 
-    <aside class="continue-card" aria-label="Featured project">
+    <aside class="continue-card" aria-label="Featured project" id="cc" hidden>
       <div class="continue-top" aria-hidden="true"><span>CONTINUE?</span><span id="countdown">9</span></div>
-      <div class="shot" aria-hidden="true"><span>[ game screenshot ]</span></div>
+      <div class="shot" id="cc-shot" aria-hidden="true"></div>
       <div>
-        <p style="margin:0;font-family:var(--font-head);font-weight:700;font-size:22px">Moss Keeper</p>
-        <p class="muted" style="margin:4px 0 0;font-size:14px">Cozy puzzle · Godot 4 · last commit [DATE]</p>
+        <p style="margin:0;font-family:var(--font-head);font-weight:700;font-size:22px" id="cc-title"></p>
+        <p class="muted" style="margin:4px 0 0;font-size:14px" id="cc-meta"></p>
       </div>
-      <ul class="checks">
-        <li>Playable build, 12 levels</li>
-        <li>MIT code · CC BY 4.0 assets</li>
-        <li>Handoff packet + agent context file</li>
-      </ul>
+      <ul class="checks" id="cc-checks"></ul>
       <div class="two-col">
-        <a class="btn btn-primary" href="project.html?id=moss-keeper">YES · adopt it</a>
-        <a class="btn btn-ghost" href="project.html?id=moss-keeper">Just play</a>
+        <a class="btn btn-primary" id="cc-yes" href="browse.html"></a>
+        <a class="btn btn-ghost" id="cc-look" href="browse.html">Have a look</a>
       </div>
     </aside>
   </section>
@@ -86,7 +82,7 @@ or take it on.</span><span class="caret" aria-hidden="true" hidden></span></h1>
     <div class="section-head">
       <div>
         <h2 id="adopt-h" class="retype"><span class="visually-hidden">Waiting for a second wind</span><span class="typed" aria-hidden="true">Waiting for a second wind</span><span class="caret" aria-hidden="true" hidden></span></h2>
-        <p>Playable, properly licensed, and handed off with notes. Sample listings shown. <a href="browse.html">Browse everything</a></p>
+        <p>Playable, properly licensed, and handed off with notes. <a href="browse.html">Browse everything</a></p>
       </div>
       <div class="pills" role="group" aria-label="Filter featured projects" id="home-filters">
         <button type="button" class="pill" data-filter="all" aria-pressed="true">All</button>
@@ -148,9 +144,9 @@ or take it on.</span><span class="caret" aria-hidden="true" hidden></span></h1>
   </div>
 </footer>
 
-<script src="js/data.js"></script>
+<script src="js/data.js?v=25"></script>
 <script src="js/common.js?v=25"></script>
-<script src="js/home.js?v=24"></script>
+<script src="js/home.js?v=25"></script>
 <script src="js/hero.js?v=2"></script>
 </body>
 </html>

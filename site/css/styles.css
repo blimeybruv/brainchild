@@ -524,3 +524,4 @@ body::before { content: ""; position: fixed; inset: -280px; z-index: -1; pointer
   animation: lattice-drift 120s linear infinite; will-change: transform; }
 @keyframes lattice-drift { from { transform: translate(0, 0); } to { transform: translate(280px, 280px); } }
 @media (prefers-reduced-motion: reduce) { body::before { animation: none; } }
+.continue-card[hidden] { display: none; }

@@ -1,12 +1,27 @@
 window.BC.load(function () {
   var D = window.BC_DATA;
   var h = window.BC.h;
-  var id = new URLSearchParams(window.location.search).get("id") || "moss-keeper";
+  var id = new URLSearchParams(window.location.search).get("id") || "";
   var listed = D.items.filter(function (i) { return i.id === id; })[0];
-  if (listed || window.location.protocol === "file:") return start(listed || D.items[0]);
+  if (listed) return start(listed);
   // Not in the list we have (for example, published a moment ago): ask for it directly.
+  if (!/^[a-z0-9-]{1,80}$/.test(id) || window.location.protocol === "file:") return missing();
   window.BC.getJSON("/api/projects/" + encodeURIComponent(id))
-    .then(function (j) { start(j && j.project ? window.BC.fromRow(j.project) : D.items[0]); }, function () { start(D.items[0]); });
+    .then(function (j) { if (j && j.project) start(window.BC.fromRow(j.project)); else missing(); }, missing);
+
+  // No such project (or it was removed): say so instead of showing the page's empty frame.
+  function missing() {
+    document.title = "Project not found · Brainchild";
+    document.getElementById("crumb-title").textContent = "Not found";
+    document.getElementById("p-title").textContent = "That project isn't here";
+    document.getElementById("p-sub").textContent = "It may have been removed, or the address is wrong.";
+    var main = document.querySelector(".layout");
+    if (main) {
+      main.textContent = "";
+      main.appendChild(h("p", { class: "muted" }, ["Have a look in ", h("a", { href: "browse.html", text: "Browse" }), " instead."]));
+    }
+    ["p-cta", "p-fork", "p-edit"].forEach(function (x) { var el = document.getElementById(x); if (el) el.hidden = true; });
+  }
 
   function start(item) {
   var S = D.statuses[item.status];
@@ -76,11 +91,10 @@ window.BC.load(function () {
     ["Type", window.BC.kindLabel(item.kind)],
     ["License", item.license],
     [item.kind === "Mod" ? "Made for" : "Built with", item.kind === "Mod" ? item.game : (item.tech || "—")],
-    ["AI tools", "[as tagged by maker]"],
-    ["Repo", "[repo link]"]
+    ["Repo", item.repo && /^https:\/\/[a-z0-9.-]+\/[A-Za-z0-9_.\/-]+$/.test(item.repo) ? h("a", { href: item.repo, rel: "noopener noreferrer", target: "_blank", text: item.repo.replace(/^https:\/\//, "") }) : "—"]
   ].forEach(function (row) {
     details.appendChild(h("dt", { text: row[0] }));
-    details.appendChild(h("dd", { text: row[1] }));
+    details.appendChild(typeof row[1] === "string" ? h("dd", { text: row[1] }) : h("dd", null, [row[1]]));
   });
 
   function lines(t) { return String(t).split(/\n+/).filter(Boolean); }
@@ -88,6 +102,19 @@ window.BC.load(function () {
   // Facts from the database: who owns it, the license record, the lineage, and how to adopt it.
   function renderRecord(p, lineage, packet) {
     var pid = encodeURIComponent(p.id);
+    // "Before you adopt": what this listing really has, from the record.
+    var checks = document.getElementById("p-checks");
+    if (checks) {
+      var k = packet || {}, filled = ["works", "broken", "vision", "agent_context"].filter(function (f) { return k[f] && String(k[f]).trim(); }).length + (Array.isArray(k.provenance) && k.provenance.length ? 1 : 0);
+      var selfHosted = typeof p.repo_host === "string" && p.repo_host.indexOf("selfhosted:") === 0;
+      [
+        [!!p.license_record, p.license_record ? "License recorded: " + (p.license_record.spdx_id || "custom license") : "No license record yet"],
+        [!!p.play_url, p.play_url ? "Playable build hosted on Brainchild" : "No hosted build"],
+        [filled === 5, "Handoff packet: " + (filled === 5 ? "all five sections filled" : filled + " of 5 sections filled")],
+        [Array.isArray(k.provenance) && k.provenance.length > 0, Array.isArray(k.provenance) && k.provenance.length ? "Asset provenance noted" : "Asset provenance not noted"],
+        [!!p.owner_verified, p.owner_verified ? (selfHosted ? "Maintainer verified: push access" : "Maintainer verified on " + (p.repo_host === "gitlab" ? "GitLab" : "GitHub")) : "Maintainer not verified"]
+      ].forEach(function (c) { checks.appendChild(h("li", { class: c[0] ? null : "pending", text: c[1] })); });
+    }
     // How fresh the packet is, and what has changed lately (field names only).
     if (packet && packet.updated_at) document.getElementById("p-packet-date").textContent = "· updated " + window.BC.niceDate(packet.updated_at);
     if (p.changes && p.changes.length) {
@@ -150,39 +177,25 @@ window.BC.load(function () {
   }
 
   function renderPacket(P) {
-    // Handoff packet. Moss Keeper has a full sample; others show what the maker would fill in.
-    var sample = id === "moss-keeper";
+    // Handoff packet: what the maker wrote, or a note where a section is still empty.
+    var empty = function (what) { return h("p", { class: "muted", text: "Not filled in yet. " + what }); };
     var tabs = [
       { key: "works", label: "What works", body: function () {
-        return P && P.works ? list(lines(P.works)) : sample ? list([
-          "All 12 levels are playable start to finish; save/load works.",
-          "Plant growth system is data-driven: new species are one JSON entry each.",
-          "Build: open in Godot 4, export preset \"Web\" is already configured."
-        ]) : h("p", { text: "[ The maker lists what's playable and how to build and run it. ]" });
+        return P && P.works ? list(lines(P.works)) : empty("The maker lists what's playable and how to build and run it.");
       } },
       { key: "broken", label: "What's broken", body: function () {
-        return P && P.broken ? list(lines(P.broken)) : sample ? list([
-          "Level 9 can soft-lock if you undo during the water animation.",
-          "Controller remapping UI is half-built (scene exists, not wired up).",
-          "Tried: procedural islands. Dropped them; they felt lifeless. Notes in /docs/dead-ends.md."
-        ]) : h("p", { text: "[ Known bugs, dead ends, and fixes already tried. ]" });
+        return P && P.broken ? list(lines(P.broken)) : empty("Known bugs, dead ends, and fixes already tried.");
       } },
       { key: "vision", label: "What I was going for", body: function () {
-        return h("p", { text: P && P.vision ? P.vision : sample
-          ? "I wanted it to feel like tending a bonsai: slow, quiet, no fail states. The plan was 3 more biomes and a \"share your garden\" seed code. If you take it somewhere else entirely, that's fine too."
-          : "[ The maker's vision: the feel, the endgame, what they'd build next. ]" });
+        return P && P.vision ? h("p", { text: P.vision }) : empty("The maker's vision: the feel, the endgame, what they'd build next.");
       } },
       { key: "agent", label: "Agent context", body: function () {
-        return h("pre", { class: "code-block", text: P && P.agent_context ? P.agent_context : sample
-          ? "# CLAUDE.md\nGodot 4 project. Game logic in /scripts, levels in /levels/*.tres.\nGridManager owns all tile state; never mutate tiles from plant scripts.\nRun tests: godot --headless -s tests/run.gd\nStyle: small scenes, signals over direct references."
-          : "# CLAUDE.md / AGENTS.md\n[ The maker's agent context file goes here. ]" });
+        return P && P.agent_context ? h("pre", { class: "code-block", text: P.agent_context }) : empty("The maker's CLAUDE.md or AGENTS.md goes here.");
       } },
       { key: "assets", label: "Asset provenance", body: function () {
         var rows = P && Array.isArray(P.provenance) && P.provenance.length
-          ? P.provenance.map(function (x) { return [String(x.part || ""), String(x.how || "")]; })
-          : sample
-          ? [["Code", "AI-assisted, reviewed by hand. MIT."], ["Art", "Hand-drawn pixel art. CC BY 4.0."], ["Music", "[TOOL] generated, tagged per track. CC BY 4.0."]]
-          : [["Code", "[ how it was made ]"], ["Art", "[ how it was made ]"], ["Audio", "[ how it was made ]"]];
+          ? P.provenance.map(function (x) { return [String(x.part || ""), String(x.how || "")]; }) : null;
+        if (!rows) return empty("What was generated, with which tool, and what was made by hand.");
         return h("div", { class: "prov-grid" }, rows.map(function (r) {
           return h("div", null, [h("strong", { text: r[0] }), h("span", { class: "muted", text: r[1] })]);
         }));
@@ -221,7 +234,7 @@ window.BC.load(function () {
     select(0);
   }
 
-  // Prefer the maker's packet from the database; fall back to the built-in sample.
+  // The maker's packet from the database.
   if (window.location.protocol === "file:") {
     renderPacket(null);
   } else {

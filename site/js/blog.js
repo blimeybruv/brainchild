@@ -3,12 +3,6 @@ window.BC.load(function () {
   var h = window.BC.h;
   var store = window.BC.store;
 
-  var posts = [
-    { topic: "Community project", title: "Community project recap: Gutter Run got its missing levels", excerpt: "What the community finished in a month, what is still open, and how the original maker felt about it." },
-    { topic: "Handoff story", title: "How Paper Knights found its second maintainer", excerpt: "The maker moved on, a player picked it up, and the agent context file did most of the explaining." },
-    { topic: "Site news", title: "Mods and plugins are different: how those listings work", excerpt: "Mods and plugins need what they're made for, so they get source downloads, install notes and version tags instead of a browser build." },
-    { topic: "Guide", title: "Writing a handoff packet your successor will thank you for", excerpt: "Five sections, one license, and the one paragraph about your vision that people always skip." }
-  ];
   var topics = ["All", "Community project", "Handoff story", "Guide", "Site news"];
 
   var topic = "All";
@@ -137,26 +131,26 @@ window.BC.load(function () {
     });
     var list = document.getElementById("posts");
     list.textContent = "";
-    var shown = (realPosts && realPosts.length ? realPosts : posts).filter(function (p) { return topic === "All" || p.topic === topic; });
-    if (!shown.length) list.appendChild(h("p", { class: "muted", text: "No posts on this topic yet." }));
+    if (realPosts === null) { list.appendChild(h("p", { class: "muted", text: "Loading posts…" })); return; }
+    var shown = realPosts.filter(function (p) { return topic === "All" || p.topic === topic; });
+    if (!shown.length) list.appendChild(h("p", { class: "muted", text: realPosts.length ? "No posts on this topic yet." : "No posts yet. Handed off a project, or picked one up? Pitch a post: it's in the sidebar." }));
     shown.forEach(function (p) {
-      var real = !!p.slug;
+      var href = "post.html?slug=" + encodeURIComponent(p.slug);
       list.appendChild(h("article", { class: "panel post" }, [
         h("div", { class: "byline" }, [
           h("span", { class: "topic", "data-topic": p.topic, text: p.topic }),
-          h("span", { text: real ? "by " + (p.author ? "@" + p.author : "Brainchild") + " · " + BC.niceDate(p.published_at) : "by @[author] · [DATE]" })
+          h("span", { text: "by " + (p.author ? "@" + p.author : "Brainchild") + " · " + BC.niceDate(p.published_at) })
         ]),
-        h("h3", null, [real ? h("a", { href: "post.html?slug=" + encodeURIComponent(p.slug), text: p.title }) : p.title]),
+        h("h3", null, [h("a", { href: href, text: p.title })]),
         h("p", { text: p.excerpt }),
-        real ? h("a", { href: "post.html?slug=" + encodeURIComponent(p.slug), style: "align-self:flex-start;font-size:15px;font-weight:500", text: "Read the post" })
-          : h("span", { class: "muted", style: "font-size:14px", text: "Sample post: real posts come at launch." }) // shown only until the first real post; removed before launch
+        h("a", { href: href, style: "align-self:flex-start;font-size:15px;font-weight:500", text: "Read the post" })
       ]));
     });
   }
 
-  // Published posts from the database. The sample posts above show only while there are none.
+  // Published posts from the database.
   var realPosts = null;
-  if (window.location.protocol !== "file:") BC.getJSON("/api/posts").then(function (j) { realPosts = j && Array.isArray(j.posts) ? j.posts : []; renderPosts(); }, function () {});
+  if (window.location.protocol !== "file:") BC.getJSON("/api/posts").then(function (j) { realPosts = j && Array.isArray(j.posts) ? j.posts : []; renderPosts(); }, function () { realPosts = []; renderPosts(); });
 
   // "Pitch a post": a signed-in member sends a draft; a moderator edits and publishes it.
   function pitchBox() {

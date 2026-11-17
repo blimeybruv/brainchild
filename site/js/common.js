@@ -107,12 +107,12 @@
     if (window.location.protocol === "file:") return go();
     getJSON("/api/projects")
       .then(function (j) {
-        if (j && Array.isArray(j.projects) && j.projects.length) {
+        if (j && Array.isArray(j.projects)) {
           window.BC_DATA.items = j.projects.map(fromRow);
           window.BC_DATA.live = true;
         }
       })
-      .catch(function () { /* keep sample data */ })
+      .catch(function () { window.BC_DATA.failed = true; /* pages say the list couldn't be loaded */ })
       .then(go, go);
   }
 

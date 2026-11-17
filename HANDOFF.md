@@ -423,6 +423,19 @@ what waits on the owner.** What is left:
    - Remove the sample Relay round for `2026-10` (id 2, with its entries, votes, tasks, contributions and
      badges), the sample Blog proposals and votes for month `2026-11` (proposal ids 6–8), and the `sample-*` users (`u-sample-ada` … `u-sample-finn`), added 14 Nov as a demonstration.
    - Ask the owner first, and list what will go.
+   - **Done 17 Nov (owner: "You can kill the sample pages").**
+     - **Code:** `site/js/data.js` no longer holds sample listings; every page uses `/api/projects`. The
+       project page's built-in "Moss Keeper" sample packet is gone, and an unknown or missing `?id=` says
+       "That project isn't here" instead of showing a sample. The sample blog posts are gone (the blog shows
+       "No posts yet" and points to Pitch a post). "Sample listings shown" was removed from Browse and home.
+     - **Placeholders replaced with real data:** the home page's "CONTINUE?" card (was hard-wired to Moss
+       Keeper) shows a listing up for adoption, otherwise a featured or the newest one, and hides when
+       there are none. The featured list falls back to the newest listings while nothing is featured.
+       The project page's "Before you adopt" checklist (was five fixed ticks) now shows the real license
+       record, hosted build, how many packet sections are filled, provenance and verification. The static
+       "[original-maker]" byline and lineage placeholders and the "AI tools [as tagged by maker]" row are
+       gone; "Repo" links to the real repository.
+     - **Database (production only; the preview database keeps its samples for testing):** see below.
 
 ## Owner request, 14 Nov: GitLab sign-in, and linked accounts
 

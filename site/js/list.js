@@ -9,6 +9,15 @@
     "Apache-2.0": ["good", "Recommended: the license states its permissions are perpetual and irrevocable. It grants no rights to the project's name, so the name question below matters."],
     "GPL-3.0": ["good", "Recommended: irrevocable, and future versions must stay open too."]
   };
+  // What each art license means, shown under the choice in step 4.
+  var ART_HINTS = {
+    "CC BY 4.0": "Anyone may use, change and share the art, even to sell, as long as they credit you. This lets the most people continue the project.",
+    "CC BY-SA 4.0": "Anyone may use, change and share the art, even to sell, with credit, and changed art must stay CC BY-SA. It can't be mixed with CC BY-NC-SA art.",
+    "CC0": "You give up your rights to the art as far as the law allows: anyone may use it for anything, without crediting you.",
+    "CC BY-NC 4.0": "People may change the art and continue the project, with credit, but not sell it. The project shows a \"Non-commercial art\" label.",
+    "CC BY-NC-SA 4.0": "People may change the art and continue the project, with credit, but not sell it, and changed art stays CC BY-NC-SA. It can't be mixed with CC BY-SA art. The project shows a \"Non-commercial art\" label.",
+    "Same as the code": "The art goes under the code's license. Code licenses are written for code, so a Creative Commons license usually fits art better."
+  };
   // What the server's field names are called on screen, with the step they're on.
   var FIELD_LABELS = {
     repo: "Repository (step 2)", title: "Title (step 5)", kind: "Type (step 5)", genre: "Genre (step 5)",
@@ -306,9 +315,7 @@
           h("p", { class: note[0] === "bad" ? "form-error" : null, text: note[1] })
         ]),
         field("Art, music and other assets", select(["CC BY 4.0", "CC BY-SA 4.0", "CC0", "CC BY-NC 4.0", "CC BY-NC-SA 4.0", "Same as the code"], st.assets, function (v) { st.assets = v; st.preview = null; render(); }),
-          BC.nonCommercial(st.assets)
-            ? "Non-commercial: people may change the art and continue the project, but not sell it" + (st.assets === "CC BY-NC-SA 4.0" ? ", and changed art stays CC BY-NC-SA. It can't be mixed with CC BY-SA art." : ".") + " The project shows a \"Non-commercial art\" label. No-derivatives (ND) licenses aren't accepted, because nobody could change the art."
-            : "Not sure? CC BY 4.0 lets the most people continue the project. Choose a non-commercial license if you don't want anyone selling it. No-derivatives (ND) licenses aren't accepted.")
+          (ART_HINTS[st.assets] || "") + " No-derivatives (ND) licenses aren't accepted, because nobody could change the art.")
       ])
     ];
     if (extra) {

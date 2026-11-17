@@ -944,6 +944,8 @@ was turned down: it penalises the projects that most need a new owner.
   "States it's irrevocable" tag from CC BY 4.0, and says all the art licenses are permanent. The step-4
   hint in `list.js` (`?v=25`) now reads "Not sure? CC BY 4.0 lets the most people continue the project…".
 
+- **Fixed 17 Nov:** the step-4 hint now describes whichever art license is chosen (`ART_HINTS` in `list.js`), instead of one shared "Not sure?" line for every non-NC choice.
+
 **Comes back to the owner if Brainchild ever makes money.** Ads, sponsorship, donations shown on project
 pages, or paid features near NC projects could make hosting NC art "commercial advantage". As things
 stand (free tiers, no ads) it's a non-issue. Before adding any of those, ask the owner how NC projects

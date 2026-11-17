@@ -111,6 +111,19 @@
       .finally(function () { if (timer) clearTimeout(timer); });
   }
 
+  // Shown at the top of the page when the project list couldn't be fetched, so an empty or partial
+  // page is never mistaken for the real thing. Often a privacy or ad-blocking extension.
+  function loadFailedNotice() {
+    if (document.getElementById("load-failed")) return;
+    var bar = document.createElement("div");
+    bar.id = "load-failed"; bar.className = "notice"; bar.setAttribute("role", "status");
+    var p = document.createElement("p"); p.className = "wrap";
+    p.textContent = "Couldn't load the project list, so this page may be empty or out of date. A privacy or ad-blocking extension can cause this: allow brainchild.nexus in it, then reload. If it keeps happening, try again in a few minutes.";
+    bar.appendChild(p);
+    var main = document.querySelector("main") || document.body;
+    main.parentNode.insertBefore(bar, main);
+  }
+
   // Load live listings from the API, then run the page. Falls back to js/data.js
   // (for example when the file is opened locally, or the API is down).
   function load(run) {
@@ -124,7 +137,7 @@
           window.BC_DATA.live = true;
         }
       })
-      .catch(function () { window.BC_DATA.failed = true; /* pages say the list couldn't be loaded */ })
+      .catch(function () { window.BC_DATA.failed = true; loadFailedNotice(); })
       .then(go, go);
   }
 

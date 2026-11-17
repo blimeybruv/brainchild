@@ -185,7 +185,7 @@ export async function tokenRequest(env, params) {
 export const ACTIVITY = [
   ["projects", "owner_id"], ["lineage", "user_id"], ["license_records", "recorded_by"], ["comments", "user_id"],
   ["comment_likes", "user_id"], ["reports", "reporter_id"], ["reports", "resolved_by"], ["screenshots", "uploaded_by"],
-  ["builds", "created_by"], ["project_changes", "user_id"], ["outside_reports", "resolved_by"], ["relay_entries", "user_id"],
+  ["screenshots", "approved_by"], ["builds", "created_by"], ["project_changes", "user_id"], ["outside_reports", "resolved_by"], ["relay_entries", "user_id"],
   ["relay_votes", "voter_id"], ["proposals", "user_id"], ["votes", "user_id"], ["posts", "author_id"], ["relay_claims", "user_id"],
   ["relay_contributions", "user_id"], ["relay_contributions", "flagged_by"], ["relay_contributions", "flag_decided_by"],
   ["relay_badges", "user_id"], ["relay_badges", "awarded_by"], ["moderation_actions", "affected_user_id"], ["moderation_actions", "moderator_id"],

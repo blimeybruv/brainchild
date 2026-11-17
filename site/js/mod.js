@@ -14,6 +14,7 @@
     var link = h("a", { href: "project.html?id=" + encodeURIComponent(r.project_id), text: r.project_title || r.project_id });
     if (r.target_type === "proposal") return [h("p", null, ["Blog proposal by @" + (r.proposal_author || r.affected || "someone") + " for ", link, r.proposal_month ? " (vote for " + r.proposal_month + ")" : "", r.proposal_removed ? " (already removed)" : ""]),
       h("blockquote", { class: "quote", text: r.proposal_goal || "[ no longer available ]" })];
+    if (r.target_type === "screenshot") return [h("p", null, ["A held screenshot from @" + (r.affected || "someone") + " for ", link, ", rejected and deleted."])];
     if (r.target_type === "relay_pr") return [h("p", null, ["Relay pull request by @" + (r.affected || "someone") + " for ", link, ": ", prLink(r.pr_url, r.pr_number), " (marked as junk: " + (FLAGS[r.category] || r.category) + ")"])];
     return r.target_type === "comment"
       ? [h("p", null, ["Comment by @" + (r.comment_author || r.affected || "someone") + " on ", link, r.comment_removed ? " (already removed)" : ""]), h("blockquote", { class: "quote", text: r.comment_body || "[ no longer available ]" })]
@@ -143,13 +144,42 @@
         ? [btn("Restore the maker's rating", "btn-primary", function () { send("restore"); }), btn("Keep the new rating", "btn-ghost", function () { send("uphold"); })]
         : a.target_type === "relay_pr"
         ? [btn("Let it count after all", "btn-primary", function () { send("restore"); }), btn("Keep the decision", "btn-ghost", function () { send("uphold"); })]
+        : a.target_type === "screenshot"
+        ? [btn("Let them upload it again (it will show at once)", "btn-primary", function () { send("restore"); }), btn("Keep the decision", "btn-ghost", function () { send("uphold"); })]
         : [btn("Put it back", "btn-primary", function () { send("restore"); }), btn("Keep it removed", "btn-ghost", function () { send("uphold"); })])
     ]));
+  }
+  // First screenshots from brand-new accounts, waiting to be approved or rejected.
+  var HELD_WHY = { new_provider_account: "their linked account is under 7 days old", first_upload_new_account: "it's their first upload and their Brainchild account is under a day old" };
+  var REJECT_CAT = [["", "Category (to reject)"], ["sexual", "Sexual content"], ["harass", "Harassment or hate"], ["license", "License or copyright problem"], ["malware", "Malware or suspicious"], ["spam", "Spam or junk"], ["other", "Something else"]];
+  function heldItem(s) {
+    var reasons = h("textarea", { class: "textarea", rows: "2", maxlength: "2000", "aria-label": "Reasons", placeholder: "To reject: what the image shows, and which rule or law it breaks. The uploader will read this." });
+    var ground = h("select", { class: "select", "aria-label": "Ground" }, [h("option", { value: "terms", text: "Breaks Brainchild's house rules" }), h("option", { value: "illegal", text: "Illegal content" })]);
+    var cat = h("select", { class: "select", "aria-label": "Category" }, REJECT_CAT.map(function (c) { return h("option", { value: c[0], text: c[1] }); }));
+    var err = h("p", { class: "form-error", role: "alert" });
+    function send(what) {
+      err.textContent = "";
+      BC.api("POST", "/api/mod/screenshots/" + s.id + "/" + what, what === "reject" ? { reasons: reasons.value, ground: ground.value, category: cat.value } : {}).then(function (res) {
+        if (res.ok) return load();
+        err.textContent = res.data.error === "invalid_fields" ? (res.data.fields && res.data.fields.indexOf("category") >= 0 && res.data.fields.indexOf("reasons") < 0 ? "Choose a category for the rejection." : "A rejection needs its reasons written out (at least a sentence) and a category.") : res.data.error === "already_resolved" ? "Someone already dealt with this screenshot." : BC.errorText(res.data.error);
+      });
+    }
+    var linked = (s.linked || []).map(function (l) { return (NAMES[l.provider] || l.provider) + " account " + (l.age_days === null ? "age unknown" : l.age_days + (l.age_days === 1 ? " day" : " days") + " old"); });
+    return h("div", { class: "panel queue-item" }, [
+      h("h3", { text: "Screenshot from @" + (s.uploader || "someone") + " · " + BC.niceDate(s.held_at) }),
+      h("p", null, ["For ", h("a", { href: "project.html?id=" + encodeURIComponent(s.project_id), text: s.project_title || s.project_id }), ". Held because " + (HELD_WHY[s.held_reason] || "the account is new") + "."]),
+      h("p", { class: "muted", text: "Brainchild account " + (s.account_age_hours < 48 ? s.account_age_hours + " hours" : Math.floor(s.account_age_hours / 24) + " days") + " old" + (linked.length ? " · " + linked.join(" · ") : "") }),
+      h("img", { class: "held-shot", src: "/api/screenshots/" + s.id + "/held", alt: "The held screenshot" }),
+      h("div", { class: "form-grid" }, [h("div", { class: "field wide" }, [reasons]), h("div", { class: "field" }, [ground]), h("div", { class: "field" }, [cat])]),
+      h("div", { class: "actions" }, [btn("Approve: show it", "btn-primary", function () { send("approve"); }), btn("Reject and delete it", "btn-ghost", function () { send("reject"); })]),
+      h("p", { class: "muted", style: "font-size:14px", text: "Approving also lets this person's later screenshots appear straight away." }),
+      err
+    ]);
   }
   // Merging two accounts that are the same person, when both have been used.
   var NAMES = { github: "GitHub", gitlab: "GitLab" };
   var LABELS = { "projects.owner_id": "projects", "lineage.user_id": "lineage entries", "license_records.recorded_by": "license records", "comments.user_id": "comments",
-    "comment_likes.user_id": "likes", "reports.reporter_id": "reports sent", "reports.resolved_by": "reports decided", "screenshots.uploaded_by": "screenshots",
+    "comment_likes.user_id": "likes", "reports.reporter_id": "reports sent", "reports.resolved_by": "reports decided", "screenshots.uploaded_by": "screenshots", "screenshots.approved_by": "screenshots approved",
     "builds.created_by": "builds", "project_changes.user_id": "page edits", "outside_reports.resolved_by": "outside reports decided", "relay_entries.user_id": "Relay entries",
     "relay_votes.voter_id": "Relay rankings", "proposals.user_id": "blog proposals", "votes.user_id": "blog votes", "posts.author_id": "blog posts", "relay_claims.user_id": "task claims",
     "relay_contributions.user_id": "Relay pull requests", "relay_contributions.flagged_by": "flags raised", "relay_contributions.flag_decided_by": "flags decided",
@@ -233,6 +263,11 @@
         btn("Closed reports", view === "closed" ? "btn-light" : "btn-ghost", function () { view = "closed"; load(); })]));
       var sigs = view === "open" ? signalsSection(d.signals) : null;
       if (sigs) root.appendChild(sigs);
+      if (d.held_screenshots && d.held_screenshots.length) {
+        root.appendChild(h("h2", { text: "Held screenshots" }));
+        root.appendChild(h("p", { class: "muted", text: "First screenshots from brand-new accounts wait here and aren't shown publicly until you approve them." }));
+        root.appendChild(h("div", { class: "queue" }, d.held_screenshots.map(heldItem)));
+      }
       if (d.appeals.length) { root.appendChild(h("h2", { text: "Requests to review a removal" })); root.appendChild(h("div", { class: "queue" }, d.appeals.map(appealItem))); }
       if (d.rating_changes && d.rating_changes.length) {
         root.appendChild(h("h2", { text: "Rating changes by maintainers" }));

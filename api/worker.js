@@ -27,7 +27,10 @@
 //   GET  /api/mod/reports, POST /api/mod/reports/<id>/resolve, POST /api/mod/actions/<id>/appeal   moderators only
 //   GET  /api/my/notices, POST /api/my/notices/<id>/appeal
 //   POST /api/projects/<id>/screenshots, POST /api/screenshots/<id>/delete   maintainer only (screenshots.js)
-//   GET  /api/screenshots/<id>                            public image
+//   GET  /api/projects/<id>/screenshots                   the maintainer's held (not yet approved) screenshots
+//   GET  /api/screenshots/<id>                            public image (never a held one)
+//   GET  /api/screenshots/<id>/held                       a held image, for its uploader, the maintainer and moderators
+//   POST /api/mod/screenshots/<id>/approve|reject         moderators only
 //   POST /api/projects/<id>/builds, PUT .../builds/<build>/files?path=, POST .../builds/<build>/activate,
 //   POST /api/projects/<id>/builds/rollback | remove      hosted browser build, maintainer only (builds.js)
 //   GET  /api/report-form, POST /api/outside-reports      reports from people who aren't signed in (outside.js)
@@ -55,7 +58,7 @@ import { listPosts, getPost, modPosts, savePost, postAction, pitch, pitchAction,
 import { repoAccessRoute } from "./github.js";
 import { myRepos, listingInfo, createListing, editProject, adoptProject, licenseRecord, licenseText } from "./listings.js";
 import { listComments, postComment, commentAction, postReport, modQueue, modResolve, modAppeal, myNotices, appealNotice, modRerate } from "./community.js";
-import { addScreenshot, deleteScreenshot, serveScreenshot } from "./screenshots.js";
+import { addScreenshot, deleteScreenshot, serveScreenshot, serveHeldScreenshot, heldForProject, approveHeld, rejectHeld } from "./screenshots.js";
 import { listVotes, castVote, propose, withdrawProposal } from "./votes.js";
 import { reportForm, postOutsideReport, resolveOutside } from "./outside.js";
 import { enterRelay, withdrawRelay, rankRelay } from "./relay.js";
@@ -68,7 +71,7 @@ const PROJECT_FIELDS =
   "p.id, p.title, p.kind, p.genre, p.status, p.base_game, p.tech, p.browser, p.license, p.note, p.tone, p.featured, p.repo_url, " +
   "p.handed_off_at, p.updated_at, p.created_at, p.intent, p.rating, p.content_notes, p.assets_license, p.name_rights, p.open_to_transfer, " +
   "u.handle AS owner, p.repo_host, (p.owner_id IS NOT NULL AND p.repo_id IS NOT NULL) AS owner_verified"
-  + ", (SELECT s.id FROM screenshots s WHERE s.project_id = p.id ORDER BY s.id LIMIT 1) AS shot"
+  + ", (SELECT s.id FROM screenshots s WHERE s.project_id = p.id AND s.held_at IS NULL ORDER BY s.id LIMIT 1) AS shot"
   + ", EXISTS (SELECT 1 FROM builds b WHERE b.project_id = p.id AND b.status = 'active') AS has_build";
 // Projects removed by a moderator are hidden everywhere.
 const PROJECT_FROM = "FROM projects p LEFT JOIN users u ON u.id = p.owner_id WHERE p.hidden_at IS NULL";
@@ -146,7 +149,8 @@ async function getProject(env, id) {
     "SELECT version, spdx_id, commit_sha, recorded_at, detection, base_spdx, extra_text FROM license_records WHERE project_id = ? ORDER BY version DESC LIMIT 1"
   ).bind(id).first();
   project.license_record = record || null;
-  const { results: shots } = await env.DB.prepare("SELECT id FROM screenshots WHERE project_id = ? ORDER BY id").bind(id).all();
+  // Held screenshots (waiting for a moderator) are left out; the maintainer sees them separately.
+  const { results: shots } = await env.DB.prepare("SELECT id FROM screenshots WHERE project_id = ? AND held_at IS NULL ORDER BY id").bind(id).all();
   project.screenshots = shots.map((x) => x.id);
   project.build = project.play_url ? await buildInfo(env, id) : null; // version, upload date and commit of the hosted build
   // The public change log: which fields changed and when (never the old text).
@@ -255,9 +259,13 @@ async function handlePrivate(request, env, ctx, url, path) {
   m = path.match(/^\/api\/proposals\/(\d{1,12})\/delete$/);
   if (m) return method === "POST" ? withdrawProposal(request, env, session, Number(m[1])) : methodNotAllowed("POST");
   m = path.match(/^\/api\/projects\/([a-z0-9-]{1,80})\/screenshots$/);
-  if (m) return method === "POST" ? addScreenshot(request, env, session, m[1]) : methodNotAllowed("POST");
+  if (m) return method === "POST" ? addScreenshot(request, env, session, m[1]) : method === "GET" ? heldForProject(env, session, m[1]) : methodNotAllowed("GET, POST");
   m = path.match(/^\/api\/screenshots\/(\d{1,12})\/delete$/);
   if (m) return method === "POST" ? deleteScreenshot(request, env, session, Number(m[1])) : methodNotAllowed("POST");
+  m = path.match(/^\/api\/screenshots\/(\d{1,12})\/held$/);
+  if (m) return method === "GET" ? serveHeldScreenshot(env, session, Number(m[1])) : methodNotAllowed("GET");
+  m = path.match(/^\/api\/mod\/screenshots\/(\d{1,12})\/(approve|reject)$/);
+  if (m) return method === "POST" ? (m[2] === "approve" ? approveHeld(request, env, session, Number(m[1])) : rejectHeld(request, env, session, Number(m[1]))) : methodNotAllowed("POST");
   return null;
 }
 
@@ -266,7 +274,7 @@ async function handleApi(request, env, ctx, url) {
 
   if (path.startsWith("/api/auth/") || path === "/api/me" || path.startsWith("/api/repos/") || path.startsWith("/api/my/") || path === "/api/listing-info" || path === "/api/verify-code" ||
       (path === "/api/projects" && request.method === "POST") || /^\/api\/projects\/[^/]+\/(adopt|edit|comments|screenshots|builds)(\/.*)?$/.test(path) ||
-      path.startsWith("/api/comments/") || path === "/api/reports" || path === "/api/relay" || path.startsWith("/api/relay/") || path === "/api/report-form" || path === "/api/outside-reports" || path === "/api/votes" || path.startsWith("/api/proposals") || path.startsWith("/api/mod/") || path === "/api/pitches" || /^\/api\/screenshots\/\d+\/delete$/.test(path)) {
+      path.startsWith("/api/comments/") || path === "/api/reports" || path === "/api/relay" || path.startsWith("/api/relay/") || path === "/api/report-form" || path === "/api/outside-reports" || path === "/api/votes" || path.startsWith("/api/proposals") || path.startsWith("/api/mod/") || path === "/api/pitches" || /^\/api\/screenshots\/\d+\/(delete|held)$/.test(path)) {
     try {
       return (await handlePrivate(request, env, ctx, url, path)) || notFound();
     } catch (err) {

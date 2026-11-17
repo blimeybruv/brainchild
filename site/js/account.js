@@ -30,9 +30,18 @@
       h("p", { class: "muted", text: "A moderator made this decision against the published rating criteria; no automated tool was involved. The project stays listed with the new rating." })
     ];
   }
+  // A moderator rejected a screenshot that was waiting for approval.
+  function screenshotDecision(d) {
+    return [
+      h("h3", { text: "Your screenshot for \"" + (d.project_title || d.project_id) + "\" wasn't approved · " + BC.niceDate(d.created_at) }),
+      h("p", null, [h("strong", { text: "Why: " }), d.reasons]),
+      h("p", { class: "muted", text: "Ground: " + (d.ground === "illegal" ? "illegal content" : "it breaks Brainchild's house rules") + " (" + (CAT[d.category] || d.category) + "). " +
+        "New accounts' first screenshots are checked by a moderator before they appear; a person made this decision, not an automated tool. The image was deleted and was never shown publicly." })
+    ];
+  }
   function decision(d) {
-    var relay = d.target_type === "relay_pr", rerate = d.action === "rerate";
-    var out = rerate ? rerateDecision(d) : relay ? relayDecision(d) : [
+    var relay = d.target_type === "relay_pr", rerate = d.action === "rerate", shot = d.target_type === "screenshot";
+    var out = rerate ? rerateDecision(d) : relay ? relayDecision(d) : shot ? screenshotDecision(d) : [
       h("h3", { text: (d.target_type === "project" ? "Your project \"" + (d.project_title || d.project_id) + "\" was removed" : d.target_type === "proposal" ? "Your blog proposal for \"" + (d.project_title || d.project_id) + "\" was removed" : "Your comment on \"" + (d.project_title || d.project_id) + "\" was removed") + " · " + BC.niceDate(d.created_at) }),
       d.comment_body ? h("blockquote", { class: "quote", text: d.comment_body }) : d.proposal_goal ? h("blockquote", { class: "quote", text: d.proposal_goal }) : null,
       h("p", null, [h("strong", { text: "Why: " }), d.reasons]),
@@ -40,7 +49,7 @@
         "A moderator made this decision after a report; no automated tool was involved. " + (d.target_type === "project" ? "The project's page is hidden; its lineage and license record are kept." : d.target_type === "proposal" ? "The proposal has left the vote and its votes no longer count. The project itself is still listed." : "The comment is no longer shown.") })
     ];
     if (d.appeal_outcome) {
-      out.push(h("p", null, [h("strong", { text: d.appeal_outcome === "restored" ? (rerate ? "Reviewed: your rating has been put back. " : relay ? "Reviewed: it counts after all. " : "Reviewed: it has been put back. ") : (relay || rerate ? "Reviewed: the decision stands. " : "Reviewed: the removal stands. ") }), d.appeal_note || ""]));
+      out.push(h("p", null, [h("strong", { text: d.appeal_outcome === "restored" ? (rerate ? "Reviewed: your rating has been put back. " : relay ? "Reviewed: it counts after all. " : shot ? "Reviewed: you can upload it again, and it will appear straight away. " : "Reviewed: it has been put back. ") : (relay || rerate ? "Reviewed: the decision stands. " : "Reviewed: the removal stands. ") }), d.appeal_note || ""]));
     } else if (d.appeal_at) {
       out.push(h("p", { class: "muted", text: "You asked for a review on " + BC.niceDate(d.appeal_at) + ". A moderator will look at it again." }));
     } else {

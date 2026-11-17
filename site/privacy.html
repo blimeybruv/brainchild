@@ -7,7 +7,7 @@
 <title>Privacy · Brainchild</title>
 <meta name="description" content="What Brainchild stores, why, for how long, and how to ask for it to be deleted.">
 <link rel="icon" href="img/favicon-32.png" sizes="32x32" type="image/png"><link rel="icon" href="img/favicon-512.png" sizes="512x512" type="image/png"><link rel="apple-touch-icon" href="img/favicon-180.png">
-<link rel="stylesheet" href="css/styles.css?v=27L">
+<link rel="stylesheet" href="css/styles.css?v=28L">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -46,7 +46,7 @@
       <ul>
         <li>your account's permanent number there, and your username;</li>
         <li>the address of your profile picture, if it's hosted by GitHub or GitLab itself;</li>
-        <li>when your account there was created, and whether it has any public repositories or projects. Moderators use these two to spot throwaway accounts made to rig a vote.</li>
+        <li>when your account there was created, and whether it has any public repositories or projects. Moderators use these two to spot throwaway accounts made to rig a vote. The creation date also decides whether your first screenshots wait for a moderator before they appear (when that account is under 7 days old).</li>
       </ul>
       <p>It never asks for or stores your email address. If your GitLab picture comes from Gravatar, it isn't kept, because that address is made from your email.</p>
       <p>To check that you manage a project, Brainchild holds a sign-in token from GitHub or GitLab. It's encrypted, it never leaves the server, it can only read (never change) anything there, and it ends when you sign out. The GitHub token sees only what is already public. GitLab has no permission limited to public projects, so the one Brainchild has to ask for could also read your private ones; Brainchild only ever looks at public projects.</p>

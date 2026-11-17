@@ -167,7 +167,7 @@ export async function roundView(env, session, month) {
   if (!round) return null;
   const { results: entries } = await env.DB.prepare(
     `SELECT e.id, e.project_id, e.user_id, e.pitch, e.created_at, e.carried_from, p.title, p.kind, p.genre, p.base_game, p.tone, u.handle AS owner,
-            (SELECT s.id FROM screenshots s WHERE s.project_id = p.id ORDER BY s.id LIMIT 1) AS shot
+            (SELECT s.id FROM screenshots s WHERE s.project_id = p.id AND s.held_at IS NULL ORDER BY s.id LIMIT 1) AS shot
        FROM relay_entries e JOIN projects p ON p.id = e.project_id JOIN users u ON u.id = e.user_id
       WHERE e.round_id = ? AND p.hidden_at IS NULL ORDER BY e.created_at, e.id`
   ).bind(round.id).all();

@@ -189,7 +189,18 @@
         }
         strip.appendChild(wrap);
       });
-      if (mine && shots.length < 6) {
+      // The maintainer's own uploads that wait for a moderator: only they (and moderators) can see them.
+      held.forEach(function (n) {
+        var wrap = h("span", { class: "thumb-wrap held" }, [
+          h("img", { class: "thumb", src: "/api/screenshots/" + n + "/held", alt: "Your screenshot, waiting for a moderator" }),
+          h("span", { class: "held-note", text: "Waiting for a moderator. New accounts' first screenshots are checked before they appear." })
+        ]);
+        wrap.appendChild(small("Remove", function () {
+          BC.api("POST", "/api/screenshots/" + n + "/delete", {}).then(function (res) { if (res.ok) { held.splice(held.indexOf(n), 1); draw(); } else note(BC.errorText(res.data && res.data.error)); });
+        }));
+        strip.appendChild(wrap);
+      });
+      if (mine && shots.length + held.length < 6) {
         var file = h("input", { type: "file", accept: "image/png,image/jpeg,image/webp", class: "visually-hidden", id: "shot-file" });
         file.addEventListener("change", function () {
           var f = file.files[0];
@@ -200,6 +211,10 @@
             .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
             .then(function (res) {
               if (!res.ok) return note({ not_an_image: "Only PNG, JPEG or WebP images can be uploaded.", image_too_large: "That image is over 2 MB.", too_many_screenshots: "A project can have 6 screenshots at most.", listing_not_verified: "List this project again through List a project first, so its repository is verified." }[res.j.error] || BC.errorText(res.j.error));
+              if (res.j.held) {
+                if (held.indexOf(res.j.id) < 0) held.push(res.j.id);
+                return note("Uploaded. A moderator checks new accounts' first screenshots before they appear; it shows here until then.");
+              }
               note("");
               if (shots.indexOf(res.j.id) < 0) shots.push(res.j.id);
               show(shots[0]); draw();
@@ -210,11 +225,18 @@
       }
       if (msg) strip.appendChild(h("p", { class: "muted", role: "status", text: msg }));
     }
-    var mine = false, msg = "";
+    var mine = false, msg = "", held = [];
     function note(t) { msg = t; draw(); }
     show(shots[0]);
     draw();
-    BC.whoAmI().then(function (u) { mine = !!u && u.handle === p.owner; if (mine) draw(); });
+    BC.whoAmI().then(function (u) {
+      mine = !!u && u.handle === p.owner;
+      if (!mine) return;
+      draw();
+      BC.api("GET", "/api/projects/" + encodeURIComponent(p.id) + "/screenshots").then(function (res) {
+        if (res.ok && Array.isArray(res.data.held)) { held = res.data.held.map(function (x) { return x.id; }); draw(); }
+      });
+    });
   });
 
   BC.whoAmI().then(function (u) { st.user = u; load(); });

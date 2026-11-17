@@ -15,6 +15,7 @@ import { listFlags } from "./relay-board.js";
 import { commentBadges } from "./relay-badges.js";
 import { moderatorSignals } from "./signals.js";
 import { myPitches } from "./posts.js";
+import { listHeld } from "./screenshots.js";
 
 export const REPORT_CATEGORIES = ["sexual", "rating", "malware", "license", "harass", "spam", "other"];
 const MAX_COMMENT = 2000;
@@ -251,8 +252,9 @@ export async function modQueue(request, env, session, url) {
   // Reports from people who aren't signed in arrive in the same queue.
   // Relay pull requests a maintainer flagged as junk are reviewed here too.
   // Signals about possible vote rigging: worth a look, never acted on automatically.
+  // First screenshots from brand-new accounts wait here until a moderator approves or rejects them.
   return privateJson({ reports, outside: await listOutside(env, closed), relay_flags: await listFlags(env, closed), appeals: closed ? [] : appeals, rating_changes: closed ? [] : ratings,
-    signals: closed ? null : await moderatorSignals(env) });
+    signals: closed ? null : await moderatorSignals(env), held_screenshots: closed ? [] : await listHeld(env) });
 }
 
 // POST /api/mod/reports/<id>/resolve  { decision: "remove" | "dismiss", ground, reasons }
@@ -330,6 +332,10 @@ export async function modAppeal(request, env, session, id) {
     if (old && typeof old.rating === "string") {
       steps.push(env.DB.prepare("UPDATE projects SET rating = ?, content_notes = ?, updated_at = ? WHERE id = ?").bind(old.rating, JSON.stringify(old.content_notes || []), now, a.project_id));
     }
+  } else if (decision === "restore" && a.target_type === "screenshot") {
+    // A rejected screenshot was deleted, so it can't be put back. Restoring trusts the uploader instead:
+    // they upload it again and it goes live at once.
+    steps.push(env.DB.prepare("UPDATE users SET screenshots_trusted_at = COALESCE(screenshots_trusted_at, ?) WHERE id = ?").bind(now, a.affected_user_id));
   } else if (decision === "restore") {
     steps.push(a.target_type === "comment"
       ? env.DB.prepare("UPDATE comments SET removed_at = NULL, removed_by = NULL WHERE id = ? AND removed_by = 'moderator'").bind(a.comment_id)

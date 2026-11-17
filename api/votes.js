@@ -37,7 +37,7 @@ async function currentProject(env, now) {
   const month = now.toISOString().slice(0, 7);
   const { results } = await env.DB.prepare(
     `SELECT pr.id, pr.project_id, pr.goal, u.handle AS proposed_by, p.title, p.kind, p.base_game, p.tone,
-            (SELECT s.id FROM screenshots s WHERE s.project_id = p.id ORDER BY s.id LIMIT 1) AS shot,
+            (SELECT s.id FROM screenshots s WHERE s.project_id = p.id AND s.held_at IS NULL ORDER BY s.id LIMIT 1) AS shot,
             (SELECT COUNT(*) FROM votes v WHERE v.proposal_id = pr.id) AS votes
        FROM proposals pr JOIN projects p ON p.id = pr.project_id LEFT JOIN users u ON u.id = pr.user_id
       WHERE pr.month = ? AND p.hidden_at IS NULL AND pr.removed_at IS NULL
@@ -59,7 +59,7 @@ export async function listVotes(env, session) {
   const { month, closes } = votingMonth(now);
   const { results } = await env.DB.prepare(
     `SELECT pr.id, pr.project_id, pr.goal, pr.user_id, u.handle AS proposed_by, p.title, p.kind, p.base_game, p.tone,
-            (SELECT s.id FROM screenshots s WHERE s.project_id = p.id ORDER BY s.id LIMIT 1) AS shot
+            (SELECT s.id FROM screenshots s WHERE s.project_id = p.id AND s.held_at IS NULL ORDER BY s.id LIMIT 1) AS shot
        FROM proposals pr JOIN projects p ON p.id = pr.project_id LEFT JOIN users u ON u.id = pr.user_id
       WHERE pr.month = ? AND p.hidden_at IS NULL AND pr.removed_at IS NULL ORDER BY pr.created_at, pr.id LIMIT 100`
   ).bind(month).all();

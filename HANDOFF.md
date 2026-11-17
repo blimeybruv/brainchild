@@ -968,6 +968,43 @@ Screenshots stay post-moderated: they go live straight away and can be reported.
 - **After one approval,** that user's later uploads go live immediately.
 - **Serving:** held images are served only to the uploader and moderators, with `no-store`.
 
+**Done 17 Nov** (migration `0023`, applied to both databases).
+- **Schema:** `screenshots` gains `held_at`, `held_reason` (`new_provider_account` |
+  `first_upload_new_account`), `approved_by` and `approved_at`. `users` gains `screenshots_trusted_at`.
+- **The rule** (`holdReason` in `api/screenshots.js`) runs on each upload:
+  - **Not held:** a trusted user, or a moderator. *Choice the agent made:* moderators are never held, since
+    they would only approve themselves.
+  - **Held:** any linked identity whose `provider_created_at` is under 7 days old. An unknown date, such as
+    a self-hosted GitLab, doesn't count. Also held: a first ever upload from a Brainchild account under 24
+    hours old.
+  - **Limits:** the 6-per-project limit counts held images too.
+- **Hidden from the public:** `GET /api/screenshots/<id>` never serves a held image. The project page's
+  `screenshots` and every card image (`shot` in listings, Relay and the blog vote) skip held ones.
+- **Who can see a held image:** `GET /api/screenshots/<id>/held` serves it with `private, no-store` to the
+  uploader, the project's maintainer and moderators, and gives everyone else 404.
+  `GET /api/projects/<id>/screenshots` gives the maintainer (or a moderator) the list of held images.
+- **Project page:** the maintainer sees held thumbnails with the required wording and a Remove button.
+  After an upload they're told it waits for a moderator.
+- **Moderation page:** a "Held screenshots" list (`held_screenshots` in `GET /api/mod/reports`) shows the
+  image, the project, the uploader and why it was held, with the Brainchild account's age and each linked
+  account's age.
+  - **Approve:** publishes the image (`approved_by`/`approved_at`) and sets the uploader's
+    `screenshots_trusted_at`, so their later uploads go live at once.
+  - **Reject:** needs written reasons (10+ characters), a ground (house rules or illegal) and a category.
+    It deletes the row and the R2 object, and records a `moderation_actions` row (`target_type =
+    'screenshot'`, `action = 'remove'`).
+- **The uploader's notice:** the account page shows "Your screenshot for … wasn't approved" with the
+  reasons. They can ask once for a review.
+  - *Choice the agent made:* the image was deleted, so "restore" can't put it back. Instead it marks the
+    uploader trusted, and the notice says they can upload it again and it will appear straight away.
+- **Elsewhere:** account merges carry the trusted mark over; `screenshots.approved_by` was added to
+  `ACTIVITY`; the privacy page says the account creation date is also used for this.
+- **Tests:** `test24` (40 checks): held for a new GitHub account and for a first upload, private serving,
+  the queue, approve and trust, reject with reasons, the notice, review and restore, and not held for older
+  accounts or moderators. The browser check covered the maintainer's held thumbnail (not visible to others),
+  the moderation item and the notice. The older discussion/screenshot suite still passes. The blog-vote
+  suite's 6 failures happen without these changes too (old test data).
+
 ## Relay rules (decided by the owner, 13 Nov; confirmed again in chat the same evening)
 
 A round lasts one calendar month. The Relay mockup shows the stages.

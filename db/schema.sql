@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS users (
   created_at  TEXT NOT NULL DEFAULT (datetime('now')),
   github_id   INTEGER,                          -- GitHub's permanent numeric id (handles can change)
   avatar_url  TEXT,
-  show_identities INTEGER NOT NULL DEFAULT 0    -- 1 = the public profile lists linked GitHub/GitLab accounts
+  show_identities INTEGER NOT NULL DEFAULT 0,   -- 1 = the public profile lists linked GitHub/GitLab accounts
+  screenshots_trusted_at TEXT                   -- a moderator approved a held screenshot: later ones go live (0023)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_github_id ON users (github_id);
 
@@ -194,8 +195,13 @@ CREATE TABLE IF NOT EXISTS screenshots (
   sha256       TEXT NOT NULL,
   uploaded_by  TEXT REFERENCES users(id),
   created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  held_at      TEXT,                          -- set = waiting for a moderator, not public (migration 0023)
+  held_reason  TEXT,                          -- new_provider_account | first_upload_new_account
+  approved_by  TEXT REFERENCES users(id),
+  approved_at  TEXT,
   UNIQUE (project_id, sha256)
 );
+CREATE INDEX IF NOT EXISTS idx_screenshots_held ON screenshots (held_at) WHERE held_at IS NOT NULL;
 
 -- Hosted browser builds. Files live in R2 under builds/<project id>/<build id>/. One build per project is 'active'.
 CREATE TABLE IF NOT EXISTS builds (

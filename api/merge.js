@@ -99,6 +99,8 @@ export async function mergeAccounts(request, env, session) {
     // The GitHub id moves with the GitHub sign-in (it decides who is a moderator).
     env.DB.prepare("UPDATE users SET github_id = NULL WHERE id = ?").bind(F),
     env.DB.prepare("UPDATE users SET github_id = COALESCE(github_id, ?1) WHERE id = ?2").bind(from.github_id, I),
+    // A screenshot approval on either account counts for the merged one.
+    env.DB.prepare("UPDATE users SET screenshots_trusted_at = COALESCE(screenshots_trusted_at, (SELECT screenshots_trusted_at FROM users WHERE id = ?1)) WHERE id = ?2").bind(F, I),
     env.DB.prepare("DELETE FROM sessions WHERE user_id = ?").bind(F),
     env.DB.prepare("INSERT INTO account_merges (from_user_id, from_handle, into_user_id, moderator_id, reason, moved, merged_at) VALUES (?, ?, ?, ?, ?, ?, ?)")
       .bind(F, from.handle, I, session.userId, reason, JSON.stringify(from.activity), now()),

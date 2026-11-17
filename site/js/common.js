@@ -106,7 +106,9 @@
   function getJSON(url, ms) {
     var ctrl = typeof AbortController === "function" ? new AbortController() : null;
     var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, ms || 4000) : null;
-    return fetch(url, { headers: { accept: "application/json" }, signal: ctrl ? ctrl.signal : undefined })
+    // cache: "no-cache" makes the browser check with the server every time, so a stale copy (kept by
+    // the browser or an extension) is never shown as current.
+    return fetch(url, { headers: { accept: "application/json" }, cache: "no-cache", signal: ctrl ? ctrl.signal : undefined })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .finally(function () { if (timer) clearTimeout(timer); });
   }
@@ -118,7 +120,10 @@
     var bar = document.createElement("div");
     bar.id = "load-failed"; bar.className = "notice"; bar.setAttribute("role", "status");
     var p = document.createElement("p"); p.className = "wrap";
-    p.textContent = "Couldn't load the project list, so this page may be empty or out of date. A privacy or ad-blocking extension can cause this: allow brainchild.nexus in it, then reload. If it keeps happening, try again in a few minutes.";
+    p.textContent = "Couldn't load the project list, so this page may be empty or out of date. A privacy or ad-blocking extension can cause this: allow brainchild.nexus in it, then reload. If it keeps happening, try again in a few minutes. ";
+    var again = document.createElement("button"); again.type = "button"; again.className = "chip"; again.textContent = "Reload";
+    again.addEventListener("click", function () { window.location.reload(); });
+    p.appendChild(again);
     bar.appendChild(p);
     var main = document.querySelector("main") || document.body;
     main.parentNode.insertBefore(bar, main);

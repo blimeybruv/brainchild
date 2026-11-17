@@ -16,6 +16,7 @@
 import { json, privateJson, NO_STORE, isSameOrigin } from "./http.js";
 import { HOSTS, access, requireAdmin, requireProjectAdmin, headCommit, fetchLicense, fetchAgentFile, listRepos, parseRepoRef, repoUrl, isSelfHosted, useCode } from "./forge.js";
 import { queueArchive, refreshArchives, archiveStatus } from "./archive.js";
+import { maskEmails } from "./license-match.js";
 
 const GENRES = ["Puzzle", "Platformer", "Racing", "Roguelite", "Narrative", "Sandbox", "Simulation", "Strategy", "Tactics", "Productivity", "Utility", "Creative tools"];
 const CONTENT_NOTES = ["Violence", "Blood", "Horror", "Strong language", "Drug references", "Gambling-style mechanics", "Historical symbols"];
@@ -631,7 +632,13 @@ export async function licenseText(env, url, sha) {
     "cache-control": "public, max-age=300"
   };
   if (url.searchParams.get("download") === "1") headers["content-disposition"] = 'attachment; filename="LICENSE-' + sha.slice(0, 8) + '.txt"';
-  return new Response(obj.body, { status: 200, headers });
+  // Email addresses are never shown on Brainchild, so any in the text (usually a copyright line) are
+  // masked. The stored copy itself is untouched; when something was masked the page says so, because
+  // the fingerprint then has to be checked against the original file in the repository.
+  const original = await obj.text();
+  const shown = maskEmails(original);
+  if (shown !== original) headers["x-brainchild-masked"] = "1";
+  return new Response(shown, { status: 200, headers });
 }
 
 // ---------- POST /api/projects/<id>/adopt ----------

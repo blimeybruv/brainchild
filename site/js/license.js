@@ -4,7 +4,18 @@
   var root = document.getElementById("l-body");
   var id = new URLSearchParams(window.location.search).get("id") || "";
   var wanted = Number(new URLSearchParams(window.location.search).get("v")) || 0;
-  var data = null, current = null, texts = {}, checked = {};
+  var data = null, current = null, texts = {}, checked = {}, masked = {};
+  // Where the original file can be read at the recorded commit (to check the fingerprint when an
+  // email address had to be hidden in the copy shown here).
+  function originalUrl(r) {
+    var host = r.repo_host || "github", full = r.repo_full_name, path = r.license_path || "LICENSE";
+    if (!full || !/^[0-9a-f]{40}$/.test(r.commit_sha || "")) return null;
+    var tail = full + (host === "github" ? "/blob/" : "/-/blob/") + r.commit_sha + "/" + path.split("/").map(encodeURIComponent).join("/");
+    if (host === "github") return "https://github.com/" + tail;
+    if (host === "gitlab") return "https://gitlab.com/" + tail;
+    var sh = String(host).indexOf("selfhosted:") === 0 ? host.slice(11) : "";
+    return /^[a-z0-9.-]+$/.test(sh) ? "https://" + sh + "/" + tail : null;
+  }
 
   function copyleft(s) { return /^(GPL|AGPL|LGPL)-/.test(s || ""); }
   function licName(r) {
@@ -78,7 +89,12 @@
 
   function render() {
     var r = current, fp = r.license_sha256, text = texts[fp];
-    var check = h("button", { class: "btn btn-ghost", type: "button", text: "Check fingerprint", disabled: typeof text === "string" && window.crypto && window.crypto.subtle ? null : true });
+    var check = h("button", { class: "btn btn-ghost", type: "button", text: "Check fingerprint", disabled: typeof text === "string" && !masked[fp] && window.crypto && window.crypto.subtle ? null : true });
+    var orig = masked[fp] ? originalUrl(r) : null;
+    var maskNote = masked[fp] ? h("p", { class: "muted", style: "font-size:14px" }, [
+      "An email address in this file is hidden here, so the fingerprint can't be checked on this page. It's the fingerprint of the original file",
+      orig ? [", which you can read ", h("a", { href: orig, rel: "noopener noreferrer", target: "_blank", text: "at this commit in the repository" }), " and check with any SHA-256 tool."] : " in the repository at this commit."
+    ].reduce(function (a, x) { return a.concat(x); }, [])) : null;
     check.addEventListener("click", function () {
       window.crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)).then(function (buf) {
         var hex = Array.prototype.map.call(new Uint8Array(buf), function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
@@ -101,6 +117,7 @@
         ]),
         h("pre", { class: "code-block license-text", tabindex: "0", text: text === undefined ? "Loading the stored copy…" : text === null ? "The stored copy couldn't be loaded. Try again in a minute." : text }),
         h("p", { class: "fingerprint" }, ["Fingerprint (SHA-256): " + fp]),
+        maskNote,
         checked[fp] ? h("p", { role: "status", class: checked[fp] === "ok" ? null : "form-error", text: checked[fp] === "ok" ? "✓ Matches the copy stored when this version was released" : "This text does not match the fingerprint." }) : null
       ]),
       r.version === 1 ? h("div", { class: "callout plain" }, [
@@ -139,8 +156,11 @@
     var fp = current.license_sha256;
     render();
     if (texts[fp] !== undefined) return;
-    fetch("/api/license-text/" + fp).then(function (res) { return res.ok ? res.text() : null; }, function () { return null; })
-      .then(function (t) { texts[fp] = t; render(); });
+    fetch("/api/license-text/" + fp).then(function (res) {
+      if (!res.ok) return null;
+      masked[fp] = res.headers.get("x-brainchild-masked") === "1"; // an email address in it was hidden
+      return res.text();
+    }, function () { return null; }).then(function (t) { texts[fp] = t; render(); });
   }
 
   function message(text) { root.textContent = ""; root.appendChild(h("p", { class: "muted", text: text })); }

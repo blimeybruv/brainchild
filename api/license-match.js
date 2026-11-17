@@ -225,7 +225,11 @@ export function matchLicense(bytes) {
     else return { spdx: null, several: ids.sort() };
   }
   // Email addresses are never shown on Brainchild, so they're masked in the wording kept and displayed.
-  const extra = extraWording(lines, pick.span, pick.tpl).slice(0, 20)
-    .map((p) => p.replace(/[^\s<>()@]+@[^\s<>()@]+\.[a-z]{2,}/gi, "[email address removed]").slice(0, 2000));
+  const extra = extraWording(lines, pick.span, pick.tpl).slice(0, 20).map((p) => maskEmails(p).slice(0, 2000));
   return { spdx: pick.tpl.spdx, extra };
+}
+
+// Replace anything that looks like an email address. Used wherever license text is shown.
+export function maskEmails(text) {
+  return String(text).replace(/(mailto:)?[^\s<>()\[\]@"'`,;:]+@[^\s<>()\[\]@"'`,;:]+\.[a-z]{2,}/gi, "[email address removed]");
 }

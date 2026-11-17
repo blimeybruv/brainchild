@@ -796,12 +796,21 @@ top of `rig.mjs`); they are not part of any deploy.
    the stored GitLab token is worth more to a thief than the GitHub one (which sees only public
    things). The privacy page now says so. The alternative is to ask GitLab without the person's token
    (public projects show their members) and request only `read_user`; GitLab may rate-limit that.
-2. **GitLab app:** remove the line
+2. **GitLab app: done (the owner, 17 Nov, believes so; it can't be checked from outside, because GitLab
+   asks for a sign-in before it checks the address).** Remove the line
    `https://claude-handoff-step-1-hhjfyd-royal-firefly-b80b.blimeybruv.workers.dev/api/auth/gitlab/callback`
    from the app's redirect URIs and keep `https://brainchild.nexus/api/auth/gitlab/callback`.
 3. **Launch clean-up: done 17 Nov**, including the six `sample-*` accounts.
-4. **Erasure and the license lock.** A license copy can be hidden but not deleted while the bucket lock is
-   on. If someone asks for a text to be erased, the lock rule has to be lifted for that one object.
+4. **Erasure and the license lock (explained to the owner 17 Nov; nothing to do unless a request comes).**
+   A license copy can be hidden but not deleted while the bucket lock is on. If someone asks for a text to
+   be erased, the lock rule has to be lifted for that one object (lift the rule, delete the copy, put the
+   rule back), with the owner deciding whether the legal-claims exception applies.
+   - **Email addresses in license copies are masked (17 Nov).** `GET /api/license-text/<fingerprint>`
+     (the view and the download) replaces anything that looks like an email address with "[email address
+     removed]" (`maskEmails` in `api/license-match.js`, also used for extra wording) and sends
+     `x-brainchild-masked: 1` when it did. The stored copy is untouched. When something was masked, the
+     License record page turns off "Check fingerprint" and links to the original file at the recorded
+     commit (GitHub, GitLab or self-hosted), so the fingerprint can still be checked there.
 
 **Known and left as they are:**
 - Adopting by fork is first come, has no undo and no per-person limit; a moderator can't reverse one

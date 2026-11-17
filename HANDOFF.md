@@ -954,6 +954,20 @@ pages, or paid features near NC projects could make hosting NC art "commercial a
 stand (free tiers, no ads) it's a non-issue. Before adding any of those, ask the owner how NC projects
 should be treated.
 
+## Owner request, 17 Nov: hold first screenshots from brand-new accounts
+
+Screenshots stay post-moderated: they go live straight away and can be reported. The one exception:
+- **When to hold:** if the uploader's linked GitHub or GitLab account is **under 7 days old** (from the
+  provider's account creation date, already fetched for the vote-rigging signals), **or** this is their
+  first ever upload and their Brainchild account is under 24 hours old, the upload is stored but held:
+  not served publicly and not shown on cards.
+- **What the maintainer sees:** the image with "Waiting for a moderator. New accounts' first screenshots
+  are checked before they appear."
+- **Moderation queue:** add a "Held screenshots" list. Approve publishes the image; reject deletes it and
+  sends the maintainer a notice with the reason (statement of reasons, like other decisions).
+- **After one approval,** that user's later uploads go live immediately.
+- **Serving:** held images are served only to the uploader and moderators, with `no-store`.
+
 ## Relay rules (decided by the owner, 13 Nov; confirmed again in chat the same evening)
 
 A round lasts one calendar month. The Relay mockup shows the stages.

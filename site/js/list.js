@@ -18,6 +18,18 @@
     "CC BY-NC-SA 4.0": "People may change the art and continue the project, with credit, but not sell it, and changed art stays CC BY-NC-SA. It can't be mixed with CC BY-SA art. The project shows a \"Non-commercial art\" label.",
     "Same as the code": "The art goes under the code's license. Code licenses are written for code, so a Creative Commons license usually fits art better."
   };
+  // The short guide to choosing, always shown under the art license's own description.
+  var ART_GUIDE = [
+    ["Want the most people able to continue and remix it?", "CC BY 4.0 (the default)."],
+    ["Want every changed version to stay open too?", "CC BY-SA 4.0."],
+    ["Don't want anyone selling it?", "CC BY-NC-SA 4.0, which keeps changes open on the same terms, or CC BY-NC 4.0."],
+    ["Don't need credit at all?", "CC0."]
+  ];
+  function withArtGuide(el) {
+    el.appendChild(h("ul", { class: "hint art-guide", "aria-label": "Which art license to choose" },
+      ART_GUIDE.map(function (g) { return h("li", null, [h("strong", { text: g[0] }), " " + g[1]]); })));
+    return el;
+  }
   // What the server's field names are called on screen, with the step they're on.
   var FIELD_LABELS = {
     repo: "Repository (step 2)", title: "Title (step 5)", kind: "Type (step 5)", genre: "Genre (step 5)",
@@ -314,8 +326,8 @@
           h("p", null, [h("strong", { style: "font-size:22px", text: name })]),
           h("p", { class: note[0] === "bad" ? "form-error" : null, text: note[1] })
         ]),
-        field("Art, music and other assets", select(["CC BY 4.0", "CC BY-SA 4.0", "CC0", "CC BY-NC 4.0", "CC BY-NC-SA 4.0", "Same as the code"], st.assets, function (v) { st.assets = v; st.preview = null; render(); }),
-          (ART_HINTS[st.assets] || "") + " No-derivatives (ND) licenses aren't accepted, because nobody could change the art.")
+        withArtGuide(field("Art, music and other assets", select(["CC BY 4.0", "CC BY-SA 4.0", "CC0", "CC BY-NC 4.0", "CC BY-NC-SA 4.0", "Same as the code"], st.assets, function (v) { st.assets = v; st.preview = null; render(); }),
+          (ART_HINTS[st.assets] || "") + " No-derivatives (ND) licenses aren't accepted, because nobody could change the art."))
       ])
     ];
     if (extra) {

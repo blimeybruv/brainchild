@@ -816,6 +816,39 @@ top of `rig.mjs`); they are not part of any deploy.
 - `caches.default.delete` only clears the copy in the data centre that handled the request; others
   expire by themselves within 60 seconds (5 minutes for screenshots and license copies).
 
+## Owner request, 17 Nov: better license detection, and a fix-it panel
+
+Background: the owner's mod (`resistance-dh-mod`) had the full MIT text plus a scope paragraph at
+the top of LICENSE. GitHub returned NOASSERTION, so the listing showed "Custom". This will recur.
+
+1. **Our own matcher, used when GitHub returns `other` / `NOASSERTION`, or no license.**
+   - **Fetch the file:** fetch LICENSE (or LICENSE.md / COPYING) at the listed commit.
+   - **Normalise:** lowercase, collapse whitespace, strip punctuation differences and quote styles,
+     and remove the copyright line(s).
+   - **Match:** check whether the full canonical text of a supported license is contained in it (MIT,
+     MIT-0, 0BSD, BSD-2/3, ISC, zlib, Apache-2.0, MPL-2.0, GPL-2.0/3.0, LGPL, AGPL, Unlicense, CC0, the CC
+     BY family). Store the canonical texts in the repo; don't fetch them at runtime.
+   - **If the file is the canonical text alone:** treat it as that license.
+   - **If there's extra wording:** show the maker the extra paragraph(s) and ask, "Does this text only
+     explain what the license covers, or does it add conditions?"
+     - "Only explains": list it as that license, mark the snapshot "with a note", and keep the extra text
+       in the snapshot and on the License record page.
+     - "Adds conditions": list it as **Custom**, and show the extra wording prominently on the License
+       record and project page.
+     - Never silently treat a modified license as standard.
+   - **Run it wherever a license is detected:** at listing, on every Edit save (the existing re-snapshot
+     logic), and at handoff or adoption.
+2. **Fix-it panel in the listing flow (step 4)** when no supported license is recognised:
+   - Explain the usual cause in plain words: extra text inside the LICENSE file, or no license.
+   - **The fix:** keep LICENSE as the plain standard text, and put notes about scope in the README.
+   - **Copy buttons** with the standard text of the common licenses, year and the maker's name filled in.
+     This doubles as the template for repos with no license.
+   - **Split licenses:** "Put the code license in LICENSE and the art license in a separate file (e.g.
+     LICENSE-ART.md)", tied to the existing assets license step.
+   - **A "Check again" button** that re-fetches the license without restarting the flow.
+   - Brainchild never gets write access, so it can't commit the fix for them.
+3. **Licensing guide:** add a short "Why does my license show as Custom?" section with the same advice.
+
 ## Relay rules (decided by the owner, 13 Nov; confirmed again in chat the same evening)
 
 A round lasts one calendar month. The Relay mockup shows the stages.

@@ -26,7 +26,7 @@ The site's tagline is "Hand it off, or take it on." "Adopt" is the deliberate wo
 |---|---|
 | Site | This repo. `site/` is served by the Worker `royal-firefly-b80b` on brainchild.nexus. Pushing to `main` redeploys it via Workers Builds (`wrangler.jsonc`). |
 | API | `api/worker.js`, the main script of the same Worker. It handles `/api/*` first (`run_worker_first`) and passes everything else to the static files. Bindings: `DB` (D1), `BUILDS` (R2), `ASSETS`. It is read-only for now, with a 60s edge cache. |
-| Database | D1 `brainchild-db` (`6e241536-91de-49b7-b885-35429bd01efb`). The schema is in `db/schema.sql`; changes are in `db/migrations/` and must be applied to both databases. It holds 19 sample projects plus one real one, `zombie-outbreak-simulator` (owner blimeybruv). |
+| Database | D1 `brainchild-db` (`6e241536-91de-49b7-b885-35429bd01efb`). The schema is in `db/schema.sql`; changes are in `db/migrations/` and must be applied to both databases. Since 17 Nov it holds only real data: one project, `zombie-outbreak-simulator` (owner blimeybruv). The preview database (`3b6e6ea2-8a4a-469c-9150-4dcbad16ab64`) still has the 19 sample projects for testing. |
 | Storage | R2 `brainchild-builds` (private; incomplete uploads are deleted after 24h). |
 | Caching | Public API answers tell browsers not to keep a copy (`max-age=0`) and let Cloudflare's edge keep one for 60s (`s-maxage=60`). Publishing and adopting clear the edge copies they affect. |
 | Previews | Every branch other than `main` gets a preview build (`npx wrangler preview`), linked from its pull request. Previews use the test database `brainchild-db-preview` (`3b6e6ea2-8a4a-469c-9150-4dcbad16ab64`) and bucket `brainchild-builds-preview`, set in the `previews` block of `wrangler.jsonc`. Any binding added at the top level needs a matching entry there, and schema changes must be applied to both databases. |
@@ -280,9 +280,8 @@ what waits on the owner.** What is left:
   for a review; restoring puts the proposal back. A removed proposal can't be withdrawn by its proposer,
   so the record stays. The Report control offers four categories that fit a proposal's text
   (harassment, spam, sexual content, something else).
-- **Waiting on the owner:** the launch clean-up in "Owner requests, 14 Nov" (step 2: delisting sample
-  projects, emptying the sample fallback, removing sample posts and proposals). The agent asks first and
-  lists what will go.
+- **Launch clean-up: done 17 Nov** (see "Owner requests, 14 Nov", step 2). The site shows only real
+  listings and posts.
 - **Only if a listed game needs it:** cross-origin isolation headers on the builds Worker, for engines
   that use threads (some Godot and Unity web exports). No listed game needs them today.
 - **Mature gate: done 15 Nov.** Only the German age label waits on the owner (item 12 below).
@@ -435,7 +434,17 @@ what waits on the owner.** What is left:
        record, hosted build, how many packet sections are filled, provenance and verification. The static
        "[original-maker]" byline and lineage placeholders and the "AI tools [as tagged by maker]" row are
        gone; "Repo" links to the real repository.
-     - **Database (production only; the preview database keeps its samples for testing):** see below.
+     - **Database (production only; the preview database keeps its samples for testing):** deleted on
+       17 Nov: the 19 sample projects (and Moss Keeper's packet, the only sample with one), the six
+       `sample-*` accounts, the sample Relay round for `2026-10` (id 2: 5 entries, 15 votes, 4 tasks, 5
+       contributions, 2 badges), and Blog proposals 6–8 with their 6 votes. There were no sample posts,
+       comments or screenshots in the database. **Kept:** `zombie-outbreak-simulator` with its packet,
+       lineage, license record, builds and archive request; the owner's account, sign-ins and sessions;
+       the reports; and Relay round 1 (`2026-11`). Nothing pointed at a sample account afterwards.
+     - **To undo:** D1 Time Travel can put the whole database back to just before the deletion, bookmark
+       `0000011e-00000000-00005126-11fcaa34d647734b277262c51e5d482a` (this would also undo anything real
+       written since, so ask the owner first; Time Travel keeps 7 days on the free plan, so after 24 Nov
+       this no longer works). The preview database holds the same 19 projects.
 
 ## Owner request, 14 Nov: GitLab sign-in, and linked accounts
 
@@ -637,8 +646,8 @@ column `base_game`), so there is no migration and the CHECK constraint stays as 
 - **Reports into drafts:** reports and outside reports with text have "Turn into a draft post", which
   opens the new draft in the editor. A signed-in reporter, who submitted the text, becomes the author;
   outside reports start as site posts. The report itself stays open.
-- **The blog page** lists published posts, each linking to `post.html?slug=…`. The sample posts show only
-  while there are no real ones (they go in the launch clean-up).
+- **The blog page** lists published posts, each linking to `post.html?slug=…`. With none, it says "No
+  posts yet" and points to Pitch a post (the sample posts were removed 17 Nov).
 
 - **Post editor (moderators only):** a page in the moderation area to create, edit, publish, unpublish
   and delete blog posts.
@@ -744,7 +753,7 @@ top of `rig.mjs`); they are not part of any deploy.
   whatever happened to the project, cached for a year, and the bucket lock means a copy can't be
   deleted. It is now served only while a listed project's record points at it, cached for 5 minutes.
 - **Accounts with no sign-in can't be claimed by name.** A GitHub sign-in used to take over any account
-  record that had no sign-in and a matching handle (today the six `sample-*` accounts; later, any account
+  record that had no sign-in and a matching handle (until 17 Nov the six `sample-*` accounts; later, any account
   whose sign-ins were removed on deletion). That path is gone from `accountFor` in `api/auth.js`.
   **Keep it gone:** an account-deletion tool must not leave a claimable record behind.
 - **Linking must start on this site.** `?link=1` is a plain link, so another site or a hosted game could
@@ -790,7 +799,7 @@ top of `rig.mjs`); they are not part of any deploy.
 2. **GitLab app:** remove the line
    `https://claude-handoff-step-1-hhjfyd-royal-firefly-b80b.blimeybruv.workers.dev/api/auth/gitlab/callback`
    from the app's redirect URIs and keep `https://brainchild.nexus/api/auth/gitlab/callback`.
-3. **Launch clean-up** (already listed above) also removes the six `sample-*` accounts.
+3. **Launch clean-up: done 17 Nov**, including the six `sample-*` accounts.
 4. **Erasure and the license lock.** A license copy can be hidden but not deleted while the bucket lock is
    on. If someone asks for a text to be erased, the lock rule has to be lifted for that one object.
 

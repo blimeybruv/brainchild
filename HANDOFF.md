@@ -929,7 +929,8 @@ was turned down: it penalises the projects that most need a new owner.
   data now carries `assets_license`.
 - **The record and the AI rules:** the handoff rules tell AI tools that NC art may be changed but the
   project must not be sold. For NC-SA they add that changed art stays CC BY-NC-SA and that CC BY-SA art
-  must not be mixed in (CC BY and CC0 files may sit alongside). The License record's "What this means"
+  must not be mixed in. CC BY, CC BY-NC and CC0 art may be used, alongside or mixed in, with anything changed or
+  mixed staying CC BY-NC-SA (added 17 Nov; the licensing guide's "Mixing" note says the same). The License record's "What this means"
   says the same. Like GPL code, NC-SA art can't be relicensed by an adopter; nothing lets anyone change
   someone else's art license.
 - **Wording:** the house rules on the home and About pages now read as above. The licensing guide's art

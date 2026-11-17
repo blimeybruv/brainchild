@@ -85,7 +85,8 @@ export function handoffRules(p) {
   }
   const assets = p.assetsLicense === "CC BY-NC-SA 4.0"
     ? "- Assets: CC BY-NC-SA 4.0. They may be changed, but the project must not be sold or used to make money, and changed or new art\n" +
-      "  based on them stays CC BY-NC-SA 4.0. Don't mix in CC BY-SA art (the two can't be combined); CC BY and CC0 files may sit alongside.\n" +
+      "  based on them stays CC BY-NC-SA 4.0. Don't mix in CC BY-SA art (the two can't be combined). CC BY, CC BY-NC and CC0 art may be\n" +
+      "  used, alongside or mixed in; anything changed or mixed stays CC BY-NC-SA 4.0.\n" +
       "  Credit original artists in CREDITS.md; list any new AI-generated assets there with the tool used."
     : p.assetsLicense === "CC BY-NC 4.0"
     ? "- Assets: CC BY-NC 4.0. They may be changed, but the project must not be sold or used to make money.\n" +

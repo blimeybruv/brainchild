@@ -3,7 +3,7 @@ window.BC.load(function () {
   var h = window.BC.h;
   var items = D.items;
 
-  var state = { types: [], genres: [], statuses: [], game: null, q: "", sort: "recent" };
+  var state = { types: [], genres: [], statuses: [], game: null, q: "", sort: "recent", commercial: false };
 
   // Pre-select from the URL, e.g. browse.html?type=Mod&game=Luanti
   var params = new URLSearchParams(window.location.search);
@@ -27,6 +27,7 @@ window.BC.load(function () {
   function inGenre(i) { return !state.genres.length || state.genres.indexOf(i.genre) >= 0; }
   function inStatus(i) { return !state.statuses.length || state.statuses.indexOf(i.status) >= 0; }
   function inGame(i) { return !state.game || i.game === state.game; }
+  function inCommercial(i) { return !state.commercial || i.commercialOk; }
   function inQuery(i) {
     if (!state.q) return true;
     var hay = [i.title, i.genre, i.tech, i.game, i.kind, i.note].join(" ").toLowerCase();
@@ -35,7 +36,7 @@ window.BC.load(function () {
   function except(skip) {
     return function (i) {
       return (skip === "type" || inType(i)) && (skip === "genre" || inGenre(i)) &&
-        (skip === "status" || inStatus(i)) && inGame(i) && inQuery(i) && inRating(i);
+        (skip === "status" || inStatus(i)) && inGame(i) && inQuery(i) && inRating(i) && inCommercial(i);
     };
   }
 
@@ -71,6 +72,10 @@ window.BC.load(function () {
       if (f) f.focus();
     }
   }
+
+  // "Commercial use allowed": code and art both under licenses that let you sell your version.
+  var commercial = document.getElementById("f-commercial");
+  if (commercial) commercial.addEventListener("change", function () { state.commercial = commercial.checked; render(); });
 
   // "Show Mature projects": off unless ticked; remembered for the browser session.
   var mature = document.getElementById("f-mature");
@@ -124,6 +129,7 @@ window.BC.load(function () {
     state.genres.forEach(function (v) { chips.push([v, function () { toggle("genres", v); }]); });
     state.statuses.forEach(function (v) { chips.push([D.statuses[v].label, function () { toggle("statuses", v); }]); });
     if (state.q) chips.push(['"' + state.q + '"', function () { state.q = ""; el.q.value = ""; render(); }]);
+    if (state.commercial) chips.push(["Commercial use allowed", function () { state.commercial = false; if (commercial) commercial.checked = false; render(); }]);
     chips.forEach(function (c) {
       var b = h("button", { type: "button", class: "chip", "aria-label": "Remove filter " + c[0] }, [c[0], " ×"]);
       b.addEventListener("click", c[1]);
@@ -152,7 +158,8 @@ window.BC.load(function () {
   }
 
   function clearAll() {
-    state.types = []; state.genres = []; state.statuses = []; state.game = null; state.q = "";
+    state.types = []; state.genres = []; state.statuses = []; state.game = null; state.q = ""; state.commercial = false;
+    if (commercial) commercial.checked = false;
     el.q.value = "";
     render();
   }

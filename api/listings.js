@@ -19,7 +19,9 @@ import { queueArchive, refreshArchives, archiveStatus } from "./archive.js";
 
 const GENRES = ["Puzzle", "Platformer", "Racing", "Roguelite", "Narrative", "Sandbox", "Simulation", "Strategy", "Tactics", "Productivity", "Utility", "Creative tools"];
 const CONTENT_NOTES = ["Violence", "Blood", "Horror", "Strong language", "Drug references", "Gambling-style mechanics", "Historical symbols"];
-const ASSET_LICENSES = ["CC BY 4.0", "CC BY-SA 4.0", "CC0", "Same as the code"];
+// Art can be open, or non-commercial (decided by the owner, 17 Nov). Never "no derivatives" (ND):
+// art nobody may change stops a project being continued.
+const ASSET_LICENSES = ["CC BY 4.0", "CC BY-SA 4.0", "CC0", "CC BY-NC 4.0", "CC BY-NC-SA 4.0", "Same as the code"];
 const NAME_RIGHTS = ["keep", "continuation", "rename"];
 const MAX_LISTINGS_PER_USER = 25;
 const MAX_BODY_BYTES = 100 * 1024;
@@ -81,7 +83,14 @@ export function handoffRules(p) {
   } else {
     licRule = "- Code license: see the LICENSE file (not a standard license). Read it before adding or copying any code.";
   }
-  const assets = p.assetsLicense === "Same as the code"
+  const assets = p.assetsLicense === "CC BY-NC-SA 4.0"
+    ? "- Assets: CC BY-NC-SA 4.0. They may be changed, but the project must not be sold or used to make money, and changed or new art\n" +
+      "  based on them stays CC BY-NC-SA 4.0. Don't mix in CC BY-SA art (the two can't be combined); CC BY and CC0 files may sit alongside.\n" +
+      "  Credit original artists in CREDITS.md; list any new AI-generated assets there with the tool used."
+    : p.assetsLicense === "CC BY-NC 4.0"
+    ? "- Assets: CC BY-NC 4.0. They may be changed, but the project must not be sold or used to make money.\n" +
+      "  Credit original artists in CREDITS.md; list any new AI-generated assets there with the tool used."
+    : p.assetsLicense === "Same as the code"
     ? "- Assets: same license as the code. Credit original artists in CREDITS.md; list any new AI-generated assets there with the tool used."
     : p.assetsLicense === "CC0"
     ? "- Assets: CC0 (public domain). List any new AI-generated assets in CREDITS.md with the tool used."

@@ -162,6 +162,7 @@
     var r = d.round, b = d.board, me = d.me, out = [];
     out.push(h("h2", { id: "task-board", text: "Task board" }));
     out.push(h("p", { class: "muted", text: "Posted by @" + b.maintainer + ". Say what you're working on, so people don't spend their time (or AI usage) on the same thing." }));
+    if (BC.artNotice(b.assets_license)) out.push(h("p", { class: "callout plain art-notice", text: BC.artNotice(b.assets_license) }));
     var cards = b.tasks.map(function (t) {
       var who = t.claimed_by.length ? t.claimed_by.map(function (x) { return "@" + x; }).join(", ") + (t.claimed_by.length === 1 ? " is" : " are") + " working on this" : "Nobody has taken this yet";
       var control = null;

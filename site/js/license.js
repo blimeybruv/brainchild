@@ -24,7 +24,14 @@
   function kicker(r) { return { handoff: "At handoff", listing: "When listed", adoption: "After adoption", relicense: "Relicensed", license_change: "License changed" }[r.kind] || "Version " + r.version; }
   function nameRule(n) { return { keep: "Adopters may keep it", continuation: "Keep it, as a continuation", rename: "Adopters must rename" }[n] || "Stays with the maintainer"; }
 
+  // Non-commercial art, said in plain words wherever the record explains what a version means.
   function meaning(r) {
+    var a = r.assets_license;
+    var art = a === "CC BY-NC-SA 4.0" ? " The art is CC BY-NC-SA 4.0: it can be changed and shared, but not sold, and changed art stays under the same license."
+      : a === "CC BY-NC 4.0" ? " The art is CC BY-NC 4.0: it can be changed and shared, but not sold." : "";
+    return meaningCore(r) + art;
+  }
+  function meaningCore(r) {
     var first = data.records[0], lic = licName(r), c = short(r.commit_sha);
     if (r.version > 1 && r.kind === "license_change") {
       var prev = data.records.filter(function (x) { return x.version === r.version - 1; })[0] || first;

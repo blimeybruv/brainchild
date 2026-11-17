@@ -905,6 +905,45 @@ the top of LICENSE. GitHub returned NOASSERTION, so the listing showed "Custom".
   question and re-asking, re-recognising an old record, and the adopter's question. The older listing, edit,
   discussion and self-hosted suites still pass.
 
+## Owner decision, 17 Nov: non-commercial art is allowed (never "no derivatives")
+
+The owner chose option (a), with a second Opus instance's additions. **The rule now reads: code needs an
+open license; art can be open, or non-commercial (but not "no derivatives").** Brainchild is
+non-commercial by design, an NC project can still be adopted and continued (just not sold), and fear of
+resale is the commonest reason makers hold back. Option (b), allowing NC art but not "up for adoption",
+was turned down: it penalises the projects that most need a new owner.
+
+**Done 17 Nov:**
+- **Art licenses on offer:** CC BY 4.0, CC BY-SA 4.0, CC0, **CC BY-NC 4.0, CC BY-NC-SA 4.0**, and "Same as
+  the code" (`ASSET_LICENSES` in `api/listings.js`; the step-4 select in `list.js`). No ND license is
+  accepted, because art nobody may change stops a project being continued. The step-4 hint explains NC
+  when it's chosen.
+- **Labels:** cards show a "Non-commercial art" tag. The project page shows it in the line under the
+  player, plus an "Art" row in Details ("… (non-commercial: can be changed, not sold)").
+- **Browse filter "Commercial use allowed"** (License box): the code must be under a standard license (not
+  Custom), and the art must be known and not NC. Older listings with no recorded art license are left out.
+  The flag is `commercialOk` in `fromRow` (`common.js`).
+- **Said at the moment of decision:** step 1 of adoption and the "Finish adopting" step, and the Relay task
+  board when the winner has NC art, show one line (`BC.artNotice`): "Art is CC BY-NC-SA: you can change
+  it, but not sell it, and changes stay under the same license." (BY-NC: "…but not sell it.") The board's
+  data now carries `assets_license`.
+- **The record and the AI rules:** the handoff rules tell AI tools that NC art may be changed but the
+  project must not be sold. For NC-SA they add that changed art stays CC BY-NC-SA and that CC BY-SA art
+  must not be mixed in (CC BY and CC0 files may sit alongside). The License record's "What this means"
+  says the same. Like GPL code, NC-SA art can't be relicensed by an adopter; nothing lets anyone change
+  someone else's art license.
+- **Wording:** the house rules on the home and About pages now read as above. The licensing guide's art
+  section lists both NC licenses and explains the grey areas (monetised videos, "pay what you want",
+  Patreon), the BY-SA mixing problem, and why ND isn't accepted.
+- **Tests:** `test23` now has 47 checks (ND and NC-ND refused, NC-SA accepted for adoption, the rules
+  text, the list API and the license record). The browser check covered the filter, tag, project page,
+  adoption line and form hint.
+
+**Comes back to the owner if Brainchild ever makes money.** Ads, sponsorship, donations shown on project
+pages, or paid features near NC projects could make hosting NC art "commercial advantage". As things
+stand (free tiers, no ads) it's a non-issue. Before adding any of those, ask the owner how NC projects
+should be treated.
+
 ## Relay rules (decided by the owner, 13 Nov; confirmed again in chat the same evening)
 
 A round lasts one calendar month. The Relay mockup shows the stages.
@@ -953,6 +992,8 @@ A round lasts one calendar month. The Relay mockup shows the stages.
   Martian Mono for code, and Silkscreen for pixel accents. Option B is held in reserve.
 - **Background:** brushed metal with a faint chip-lattice pattern.
 - **Hosting:** screenshots and builds are hosted on Brainchild (R2), not only in repos.
+- **Art licenses (decided 17 Nov):** code needs an open license; art can be open or non-commercial
+  (CC BY-NC, CC BY-NC-SA), never "no derivatives". See "Owner decision, 17 Nov: non-commercial art".
 - **Logo (decided 15 Nov):** the owner's cradled-brain mark, used as the header logo (`site/img/favicon-180.png`)
   and as the favicon (`favicon-32.png`, `favicon-180.png`, `favicon-512.png`).
 

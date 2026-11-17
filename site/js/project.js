@@ -83,13 +83,15 @@ window.BC.load(function () {
   [
     item.kind === "Mod" ? "Made for " + item.game : item.genre,
     item.tech || null,
-    item.kind === "Mod" ? "Source + install notes" : (item.browser ? "Built from source by Brainchild" : "Desktop or extension build")
+    item.kind === "Mod" ? "Source + install notes" : (item.browser ? "Built from source by Brainchild" : "Desktop or extension build"),
+    item.ncArt ? "Non-commercial art" : null
   ].forEach(function (t) { if (t) meta.appendChild(h("span", { text: t })); });
 
   var details = document.getElementById("p-details");
   [
     ["Type", window.BC.kindLabel(item.kind)],
     ["License", item.license],
+    ["Art", item.assets ? (item.assets === "Same as the code" ? "Same license as the code" : item.assets) + (item.ncArt ? " (non-commercial: can be changed, not sold)" : "") : "—"],
     [item.kind === "Mod" ? "Made for" : "Built with", item.kind === "Mod" ? item.game : (item.tech || "—")],
     ["Repo", item.repo && /^https:\/\/[a-z0-9.-]+\/[A-Za-z0-9_.\/-]+$/.test(item.repo) ? h("a", { href: item.repo, rel: "noopener noreferrer", target: "_blank", text: item.repo.replace(/^https:\/\//, "") }) : "—"]
   ].forEach(function (row) {

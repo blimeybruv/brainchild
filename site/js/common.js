@@ -60,6 +60,7 @@
         h("div", { class: "tags" }, [
           compact ? h("span", { class: "tag", text: item.genre }) : null,
           h("span", { class: "tag", text: item.license }),
+          item.ncArt ? h("span", { class: "tag", text: "Non-commercial art" }) : null,
           compact ? null : h("span", { class: "tag", text: "handoff packet" })
         ]),
         actions
@@ -87,8 +88,19 @@
       repo: r.repo_url || null,
       owner: r.owner || null, ownerVerified: !!r.owner_verified, rating: r.rating || "everyone",
       notes: Array.isArray(r.content_notes) ? r.content_notes : [], handedOffAt: r.handed_off_at || null,
-      openToTransfer: !!r.open_to_transfer, nameRights: r.name_rights || null, shot: r.shot || null, playUrl: r.play_url || null
+      openToTransfer: !!r.open_to_transfer, nameRights: r.name_rights || null, shot: r.shot || null, playUrl: r.play_url || null,
+      assets: r.assets_license || null, ncArt: nonCommercial(r.assets_license),
+      // Every standard code license allows selling; the art must too. Custom licenses, and listings
+      // that never said what the art is under, can't be counted.
+      commercialOk: !!r.assets_license && !nonCommercial(r.assets_license) && !/^Custom/.test(r.license || "")
     };
+  }
+  function nonCommercial(a) { return typeof a === "string" && /\bNC\b/.test(a); }
+  // The plain line shown where people decide: adopting a project, or picking up a Relay task.
+  function artNotice(a) {
+    if (a === "CC BY-NC-SA 4.0") return "Art is CC BY-NC-SA: you can change it, but not sell it, and changes stay under the same license.";
+    if (a === "CC BY-NC 4.0") return "Art is CC BY-NC: you can change it, but not sell it.";
+    return null;
   }
 
   function getJSON(url, ms) {
@@ -353,5 +365,6 @@
 
   window.BC = { h: h, card: card, metaLine: metaLine, store: safeStore(), load: load, getJSON: getJSON, whoAmI: whoAmI, fromRow: fromRow,
     api: api, errorText: errorText, repoWhere: repoWhere, kindLabel: kindLabel, renderPost: renderPost,
-    matureOk: matureOk, setMatureOk: setMatureOk, RATINGS: RATINGS, niceDate: niceDate, renderSteps: renderSteps, choices: choices, rulesBlock: rulesBlock, licenseQuestion: licenseQuestion };
+    matureOk: matureOk, setMatureOk: setMatureOk, RATINGS: RATINGS, niceDate: niceDate, renderSteps: renderSteps, choices: choices, rulesBlock: rulesBlock, licenseQuestion: licenseQuestion,
+    nonCommercial: nonCommercial, artNotice: artNotice };
 })();

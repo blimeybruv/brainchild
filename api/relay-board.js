@@ -42,7 +42,7 @@ const decided = (round) => round.status === "running" || round.status === "revie
 async function winnerOf(env, round) {
   if (!round.winner_entry_id) return null;
   return env.DB.prepare(
-    `SELECT e.id, e.user_id, e.project_id, u.handle AS maintainer, p.title, p.repo_full_name, p.repo_id, COALESCE(p.repo_host, 'github') AS repo_host
+    `SELECT e.id, e.user_id, e.project_id, u.handle AS maintainer, p.title, p.repo_full_name, p.repo_id, COALESCE(p.repo_host, 'github') AS repo_host, p.assets_license
        FROM relay_entries e JOIN projects p ON p.id = e.project_id JOIN users u ON u.id = e.user_id WHERE e.id = ?`
   ).bind(round.winner_entry_id).first();
 }
@@ -69,7 +69,7 @@ export async function relayState(env, session, url) {
       WHERE c.round_id = ? ORDER BY c.id`
   ).bind(round.id).all();
   out.board = {
-    project_id: w.project_id, project_title: w.title, maintainer: w.maintainer,
+    project_id: w.project_id, project_title: w.title, maintainer: w.maintainer, assets_license: w.assets_license || null,
     repo: w.repo_full_name, repo_url: w.repo_full_name ? repoUrl(w.repo_host, w.repo_full_name) : null, repo_host: w.repo_host,
     open: round.status === "running",                                   // tasks can be posted and claimed
     accepting: round.status === "running" || round.status === "review", // contributions can be submitted and flagged

@@ -305,8 +305,10 @@
           h("p", null, [h("strong", { style: "font-size:22px", text: name })]),
           h("p", { class: note[0] === "bad" ? "form-error" : null, text: note[1] })
         ]),
-        field("Art, music and other assets", select(["CC BY 4.0", "CC BY-SA 4.0", "CC0", "Same as the code"], st.assets, function (v) { st.assets = v; st.preview = null; }),
-          "CC BY 4.0 is recommended: others may reuse the assets if they credit you.")
+        field("Art, music and other assets", select(["CC BY 4.0", "CC BY-SA 4.0", "CC0", "CC BY-NC 4.0", "CC BY-NC-SA 4.0", "Same as the code"], st.assets, function (v) { st.assets = v; st.preview = null; render(); }),
+          BC.nonCommercial(st.assets)
+            ? "Non-commercial: people may change the art and continue the project, but not sell it" + (st.assets === "CC BY-NC-SA 4.0" ? ", and changed art stays CC BY-NC-SA. It can't be mixed with CC BY-SA art." : ".") + " The project shows a \"Non-commercial art\" label. No-derivatives (ND) licenses aren't accepted, because nobody could change the art."
+            : "CC BY 4.0 is recommended: others may reuse the assets if they credit you. Non-commercial is allowed too; no-derivatives (ND) isn't.")
       ])
     ];
     if (extra) {

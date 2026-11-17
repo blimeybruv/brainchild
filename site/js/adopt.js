@@ -37,6 +37,7 @@
       return out;
     }
     out.push(h("p", { text: released() + " Sign in with " + site() + " so we can link your copy." }));
+    if (BC.artNotice(p.assets_license)) out.push(h("p", { class: "callout plain art-notice", text: BC.artNotice(p.assets_license) }));
     if (st.user && st.user.handle === p.owner) {
       out.push(h("p", { class: "form-error", text: "You're this project's current maintainer, so there's nothing to adopt." }));
     } else if (st.user) {
@@ -155,6 +156,7 @@
         h("p", null, [h("strong", { text: "Verified: @" + st.user.handle + " has " + (s.host === "gitlab" ? "the Maintainer or Owner role" : sh() ? "push access (your code is in the file)" : "admin rights") + " on " + BC.repoWhere(s.host, s.repo) })]),
         h("p", { text: s.method === "transfer" ? "Transfer confirmed: this is the project's own repository, now under your account." : "Fork confirmed: " + site() + " shows it as forked from the original." }),
         h("p", { text: licLine })])]),
+      BC.artNotice(st.p.assets_license) ? h("p", { class: "callout plain art-notice", text: BC.artNotice(st.p.assets_license) }) : null,
       h("p", { class: "muted", text: "Finishing makes you the maintainer of \"" + s.title + "\" on Brainchild. The original maker stays credited in the lineage." }),
       errorLine(),
       h("div", { class: "actions" }, [btn(st.busy ? "Finishing…" : "Finish adopting", function () { send(false); }, null, st.busy), back()])
